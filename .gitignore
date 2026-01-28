@@ -5,3 +5,5 @@ dist/
 *.log
 .DS_Store
 project.config.json.bak
+.swc/
+project.private.config.json
