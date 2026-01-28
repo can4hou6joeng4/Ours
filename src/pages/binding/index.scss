@@ -1,0 +1,87 @@
+@import "../../styles/theme.scss";
+
+.container {
+  padding: $spacing-base * 2;
+  background-color: $bg-color;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+
+  .card {
+    @include card-base;
+    width: 100%;
+    text-align: center;
+  }
+
+  .title {
+    font-size: 40rpx;
+    font-weight: bold;
+    color: $text-main;
+    display: block;
+    margin-bottom: 8rpx;
+  }
+
+  .subtitle {
+    font-size: 24rpx;
+    color: $text-sub;
+    display: block;
+    margin-bottom: 60rpx;
+  }
+
+  .section {
+    text-align: left;
+    margin-bottom: 40rpx;
+
+    .label {
+      font-size: 26rpx;
+      color: $text-sub;
+      margin-bottom: 16rpx;
+      display: block;
+    }
+  }
+
+  .code-box {
+    background: #f0f0f0;
+    padding: 24rpx;
+    border-radius: $border-radius-md;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    .code {
+      font-size: 36rpx;
+      font-weight: bold;
+      color: $primary-color;
+      letter-spacing: 4rpx;
+    }
+
+    .copy-btn {
+      margin: 0;
+      font-size: 24rpx;
+      height: 50rpx;
+      line-height: 50rpx;
+    }
+  }
+
+  .divider {
+    color: #ccc;
+    font-size: 24rpx;
+    margin: 40rpx 0;
+  }
+
+  .input {
+    background: #fff;
+    border: 2rpx solid #eee;
+    padding: 24rpx;
+    border-radius: $border-radius-md;
+    font-size: 32rpx;
+  }
+
+  .bind-btn {
+    background-color: $primary-color;
+    color: #fff;
+    border-radius: 50rpx;
+    margin-top: 40rpx;
+    font-weight: bold;
+  }
+}
