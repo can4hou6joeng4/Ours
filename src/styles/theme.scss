@@ -1,0 +1,34 @@
+// Figma 风格全局主题变量
+
+// 核心配色
+$primary-color: #7B61FF;    // Figma 紫色
+$secondary-color: #FF7EB3;  // 搞怪/辅助色
+$success-color: #4CAF50;
+$warning-color: #FF9800;
+$danger-color: #F44336;
+$bg-color: #F8F9FE;         // 浅色背景
+
+// 文字颜色
+$text-main: #1A1D1E;
+$text-sub: #6A6A6A;
+$text-white: #FFFFFF;
+
+// 布局规范
+$border-radius-lg: 24px;    // 卡片大圆角
+$border-radius-md: 12px;
+$spacing-base: 16px;
+$card-shadow: 0 8px 24px rgba(123, 97, 255, 0.1);
+
+// 混入
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@mixin card-base {
+  background: $text-white;
+  border-radius: $border-radius-lg;
+  padding: $spacing-base;
+  box-shadow: $card-shadow;
+}
