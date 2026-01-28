@@ -1,0 +1,98 @@
+@import "../../styles/theme.scss";
+
+.history-container {
+  height: 100vh;
+  background-color: #f7f8fa;
+  display: flex;
+  flex-direction: column;
+
+  .history-header {
+    padding: 80rpx 40rpx;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: #fff;
+
+    .title {
+      font-size: 48rpx;
+      font-weight: 800;
+      display: block;
+      margin-bottom: 12rpx;
+      letter-spacing: 2rpx;
+    }
+
+    .subtitle {
+      font-size: 24rpx;
+      opacity: 0.85;
+      font-weight: 500;
+    }
+  }
+
+  .records-list {
+    flex: 1;
+    margin-top: -30rpx;
+    background: #ffffff;
+    border-radius: 40rpx 40rpx 0 0;
+    padding: 40rpx 30rpx;
+    box-sizing: border-box;
+    box-shadow: 0 -10rpx 30rpx rgba(0, 0, 0, 0.05);
+
+    .record-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 32rpx 0;
+      border-bottom: 2rpx solid #f8fafc;
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      .left {
+        display: flex;
+        flex-direction: column;
+
+        .record-title {
+          font-size: 32rpx;
+          color: #1e293b;
+          font-weight: 600;
+          margin-bottom: 8rpx;
+        }
+
+        .record-time {
+          font-size: 22rpx;
+          color: #94a3b8;
+          font-weight: 500;
+        }
+      }
+
+      .right {
+        &.income { color: #10b981; }
+        &.outcome { color: #ef4444; }
+
+        .points-val {
+          font-size: 36rpx;
+          font-weight: 800;
+          font-family: 'DIN Alternate', sans-serif;
+        }
+      }
+    }
+
+    .empty-state {
+      padding-top: 240rpx;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      color: #94a3b8;
+
+      .empty-icon {
+        font-size: 100rpx;
+        margin-bottom: 24rpx;
+        opacity: 0.5;
+      }
+
+      text {
+        font-size: 28rpx;
+        font-weight: 500;
+      }
+    }
+  }
+}
