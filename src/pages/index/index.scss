@@ -232,9 +232,12 @@
 
   // 详情弹窗增强
   .detail-modal {
+    z-index: 1001; // 提升至最高层级，超过 FAB 按钮
+
     .modal-content {
       padding: 0;
       overflow: hidden;
+      width: 85%; // 略微加宽，视觉更饱满
 
       .detail-header {
         padding: 40rpx;

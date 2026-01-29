@@ -221,6 +221,7 @@ export default function Index() {
   }
 
   const handleShowDetail = (task: any) => {
+    console.log('触发详情弹窗:', task.title)
     setSelectedTask(task)
     setShowDetailModal(true)
   }
