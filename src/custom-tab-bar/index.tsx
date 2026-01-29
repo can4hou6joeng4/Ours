@@ -7,17 +7,6 @@ import './index.scss'
 export default function CustomTabBar() {
   const [selected, setSelected] = useState(0)
 
-  // 监听路由变化同步选中状态
-  useEffect(() => {
-    const pages = Taro.getCurrentPages()
-    const currentPage = pages[pages.length - 1]
-    if (currentPage) {
-      const path = currentPage.route
-      const index = LIST.findIndex(item => item.pagePath === path || item.pagePath === `/${path}`)
-      if (index !== -1) setSelected(index)
-    }
-  }, [])
-
   const LIST = [
     {
       pagePath: 'pages/index/index',
@@ -36,27 +25,50 @@ export default function CustomTabBar() {
     }
   ]
 
+  // 核心修复：更高效的路由同步
+  useEffect(() => {
+    const updateSelected = () => {
+      const pages = Taro.getCurrentPages()
+      const currentPage = pages[pages.length - 1]
+      if (currentPage) {
+        const path = currentPage.route?.replace(/^\//, '')
+        const index = LIST.findIndex(item => item.pagePath === path)
+        if (index !== -1 && index !== selected) setSelected(index)
+      }
+    }
+
+    updateSelected()
+    // 增加一个微小延迟的二次检查，确保在某些环境下的准确性
+    const timer = setTimeout(updateSelected, 50)
+    return () => clearTimeout(timer)
+  }, [Taro.getCurrentPages().length]) // 监听页面栈长度变化
+
   const switchTab = (index, url) => {
+    if (selected === index) return
     Taro.switchTab({ url: '/' + url })
-    setSelected(index)
   }
 
   return (
-    <View className='tab-bar-wrapper'>
-      <View className='tab-bar-capsule'>
-        {LIST.map((item, index) => (
-          <View
-            key={index}
-            className={`tab-item ${selected === index ? 'active' : ''}`}
-            onClick={() => switchTab(index, item.pagePath)}
-          >
-            <Image
-              src={getIconifyUrl(item.icon, selected === index ? '#D4B185' : '#666')}
-              className='tab-icon'
-            />
-            <Text className='tab-text'>{item.text}</Text>
-          </View>
-        ))}
+    <View className='tab-bar-root'>
+      {/* 核心修复：背景遮罩层，防止内容穿透 */}
+      <View className='tab-bar-mask'></View>
+
+      <View className='tab-bar-wrapper'>
+        <View className='tab-bar-capsule'>
+          {LIST.map((item, index) => (
+            <View
+              key={index}
+              className={`tab-item ${selected === index ? 'active' : ''}`}
+              onClick={() => switchTab(index, item.pagePath)}
+            >
+              <Image
+                src={getIconifyUrl(item.icon, selected === index ? '#D4B185' : '#888')}
+                className='tab-icon'
+              />
+              <Text className='tab-text'>{item.text}</Text>
+            </View>
+          ))}
+        </View>
       </View>
     </View>
   )

@@ -1,58 +1,73 @@
 @import "../styles/theme.scss";
 
-.tab-bar-wrapper {
+.tab-bar-root {
   position: fixed;
-  bottom: calc(40rpx + env(safe-area-inset-bottom));
+  bottom: 0;
   left: 0;
   right: 0;
-  display: flex;
-  justify-content: center;
   z-index: 999;
   pointer-events: none;
 
-  .tab-bar-capsule {
-    pointer-events: auto;
-    width: 480rpx; // 缩减宽度，使其更像紧凑的胶囊
-    height: 100rpx; // 略微减小高度，更显精致
-    background: rgba(255, 255, 255, 0.95); // 增加不透明度，减少背景干扰
-    backdrop-filter: blur(15px);
-    border-radius: 100rpx;
+  // 遮罩层：颜色与背景色一致，高度覆盖胶囊及安全区
+  .tab-bar-mask {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: calc(160rpx + env(safe-area-inset-bottom));
+    background: $bg-color; // 关键：使用全局背景色遮挡滚动内容
+    z-index: 998;
+    // 使用渐变使遮挡更自然
+    mask-image: linear-gradient(to bottom, transparent, black 20rpx);
+  }
+
+  .tab-bar-wrapper {
+    position: relative;
+    padding-bottom: calc(40rpx + env(safe-area-inset-bottom));
     display: flex;
-    align-items: center;
-    justify-content: space-around;
-    padding: 0 30rpx;
-    border: 1rpx solid rgba(0, 0, 0, 0.05);
-    box-shadow: 0 20rpx 40rpx rgba(0, 0, 0, 0.1);
+    justify-content: center;
+    z-index: 999;
+    pointer-events: none;
 
-    .tab-item {
-      flex: 1;
+    .tab-bar-capsule {
+      pointer-events: auto;
+      width: 480rpx;
+      height: 100rpx;
+      background: rgba(255, 255, 255, 0.98); // 提高不透明度
+      backdrop-filter: blur(15px);
+      border-radius: 100rpx;
       display: flex;
-      flex-direction: column;
       align-items: center;
-      justify-content: center;
-      transition: all 0.2s;
+      justify-content: space-around;
+      padding: 0 30rpx;
+      border: 1rpx solid rgba(0, 0, 0, 0.05);
+      box-shadow: 0 20rpx 40rpx rgba(0, 0, 0, 0.1);
 
-      .tab-icon {
-        width: 40rpx; // 缩小图标，增加呼吸感
-        height: 40rpx;
-        margin-bottom: 2rpx;
-      }
+      .tab-item {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
 
-      .tab-text {
-        font-size: 18rpx; // 缩小文字，符合比例
-        color: #888;
-        font-weight: 500;
-      }
-
-      &.active {
-        .tab-text {
-          color: $primary-color;
-          font-weight: bold;
+        .tab-icon {
+          width: 40rpx;
+          height: 40rpx;
+          margin-bottom: 2rpx;
         }
-      }
 
-      &:active {
-        transform: scale(0.9);
+        .tab-text {
+          font-size: 18rpx;
+          color: #888;
+          font-weight: 500;
+        }
+
+        &.active {
+          .tab-text {
+            color: $primary-color;
+            font-weight: bold;
+          }
+        }
       }
     }
   }

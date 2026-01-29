@@ -10,7 +10,7 @@ export default defineAppConfig({
   window: {
     backgroundTextStyle: 'light',
     navigationBarBackgroundColor: '#fff',
-    navigationBarTitleText: 'Ours',
+    navigationBarTitleText: '兑换',
     navigationBarTextStyle: 'black',
     backgroundColor: '#F8F9FE'
   },
