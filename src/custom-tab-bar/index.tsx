@@ -19,6 +19,11 @@ export default function CustomTabBar() {
       icon: 'tabler:refresh'
     },
     {
+      pagePath: 'pages/inventory/index',
+      text: '背包',
+      icon: 'tabler:package'
+    },
+    {
       pagePath: 'pages/me/index',
       text: '我的',
       icon: 'tabler:user'

@@ -31,6 +31,10 @@ export default defineAppConfig({
         text: '兑换'
       },
       {
+        pagePath: 'pages/inventory/index',
+        text: '背包'
+      },
+      {
         pagePath: 'pages/me/index',
         text: '我的'
       }

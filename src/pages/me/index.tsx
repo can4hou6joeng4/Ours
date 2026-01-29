@@ -105,17 +105,6 @@ export default function Me() {
         </View>
       </View>
 
-      {/* 功能菜单区 */}
-      <View className='menu-list'>
-        <View className='menu-item' onClick={() => Taro.navigateTo({ url: '/pages/inventory/index' })}>
-          <View className='menu-left'>
-            <Text className='menu-icon'>◎</Text>
-            <Text className='menu-label'>我的背包</Text>
-          </View>
-          <Text className='menu-arrow'>⟩</Text>
-        </View>
-      </View>
-
       {/* 另一半/绑定状态区 */}
       <View className='binding-section'>
         <Text className='section-label'>PARTNER INFO / 我的另一半</Text>
