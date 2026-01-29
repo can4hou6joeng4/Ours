@@ -1,11 +1,21 @@
 @import "../../styles/theme.scss";
 
 .gift-edit-container {
-  min-height: 100vh;
+  height: 100vh;
   background-color: #F7F7F7;
-  padding: 32rpx;
-  padding-bottom: 180rpx;
+  display: flex;
+  flex-direction: column;
   box-sizing: border-box;
+
+  .edit-scroll-view {
+    flex: 1;
+    height: 0; // 必须设置，确保在 flex 布局下正确滚动
+  }
+
+  .scroll-content {
+    padding: 32rpx;
+    padding-bottom: 40rpx;
+  }
 
   .section-group {
     background: #ffffff;
@@ -28,7 +38,7 @@
       }
 
       .title {
-        font-size: 30rpx;
+        font-size: 28rpx;
         font-weight: bold;
         color: #333;
       }
@@ -36,7 +46,7 @@
 
     .upload-area {
       width: 100%;
-      height: 360rpx;
+      height: 240rpx; // 缩小图片区域高度
       background: #F9F9F9;
       border: 2rpx dashed #EEEEEE;
       border-radius: 16rpx;

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import Taro, { useRouter } from '@tarojs/taro'
-import { View, Text, Input, Button, Image, Picker } from '@tarojs/components'
+import { View, Text, Input, Button, Image, ScrollView } from '@tarojs/components'
 import { getIconifyUrl } from '../../utils/assets'
 import './index.scss'
 
@@ -12,25 +12,19 @@ export default function GiftEdit() {
   const [giftData, setGiftData] = useState({
     name: '',
     points: '',
-    category: 'entertainment',
     coverImg: '',
     desc: ''
   })
-
-  const categories = [
-    { id: 'entertainment', name: '电子产品' },
-    { id: 'life', name: '生活用品' },
-    { id: 'surprise', name: '惊喜奖励' },
-    { id: 'food', name: '美食佳饮' }
-  ]
 
   useEffect(() => {
     if (isEdit && router.params.data) {
       try {
         const data = JSON.parse(decodeURIComponent(router.params.data))
         setGiftData({
-          ...data,
-          points: String(data.points)
+          name: data.name || '',
+          points: String(data.points || ''),
+          coverImg: data.coverImg || '',
+          desc: data.desc || ''
         })
       } catch (e) {
         console.error('解析数据失败', e)
@@ -95,80 +89,67 @@ export default function GiftEdit() {
 
   return (
     <View className='gift-edit-container'>
-      <View className='section-group'>
-        <View className='section-header'>
-          <View className='accent' />
-          <Text className='title'>物品图片</Text>
-        </View>
-        <View className='upload-area' onClick={handleUploadImg}>
-          {giftData.coverImg ? (
-            <Image src={giftData.coverImg} mode='aspectFill' className='preview-img' />
-          ) : (
-            <View className='upload-placeholder'>
-              <Image src={getIconifyUrl('tabler:cloud-upload', '#D4B185')} className='upload-icon' />
-              <Text className='upload-text'>点击上传图片</Text>
+      <ScrollView scrollY className='edit-scroll-view'>
+        <View className='scroll-content'>
+          <View className='section-group'>
+            <View className='section-header'>
+              <View className='accent' />
+              <Text className='title'>物品图片</Text>
             </View>
-          )}
-        </View>
-      </View>
-
-      <View className='section-group'>
-        <View className='section-header'>
-          <View className='accent' />
-          <Text className='title'>基础信息</Text>
-        </View>
-        <View className='form-item'>
-          <Text className='label'>物品名称 *</Text>
-          <Input
-            className='input'
-            placeholder='请输入物品名称'
-            value={giftData.name}
-            onInput={e => setGiftData({ ...giftData, name: e.detail.value })}
-          />
-        </View>
-        <View className='form-item'>
-          <Text className='label'>分类 *</Text>
-          <Picker
-            mode='selector'
-            range={categories}
-            rangeKey='name'
-            onChange={e => setGiftData({ ...giftData, category: categories[e.detail.value].id })}
-          >
-            <View className='picker-value'>
-              <Text style={{ color: giftData.category ? '#333' : '#999' }}>
-                {categories.find(c => c.id === giftData.category)?.name || '请选择分类'}
-              </Text>
-              <Text className='arrow'>▾</Text>
+            <View className='upload-area' onClick={handleUploadImg}>
+              {giftData.coverImg ? (
+                <Image src={giftData.coverImg} mode='aspectFill' className='preview-img' />
+              ) : (
+                <View className='upload-placeholder'>
+                  <Image src={getIconifyUrl('tabler:cloud-upload', '#D4B185')} className='upload-icon' />
+                  <Text className='upload-text'>点击上传图片</Text>
+                </View>
+              )}
             </View>
-          </Picker>
-        </View>
-      </View>
+          </View>
 
-      <View className='section-group'>
-        <View className='section-header'>
-          <View className='accent' />
-          <Text className='title'>详细属性</Text>
+          <View className='section-group'>
+            <View className='section-header'>
+              <View className='accent' />
+              <Text className='title'>基础信息</Text>
+            </View>
+            <View className='form-item'>
+              <Text className='label'>物品名称 *</Text>
+              <Input
+                className='input'
+                placeholder='请输入物品名称'
+                value={giftData.name}
+                onInput={e => setGiftData({ ...giftData, name: e.detail.value })}
+              />
+            </View>
+            <View className='form-item'>
+              <Text className='label'>所需积分 *</Text>
+              <Input
+                className='input'
+                type='number'
+                placeholder='请输入积分数值'
+                value={giftData.points}
+                onInput={e => setGiftData({ ...giftData, points: e.detail.value })}
+              />
+            </View>
+          </View>
+
+          <View className='section-group'>
+            <View className='section-header'>
+              <View className='accent' />
+              <Text className='title'>详细描述</Text>
+            </View>
+            <View className='form-item'>
+              <Input
+                className='input'
+                placeholder='简单描述一下礼品吧'
+                value={giftData.desc}
+                onInput={e => setGiftData({ ...giftData, desc: e.detail.value })}
+              />
+            </View>
+          </View>
         </View>
-        <View className='form-item'>
-          <Text className='label'>所需积分 *</Text>
-          <Input
-            className='input'
-            type='number'
-            placeholder='请输入积分数值'
-            value={giftData.points}
-            onInput={e => setGiftData({ ...giftData, points: e.detail.value })}
-          />
-        </View>
-        <View className='form-item'>
-          <Text className='label'>物品描述</Text>
-          <Input
-            className='input'
-            placeholder='简单描述一下礼品吧'
-            value={giftData.desc}
-            onInput={e => setGiftData({ ...giftData, desc: e.detail.value })}
-          />
-        </View>
-      </View>
+      </ScrollView>
 
       <View className='footer-btns'>
         <Button className='btn reset' onClick={() => Taro.navigateBack()}>取消</Button>
