@@ -6,11 +6,24 @@ import './index.scss'
 
 export default function History() {
   const [records, setRecords] = useState<any[]>([])
+  const [totalPoints, setTotalPoints] = useState(0)
   const [loading, setLoading] = useState(false)
 
   useDidShow(() => {
     fetchRecords()
+    fetchUserInfo()
   })
+
+  const fetchUserInfo = async () => {
+    try {
+      const { result }: any = await Taro.cloud.callFunction({ name: 'initUser' })
+      if (result.success) {
+        setTotalPoints(result.user.totalPoints)
+      }
+    } catch (e) {
+      console.error('获取用户信息失败', e)
+    }
+  }
 
   const fetchRecords = async () => {
     setLoading(true)
@@ -32,12 +45,17 @@ export default function History() {
 
   return (
     <View className='history-container'>
-      <View className='history-header'>
-        <Text className='title'>积分明细</Text>
-        <Text className='subtitle'>TRANSACTION HISTORY / 记录每一分的变化</Text>
+      {/* 沉浸式资产卡片 - 与兑换页一致 */}
+      <View className='asset-summary-card'>
+        <View className='asset-info'>
+          <Text className='asset-label'>TOTAL ASSETS / 当前总积分</Text>
+          <View className='asset-num'>{totalPoints}</View>
+        </View>
+        <View className='asset-tag'>History</View>
       </View>
 
-      <ScrollView scrollY className='records-list'>
+      <View className='records-list'>
+        <Text className='section-title'>TRANSACTION RECORDS / 往期明细</Text>
         {records.length === 0 && !loading ? (
           <View className='empty-state'>
             <View className='empty-icon'>📄</View>

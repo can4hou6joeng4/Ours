@@ -1,50 +1,74 @@
 @import "../../styles/theme.scss";
 
 .history-container {
-  height: 100vh;
-  background-color: #f7f8fa;
-  display: flex;
-  flex-direction: column;
+  min-height: 100vh;
+  background-color: $bg-color;
+  padding: 32rpx;
+  box-sizing: border-box;
 
-  .history-header {
-    padding: 80rpx 40rpx;
+  // 复刻兑换页面的沉浸式资产看板
+  .asset-summary-card {
     background: $secondary-color; // 碳黑
-    color: #fff;
+    border-radius: 40rpx;
+    padding: 60rpx 48rpx;
+    margin-bottom: 40rpx;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 20rpx 40rpx rgba(0, 0, 0, 0.15);
     position: relative;
+    overflow: hidden;
 
-    .title {
-      font-size: 40rpx;
+    &::before {
+      content: "◎ 资产概览";
+      position: absolute;
+      top: 24rpx;
+      left: 32rpx;
+      font-size: 20rpx;
+      color: $primary-color;
       font-weight: bold;
-      display: block;
-      margin-bottom: 8rpx;
-      color: $primary-color; // 香槟金
+      letter-spacing: 2rpx;
     }
 
-    .subtitle {
+    .asset-info {
+      .asset-label {
+        font-size: 22rpx;
+        color: #8E8E93;
+        font-weight: 500;
+        display: block;
+        margin-bottom: 12rpx;
+        letter-spacing: 1rpx;
+      }
+      .asset-num {
+        font-size: 64rpx;
+        font-weight: 900;
+        color: $primary-color; // 香槟金
+        letter-spacing: -2rpx;
+      }
+    }
+
+    .asset-tag {
       font-size: 20rpx;
-      opacity: 0.6;
-      font-weight: 500;
-      letter-spacing: 2rpx;
+      color: rgba(255, 255, 255, 0.4);
+      writing-mode: vertical-lr;
+      text-transform: uppercase;
+      letter-spacing: 4rpx;
     }
   }
 
   .records-list {
-    flex: 1;
-    margin-top: -24rpx;
-    background: $bg-color;
-    border-radius: 24rpx 24rpx 0 0;
-    padding: 32rpx;
-    box-sizing: border-box;
+    background: transparent;
+    padding: 0;
+    margin-top: 0;
+    box-shadow: none;
 
-    .record-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 32rpx;
-      background: #fff;
-      border-radius: 20rpx;
-      margin-bottom: 20rpx;
-      box-shadow: $card-shadow;
+    .section-title {
+      font-size: 24rpx;
+      color: $text-sub;
+      margin: 0 0 24rpx 8rpx;
+      font-weight: bold;
+      letter-spacing: 2rpx;
+    }
 
       .left {
         display: flex;
