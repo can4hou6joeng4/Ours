@@ -62,22 +62,27 @@
   // 悬浮操作按钮 (FAB)
   .fab-btn {
     position: fixed;
-    right: 40rpx;
-    bottom: calc(140rpx + env(safe-area-inset-bottom));
-    width: 100rpx;
-    height: 100rpx;
+    right: 48rpx;
+    bottom: calc(160rpx + env(safe-area-inset-bottom));
+    width: 110rpx;
+    height: 110rpx;
     background: linear-gradient(135deg, $primary-color, #E5C59F);
     border-radius: 50%;
     @include flex-center;
-    box-shadow: 0 12rpx 32rpx rgba($primary-color, 0.3);
+    // 多重弥散投影，增加悬浮感
+    box-shadow:
+      0 12rpx 32rpx rgba($primary-color, 0.3),
+      0 20rpx 60rpx rgba(0, 0, 0, 0.15);
     color: #fff;
-    font-size: 60rpx;
+    font-size: 64rpx;
     z-index: 999;
     font-weight: 300;
+    border: 4rpx solid rgba(255, 255, 255, 0.4); // 增加一个柔和的白色边缘，增强立体感
 
     &:active {
-      transform: scale(0.9) rotate(90deg);
-      transition: all 0.2s;
+      transform: scale(0.9) translateY(4rpx);
+      box-shadow: 0 4rpx 12rpx rgba($primary-color, 0.2);
+      transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
   }
 

@@ -211,10 +211,10 @@ export default function Index() {
 
     if (currentTab === 'pending') return t.status === 'pending'
     if (currentTab === 'done') return t.status === 'done'
-    return true
+    return t.status !== 'revoked' // 默认不显示已撤销
   })
 
-  if (loading) return <View className='container'><Text>数据加载中...</Text></View>
+  if (loading) return <View className='container'><View className='empty-state'><Text>数据加载中...</Text></View></View>
 
   return (
     <View className='container'>
