@@ -165,10 +165,25 @@
             font-size: 20rpx;
             padding: 4rpx 16rpx;
             border-radius: 8rpx;
-            margin-right: 16rpx;
+            margin-right: 12rpx;
             font-weight: 500;
             &.reward { background: rgba($primary-color, 0.1); color: $primary-color; }
             &.penalty { background: rgba(255, 77, 79, 0.1); color: #FF4D4F; }
+
+            // 身份标签样式
+            &.identity {
+              background: #F5F5F5;
+              color: #888;
+              font-size: 18rpx; // 略小于主要标签
+              opacity: 0.8;
+
+              &.mine { border: 1rpx solid #EEE; }
+              &.partner { border: 1rpx solid #EEE; }
+              &.target {
+                &.reward { background: rgba($primary-color, 0.2); color: $primary-color; border: 1rpx solid rgba($primary-color, 0.2); opacity: 1; }
+                &.penalty { background: rgba(255, 77, 79, 0.2); color: #FF4D4F; border: 1rpx solid rgba(255, 77, 79, 0.2); opacity: 1; }
+              }
+            }
           }
           .time { font-size: 22rpx; color: #BBB; }
         }

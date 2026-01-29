@@ -286,6 +286,17 @@ export default function Index() {
                 <Text className='title'>{task.title}</Text>
                 <View className='tags'>
                   <Text className={`tag ${task.type}`}>{task.type === 'reward' ? '奖赏' : '惩罚'}</Text>
+                  {/* 身份关系标签 */}
+                  {task.creatorId === currentUserId ? (
+                    <Text className='tag identity mine'>我发布的</Text>
+                  ) : (
+                    <Text className='tag identity partner'>对方发起</Text>
+                  )}
+                  {task.targetId === currentUserId && (
+                    <Text className={`tag identity target ${task.type}`}>
+                      {task.type === 'reward' ? '给我的' : '我被罚'}
+                    </Text>
+                  )}
                   <Text className='time'>{task.createTime ? new Date(task.createTime).toLocaleString().slice(5, 16) : '刚刚'}</Text>
                 </View>
               </View>
