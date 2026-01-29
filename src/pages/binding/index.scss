@@ -1,15 +1,19 @@
 @import "../../styles/theme.scss";
 
 .container {
-  padding: $spacing-base * 2;
+  padding: 40rpx;
   background-color: $bg-color;
   min-height: 100vh;
   display: flex;
   align-items: center;
 
   .card {
-    @include card-base;
+    background: #ffffff;
+    border-radius: 40rpx;
+    padding: 60rpx 40rpx;
     width: 100%;
+    box-shadow: $card-shadow;
+    border: 1rpx solid #F0F0F0;
     text-align: center;
   }
 
@@ -18,70 +22,106 @@
     font-weight: bold;
     color: $text-main;
     display: block;
-    margin-bottom: 8rpx;
+    margin-bottom: 12rpx;
   }
 
   .subtitle {
-    font-size: 24rpx;
+    font-size: 20rpx;
     color: $text-sub;
     display: block;
-    margin-bottom: 60rpx;
+    margin-bottom: 80rpx;
+    letter-spacing: 2rpx;
+    text-transform: uppercase;
   }
 
   .section {
     text-align: left;
-    margin-bottom: 40rpx;
+    margin-bottom: 48rpx;
 
     .label {
-      font-size: 26rpx;
+      font-size: 24rpx;
       color: $text-sub;
-      margin-bottom: 16rpx;
+      margin-bottom: 20rpx;
       display: block;
+      font-weight: bold;
+      letter-spacing: 1rpx;
     }
   }
 
   .code-box {
-    background: #f0f0f0;
-    padding: 24rpx;
-    border-radius: $border-radius-md;
+    background: #F8F8F8;
+    padding: 32rpx 40rpx;
+    border-radius: 24rpx;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    border: 1rpx solid #EEE;
 
     .code {
-      font-size: 36rpx;
-      font-weight: bold;
+      font-size: 40rpx;
+      font-weight: 900;
       color: $primary-color;
-      letter-spacing: 4rpx;
+      letter-spacing: 6rpx;
     }
 
     .copy-btn {
       margin: 0;
-      font-size: 24rpx;
-      height: 50rpx;
-      line-height: 50rpx;
+      font-size: 22rpx;
+      height: 56rpx;
+      line-height: 56rpx;
+      padding: 0 32rpx;
+      background: #FFF;
+      color: $primary-color;
+      border: 1rpx solid rgba($primary-color, 0.3);
+      border-radius: 30rpx;
+      font-weight: bold;
     }
   }
 
   .divider {
-    color: #ccc;
-    font-size: 24rpx;
+    color: #EEE;
+    font-size: 20rpx;
     margin: 40rpx 0;
+    position: relative;
+    &::before, &::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      width: 40%;
+      height: 1rpx;
+      background: #F0F0F0;
+    }
+    &::before { left: 0; }
+    &::after { right: 0; }
   }
 
   .input {
-    background: #fff;
-    border: 2rpx solid #eee;
-    padding: 24rpx;
-    border-radius: $border-radius-md;
-    font-size: 32rpx;
+    background: #F8F8F8;
+    border: 1rpx solid #EEE;
+    padding: 28rpx 40rpx;
+    border-radius: 24rpx;
+    font-size: 30rpx;
+    transition: all 0.2s;
+    &:focus {
+      border-color: $primary-color;
+      background: #FFF;
+    }
   }
 
   .bind-btn {
     background-color: $primary-color;
     color: #fff;
-    border-radius: 50rpx;
+    border-radius: 100rpx;
     margin-top: 40rpx;
     font-weight: bold;
+    height: 100rpx;
+    line-height: 100rpx;
+    box-shadow: 0 12rpx 32rpx rgba($primary-color, 0.2);
+    font-size: 32rpx;
+
+    &:active {
+      transform: scale(0.98);
+      opacity: 0.9;
+    }
   }
 }
