@@ -214,10 +214,17 @@ export default function Index() {
 
   return (
     <View className='container'>
-      {/* 积分看板 */}
+      {/* 积分看板 (理物风格) */}
       <View className='score-board'>
-        <Text className='label'>ASSET OVERVIEW / 我的当前积分</Text>
-        <Text className={`value ${points < 0 ? 'negative' : ''}`}>{points}</Text>
+        <View className='stat-item'>
+          <Text className='value'>¥{points}.00</Text>
+          <Text className='label'>总资产积分</Text>
+        </View>
+        <View className='divider' />
+        <View className='stat-item'>
+          <Text className='value'>¥0</Text>
+          <Text className='label'>今日变动</Text>
+        </View>
       </View>
 
       {/* 悬浮发布按钮 */}

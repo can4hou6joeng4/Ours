@@ -1,16 +1,17 @@
-// 工业科技风格：深灰 + 橙色
-$primary-color: #FF6B00;    // 能量橙
-$secondary-color: #1A1A1A;  // 碳黑
-$bg-color: #F4F4F4;         // 浅灰背景
+// 极致理物风格：碳黑 + 香槟金
+$primary-color: #D4B185;    // 香槟金 (用于核心数值和高亮)
+$accent-color: #E6D5B8;     // 浅米色 (用于 FAB 和辅助按钮)
+$secondary-color: #1A1A1A;  // 碳黑 (用于沉浸式看板)
+$bg-color: #F8F8F8;         // 极简浅灰背景
 
 $text-main: #1A1A1A;
-$text-sub: #8E8E93;
+$text-sub: #999999;
 $text-white: #FFFFFF;
 
 $border-radius-lg: 40rpx;
-$border-radius-md: 20rpx;
-$spacing-base: 32rpx;       // 补全缺失的间距变量
-$card-shadow: 0 12rpx 32rpx rgba(0, 0, 0, 0.06);
+$border-radius-md: 24rpx;
+$spacing-base: 32rpx;
+$card-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.04);
 
 // 混入
 @mixin flex-center {

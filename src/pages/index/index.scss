@@ -7,63 +7,86 @@
   display: flex;
   flex-direction: column;
 
-  // 积分看板 (工业化沉浸式设计)
+  // 积分看板 (参考图：理物 - 资产概览风格)
   .score-board {
     @include card-base;
     background: $secondary-color; // 碳黑
     color: #fff;
     display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    padding: 48rpx;
+    flex-direction: row; // 横向排列
+    justify-content: space-around;
+    padding: 40rpx 0;
     margin-bottom: 40rpx;
     position: relative;
-    overflow: hidden;
+    border-radius: 24rpx; // 参考图圆角较小
 
-    // 装饰性光晕
-    &::after {
-      content: "";
+    &::before {
+      content: "◎ 资产概览";
       position: absolute;
-      top: -100rpx;
-      right: -100rpx;
-      width: 300rpx;
-      height: 300rpx;
-      background: radial-gradient(circle, rgba($primary-color, 0.15) 0%, transparent 70%);
+      top: 20rpx;
+      left: 30rpx;
+      font-size: 24rpx;
+      color: $primary-color;
+      font-weight: bold;
     }
 
-    .label { font-size: 24rpx; opacity: 0.6; display: block; letter-spacing: 2rpx; }
-    .value {
-      font-size: 80rpx;
-      font-weight: bold;
-      margin-top: 16rpx;
-      display: block;
-      color: $primary-color; // 能量橙
+    .stat-item {
+      flex: 1;
+      text-align: center;
+      margin-top: 20rpx;
 
-      &.negative {
-        color: #FF4D4F;
-        text-shadow: 0 0 20rpx rgba(255, 77, 79, 0.3);
+      .label {
+        font-size: 22rpx;
+        opacity: 0.6;
+        display: block;
+        margin-top: 10rpx;
+        color: #fff;
       }
+      .value {
+        font-size: 40rpx; // 缩小字号，更显精致
+        font-weight: bold;
+        display: block;
+        color: $primary-color; // 香槟金
+      }
+    }
+
+    // 分隔线
+    .divider {
+      width: 1rpx;
+      height: 60rpx;
+      background: rgba(255, 255, 255, 0.1);
+      align-self: center;
     }
   }
 
-  // 悬浮操作按钮 (FAB)
+  // 悬浮操作按钮 (FAB) - 参考图色值
   .fab-btn {
     position: fixed;
     right: 40rpx;
     bottom: calc(40rpx + env(safe-area-inset-bottom));
-    width: 110rpx;
-    height: 110rpx;
-    background: $primary-color;
+    width: 100rpx;
+    height: 100rpx;
+    background: $accent-color; // 浅米色
     border-radius: 50%;
     @include flex-center;
-    box-shadow: 0 16rpx 32rpx rgba($primary-color, 0.3);
+    box-shadow: 0 12rpx 24rpx rgba(0, 0, 0, 0.15);
     color: #fff;
-    font-size: 50rpx;
+    font-size: 60rpx;
     z-index: 99;
-    transition: transform 0.2s;
+  }
 
-    &:active {
-      transform: scale(0.9);
+  // 两级 Tab (简化版实现)
+  .tab-bar {
+    border-bottom: none;
+    justify-content: flex-start;
+    gap: 40rpx;
+    padding: 10rpx 0;
+
+    .tab-item {
+      font-size: 28rpx;
+      color: $text-main;
+      font-weight: bold;
+      &.active::after { display: none; } // 移除原有的底部横线
     }
   }
 
