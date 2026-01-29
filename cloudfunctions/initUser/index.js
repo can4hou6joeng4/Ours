@@ -10,7 +10,18 @@ exports.main = async (event, context) => {
     const userRes = await db.collection('Users').doc(OPENID).get().catch(() => null)
 
     if (userRes) {
-      return { success: true, user: userRes.data }
+      // 聚合当日积分变动
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+
+      const recordsRes = await db.collection('Records').where({
+        userId: OPENID,
+        createTime: _.gte(today)
+      }).get()
+
+      const todayChange = recordsRes.data.reduce((sum, record) => sum + (record.amount || 0), 0)
+
+      return { success: true, user: userRes.data, todayChange }
     }
 
     // 2. 如果不存在，则创建新用户
