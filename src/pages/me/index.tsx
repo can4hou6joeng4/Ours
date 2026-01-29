@@ -119,7 +119,7 @@ export default function Me() {
       {/* 另一半/绑定状态区 */}
       <View className='binding-section'>
         <Text className='section-label'>PARTNER INFO / 我的另一半</Text>
-        <View className='binding-card'>
+        <View className='binding-content'>
           {!userInfo?.partnerId ? (
             <View className='binding-guide'>
               <Text className='guide-text'>绑定另一半，开启双人互动空间</Text>
@@ -130,7 +130,7 @@ export default function Me() {
           ) : (
             <View className='partner-info-box'>
               <View className='partner-status'>
-                已关联：{userInfo.partnerId.slice(-6)}
+                已关联伙伴：{userInfo.partnerId.slice(-6)}
               </View>
               <Button className='unbind-btn'>解除绑定 (暂未开放)</Button>
             </View>

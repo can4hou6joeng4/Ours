@@ -10,6 +10,22 @@ exports.main = async (event, context) => {
     const userRes = await db.collection('Users').doc(OPENID).get().catch(() => null)
 
     if (userRes) {
+      const userData = userRes.data
+      let partnerData = null
+
+      // 如果有绑定伙伴，拉取伙伴的基础资料和心情
+      if (userData.partnerId) {
+        const partnerRes = await db.collection('Users').doc(userData.partnerId).get().catch(() => null)
+        if (partnerRes) {
+          partnerData = {
+            nickName: partnerRes.data.nickName,
+            avatarUrl: partnerRes.data.avatarUrl,
+            currentMood: partnerRes.data.currentMood,
+            moodUpdateTime: partnerRes.data.moodUpdateTime
+          }
+        }
+      }
+
       // 聚合当日积分变动
       const today = new Date()
       today.setHours(0, 0, 0, 0)
@@ -21,7 +37,12 @@ exports.main = async (event, context) => {
 
       const todayChange = recordsRes.data.reduce((sum, record) => sum + (record.amount || 0), 0)
 
-      return { success: true, user: userRes.data, todayChange }
+      return {
+        success: true,
+        user: userData,
+        partner: partnerData,
+        todayChange
+      }
     }
 
     // 2. 如果不存在，则创建新用户

@@ -1,88 +1,79 @@
 import { View, Text, ScrollView, Button, Image } from '@tarojs/components'
-import Taro, { useDidShow } from '@tarojs/taro'
-import { useState } from 'react'
+import Taro, { useDidShow, eventCenter } from '@tarojs/taro'
+import { useState, useEffect } from 'react'
 import DuxGrid from '../../components/DuxGrid'
 import DuxCard from '../../components/DuxCard'
-import { getIconifyUrl, getPexelsUrl } from '../../utils/assets'
+import { getIconifyUrl } from '../../utils/assets'
 import './index.scss'
-
-const PRODUCTS = [
-  {
-    id: 1,
-    name: '电影日',
-    points: 500,
-    desc: '一起看一场想看的电影',
-    icon: 'tabler:movie',
-    type: 'movie',
-    theme: '#FF6B00',
-    bgColor: '#ffffff'
-  },
-  {
-    id: 2,
-    name: '家务抵用券',
-    points: 300,
-    desc: '对方帮你分担一次家务',
-    icon: 'tabler:vacuum-cleaner',
-    type: 'chore',
-    theme: '#FF6B00',
-    bgColor: '#ffffff'
-  },
-  {
-    id: 3,
-    name: '整蛊盲盒',
-    points: 200,
-    desc: '随机触发一个有趣的整蛊',
-    icon: 'tabler:gift',
-    type: 'box',
-    theme: '#FF6B00',
-    bgColor: '#ffffff'
-  },
-  {
-    id: 4,
-    name: '奶茶自由',
-    points: 150,
-    desc: '获得一杯心仪的奶茶',
-    icon: 'tabler:cup',
-    type: 'tea',
-    theme: '#FF6B00',
-    bgColor: '#ffffff'
-  },
-  {
-    id: 5,
-    name: '免死金牌',
-    points: 1000,
-    desc: '犯错时可抵消一次惩罚',
-    icon: 'tabler:medal',
-    type: 'medal',
-    theme: '#FF6B00',
-    bgColor: '#ffffff'
-  }
-]
-
-const CATEGORIES = [
-  { id: 'all', name: '全部', icon: 'tabler:apps', color: '#7B61FF' },
-  { id: 'movie', name: '娱乐', icon: 'tabler:device-tv', color: '#3B82F6' },
-  { id: 'chore', name: '生活', icon: 'tabler:home-heart', color: '#10B981' },
-  { id: 'gift', name: '惊喜', icon: 'tabler:gift', color: '#F59E0B' },
-]
 
 export default function Store() {
   const [totalPoints, setTotalPoints] = useState(0)
-  const [activeTab, setActiveTab] = useState('all')
+  const [products, setProducts] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [isAdmin, setIsAdmin] = useState(false)
 
   useDidShow(() => {
-    fetchUserInfo()
+    fetchData()
   })
 
-  const fetchUserInfo = async () => {
+  useEffect(() => {
+    eventCenter.on('refreshStore', fetchData)
+    return () => eventCenter.off('refreshStore', fetchData)
+  }, [])
+
+  const fetchData = async () => {
+    setLoading(true)
     try {
-      const { result }: any = await Taro.cloud.callFunction({ name: 'initUser' })
-      if (result.success) {
-        setTotalPoints(result.user.totalPoints)
+      const [userRes, giftsRes]: any = await Promise.all([
+        Taro.cloud.callFunction({ name: 'initUser' }),
+        Taro.cloud.callFunction({ name: 'getGifts' })
+      ])
+
+      if (userRes.result.success) {
+        setTotalPoints(userRes.result.user.totalPoints)
+        // 简单判断：有伙伴且是发起绑定的人视为管理员，或者根据业务逻辑调整
+        setIsAdmin(true)
+      }
+
+      if (giftsRes.result.success) {
+        setProducts(giftsRes.result.gifts)
       }
     } catch (e) {
-      console.error('获取用户信息失败', e)
+      console.error('获取数据失败', e)
+    } finally {
+      setLoading(false)
     }
+  }
+
+  const handleEdit = (e, item) => {
+    e.stopPropagation()
+    Taro.navigateTo({
+      url: `/pages/gift-edit/index?id=${item._id}&data=${encodeURIComponent(JSON.stringify(item))}`
+    })
+  }
+
+  const handleDelete = (e, item) => {
+    e.stopPropagation()
+    Taro.showModal({
+      title: '确认删除',
+      content: `确定要删除礼品“${item.name}”吗？`,
+      success: async (res) => {
+        if (res.confirm) {
+          try {
+            const result: any = await Taro.cloud.callFunction({
+              name: 'manageGift',
+              data: { action: 'delete', giftId: item._id }
+            })
+            if (result.result.success) {
+              Taro.showToast({ title: '已删除' })
+              fetchData()
+            }
+          } catch (e) {
+            Taro.showToast({ title: '删除失败', icon: 'none' })
+          }
+        }
+      }
+    })
   }
 
   const handleBuy = async (item) => {
@@ -107,7 +98,7 @@ export default function Store() {
 
       if (result.success) {
         Taro.showToast({ title: '兑换成功', icon: 'success' })
-        fetchUserInfo()
+        fetchData()
       } else {
         Taro.showToast({ title: result.error || '兑换失败', icon: 'none' })
       }
@@ -122,7 +113,6 @@ export default function Store() {
     <View className='store-v2-container'>
       <ScrollView scrollY className='store-scroll-view'>
         <View className='store-inner-content'>
-          {/* 还原并优化之前的积分卡片结构 */}
           <View className='minimal-assets-bar' onClick={() => Taro.navigateTo({ url: '/pages/history/index' })}>
             <View className='asset-info'>
               <Text className='asset-label'>CURRENT ASSETS / 当前积分</Text>
@@ -135,31 +125,52 @@ export default function Store() {
             </View>
           </View>
 
+          {isAdmin && (
+            <View className='admin-actions'>
+              <Button className='add-btn' onClick={() => Taro.navigateTo({ url: '/pages/gift-edit/index' })}>
+                + 新增礼品
+              </Button>
+            </View>
+          )}
+
           <View className='cards-wrapper'>
-            <DuxGrid column={2} gap={32}>
-              {PRODUCTS.map(item => (
-                <DuxCard
-                  key={item.id}
-                  className='product-card-v4'
-                  onClick={() => handleBuy(item)}
-                  style={{ backgroundColor: item.bgColor }}
-                  shadow={false}
-                >
-                  <View className='card-top'>
-                    <View className='icon-circle'>
-                      <Image src={getIconifyUrl(item.icon, '#D4B185')} className='iconify-inner' />
+            {products.length === 0 && !loading ? (
+              <View className='empty-state'>暂无礼品，请联系管理员添加</View>
+            ) : (
+              <DuxGrid column={2} gap={32}>
+                {products.map(item => (
+                  <DuxCard
+                    key={item._id}
+                    className='product-card-v4'
+                    onClick={() => handleBuy(item)}
+                    shadow={false}
+                  >
+                    <View className='card-top'>
+                      {item.coverImg ? (
+                        <Image src={item.coverImg} mode='aspectFill' className='product-image' />
+                      ) : (
+                        <View className='icon-circle'>
+                          <Image src={getIconifyUrl('tabler:gift', '#D4B185')} className='iconify-inner' />
+                        </View>
+                      )}
+                      {isAdmin && (
+                        <View className='admin-tags'>
+                          <View className='tag edit' onClick={(e) => handleEdit(e, item)}>编辑</View>
+                          <View className='tag delete' onClick={(e) => handleDelete(e, item)}>删除</View>
+                        </View>
+                      )}
                     </View>
-                  </View>
-                  <View className='card-body'>
-                    <Text className='p-name'>{item.name}</Text>
-                    <Text className='p-desc'>{item.desc}</Text>
-                    <View className='p-footer'>
-                      <Text className='p-price'>{item.points}</Text>
+                    <View className='card-body'>
+                      <Text className='p-name'>{item.name}</Text>
+                      <Text className='p-desc'>{item.desc || '暂无描述'}</Text>
+                      <View className='p-footer'>
+                        <Text className='p-price'>{item.points}</Text>
+                      </View>
                     </View>
-                  </View>
-                </DuxCard>
-              ))}
-            </DuxGrid>
+                  </DuxCard>
+                ))}
+              </DuxGrid>
+            )}
           </View>
         </View>
       </ScrollView>

@@ -65,9 +65,10 @@
     .section-title {
       font-size: 24rpx;
       color: $text-sub;
-      margin: 0 0 24rpx 8rpx;
+      margin: 16rpx 0 40rpx 8rpx; // 增加上下间距，增强呼吸感
       font-weight: bold;
       letter-spacing: 2rpx;
+      display: block;
     }
 
     .record-item {

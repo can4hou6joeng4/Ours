@@ -14,7 +14,21 @@
     .store-inner-content {
       padding: 32rpx;
 
-      // 还原并优化之前的积分卡片风格 (更硬朗、更有质感)
+      .admin-actions {
+        margin-bottom: 32rpx;
+        .add-btn {
+          background: #ffffff;
+          color: $primary-color;
+          border: 2rpx dashed $primary-color;
+          border-radius: 20rpx;
+          font-size: 28rpx;
+          height: 80rpx;
+          line-height: 80rpx;
+          &::after { border: none; }
+        }
+      }
+
+      // 还原并优化之前的积分卡片风格
       .minimal-assets-bar {
         background: $secondary-color; // 碳黑
         border-radius: 40rpx; // 恢复大气的大圆角
@@ -78,6 +92,32 @@
           background: #F8F8F8;
           margin-bottom: 0;
           @include flex-center;
+          position: relative;
+
+          .product-image {
+            width: 100%;
+            height: 100%;
+          }
+
+          .admin-tags {
+            position: absolute;
+            top: 12rpx;
+            right: 12rpx;
+            display: flex;
+            gap: 8rpx;
+
+            .tag {
+              padding: 4rpx 16rpx;
+              border-radius: 8rpx;
+              font-size: 20rpx;
+              color: #fff;
+              backdrop-filter: blur(4rpx);
+
+              &.edit { background: rgba($primary-color, 0.8); }
+              &.delete { background: rgba(#FF4D4F, 0.8); }
+            }
+          }
+
           .icon-circle {
             background: transparent !important;
             .iconify-inner { width: 80rpx; height: 80rpx; opacity: 0.8; }
@@ -93,25 +133,24 @@
 
           .p-name {
             font-size: 30rpx;
-            color: $text-main;
+            color: #B8860B; // 琥珀金：比香槟金更鲜艳，但保持高级感
             font-weight: bold;
             line-height: 1.4;
             margin-bottom: 8rpx;
-            word-break: break-all; // 允许换行
+            word-break: break-all;
           }
           .p-desc {
             font-size: 22rpx;
             color: $text-sub;
             margin-bottom: 20rpx;
             line-height: 1.5;
-            word-break: break-all; // 允许换行
+            word-break: break-all;
           }
           .p-footer {
             .p-price {
-              font-size: 38rpx;
-              color: #FF4D4F !important; // 使用鲜艳的红橙色吸引兑换
-              font-weight: 900;
-              text-shadow: 0 4rpx 10rpx rgba(255, 77, 79, 0.1);
+              font-size: 32rpx; // 还原字号
+              color: $primary-color !important; // 还原为香槟金
+              font-weight: bold; // 还原字重
             }
           }
         }

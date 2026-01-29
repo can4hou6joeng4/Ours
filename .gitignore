@@ -7,3 +7,4 @@ dist/
 project.config.json.bak
 .swc/
 project.private.config.json
+node_modules
