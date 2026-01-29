@@ -48,15 +48,27 @@ export default function Store() {
     }
   }
 
-  const handleEdit = (e, item) => {
-    e.stopPropagation()
-    Taro.navigateTo({
-      url: `/pages/gift-edit/index?id=${item._id}&data=${encodeURIComponent(JSON.stringify(item))}`
+  const handleLongPress = (item) => {
+    if (!isAdmin) return
+
+    Taro.showActionSheet({
+      itemList: ['编辑礼品', '删除礼品'],
+      itemColor: '#333',
+      success: (res) => {
+        if (res.tapIndex === 0) {
+          // 编辑
+          Taro.navigateTo({
+            url: `/pages/gift-edit/index?id=${item._id}&data=${encodeURIComponent(JSON.stringify(item))}`
+          })
+        } else if (res.tapIndex === 1) {
+          // 删除
+          handleDelete(item)
+        }
+      }
     })
   }
 
-  const handleDelete = (e, item) => {
-    e.stopPropagation()
+  const handleDelete = (item) => {
     Taro.showModal({
       title: '确认删除',
       content: `确定要删除礼品“${item.name}”吗？`,
@@ -158,20 +170,15 @@ export default function Store() {
                     key={item._id}
                     className='product-card-v4'
                     onClick={() => handleBuy(item)}
+                    onLongPress={() => handleLongPress(item)}
                     shadow={false}
                   >
                     <View className='card-top'>
                       {item.coverImg ? (
-                        <Image src={item.coverImg} mode='aspectFill' className='product-image' />
+                        <Image src={item.coverImg} mode='aspectFit' className='product-image' />
                       ) : (
                         <View className='icon-circle'>
                           <Image src={getIconifyUrl('tabler:gift', '#D4B185')} className='iconify-inner' />
-                        </View>
-                      )}
-                      {isAdmin && (
-                        <View className='admin-tags'>
-                          <View className='tag edit' onClick={(e) => handleEdit(e, item)}>编辑</View>
-                          <View className='tag delete' onClick={(e) => handleDelete(e, item)}>删除</View>
                         </View>
                       )}
                     </View>
