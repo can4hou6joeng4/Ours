@@ -1,7 +1,8 @@
-import { View, Text, ScrollView } from '@tarojs/components'
+import { View, Text, ScrollView, Button } from '@tarojs/components'
 import Taro, { useDidShow } from '@tarojs/taro'
 import { useState } from 'react'
-import { Grid, Card, Button, Box, Space } from 'dux-ui'
+import DuxGrid from '../../components/DuxGrid'
+import DuxCard from '../../components/DuxCard'
 import './index.scss'
 
 const PRODUCTS = [
@@ -31,7 +32,6 @@ export default function Store() {
   }
 
   const handleBuy = async (item) => {
-    // TODO: 请用户在此处完善具体的积分余额校验逻辑
     if (totalPoints < item.points) {
       Taro.showToast({ title: '积分不足', icon: 'error' })
       return
@@ -67,35 +67,35 @@ export default function Store() {
   return (
     <View className='store-v2-container'>
       <View className='header-section'>
-        <Box className='user-points-badge' onClick={() => Taro.navigateTo({ url: '/pages/history/index' })}>
+        <View className='user-points-badge' onClick={() => Taro.navigateTo({ url: '/pages/history/index' })}>
           <Text className='coin-icon'>💰</Text>
           <Text className='points-val'>{totalPoints}</Text>
           <Text className='points-label'>我的积分 ⟩</Text>
-        </Box>
+        </View>
       </View>
 
       <ScrollView scrollY className='store-scroll-view'>
         <View className='cards-wrapper'>
-          <Grid column={2} gap={24}>
+          <DuxGrid column={2} gap={24}>
             {PRODUCTS.map(item => (
-              <Card key={item.id} className='product-card-dux' shadow onClick={() => handleBuy(item)}>
+              <DuxCard key={item.id} className='product-card-local' onClick={() => handleBuy(item)}>
                 <View className={`icon-wrapper ${item.type}`}>
                   <Text className='emoji-icon'>{item.icon}</Text>
                 </View>
-                <Box padding className='content-wrapper'>
+                <View className='content-wrapper'>
                   <Text className='product-name'>{item.name}</Text>
                   <Text className='product-desc'>{item.desc}</Text>
-                  <Space align='baseline' className='price-tag'>
+                  <View className='price-tag'>
                     <Text className='price-num'>{item.points}</Text>
                     <Text className='price-unit'>积分</Text>
-                  </Space>
-                </Box>
-                <Button className='buy-btn' type='primary' block radiusType='none'>
+                  </View>
+                </View>
+                <Button className='buy-btn'>
                   立即兑换
                 </Button>
-              </Card>
+              </DuxCard>
             ))}
-          </Grid>
+          </DuxGrid>
         </View>
       </ScrollView>
     </View>

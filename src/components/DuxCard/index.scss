@@ -1,0 +1,21 @@
+@import "../../styles/theme.scss";
+
+.dux-card-container {
+  background: #ffffff;
+  border-radius: $border-radius-lg;
+  overflow: hidden;
+  position: relative;
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+
+  &.has-shadow {
+    box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.05);
+  }
+
+  &:active {
+    transform: scale(0.96);
+    opacity: 0.9;
+  }
+}
