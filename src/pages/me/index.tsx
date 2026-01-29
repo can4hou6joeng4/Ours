@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import Taro, { useDidShow } from '@tarojs/taro'
-import { View, Text, Button } from '@tarojs/components'
+import { View, Text, Button, Image } from '@tarojs/components'
 import './index.scss'
 
 export default function Me() {

@@ -122,20 +122,21 @@ export default function Store() {
     <View className='store-v2-container'>
       <ScrollView scrollY className='store-scroll-view'>
         <View className='store-inner-content'>
-          {/* 资产看板 (理物风格) */}
+          {/* 还原并优化之前的积分卡片结构 */}
           <View className='minimal-assets-bar' onClick={() => Taro.navigateTo({ url: '/pages/history/index' })}>
             <View className='asset-info'>
-              <Text className='asset-num'>{totalPoints}</Text>
-              <Text className='asset-label'>总资产积分</Text>
+              <Text className='asset-label'>CURRENT ASSETS / 当前积分</Text>
+              <View className='asset-value-row'>
+                <Text className='asset-num'>{totalPoints}</Text>
+              </View>
             </View>
-            <View className='asset-info'>
-              <Text className='asset-num'>0</Text>
-              <Text className='asset-label'>今日变动</Text>
+            <View className='asset-btn'>
+              <Text>明细 ⟩</Text>
             </View>
           </View>
 
           <View className='cards-wrapper'>
-            <DuxGrid column={2} gap={24}>
+            <DuxGrid column={2} gap={32}>
               {PRODUCTS.map(item => (
                 <DuxCard
                   key={item.id}
@@ -145,15 +146,15 @@ export default function Store() {
                   shadow={false}
                 >
                   <View className='card-top'>
-                    <View className='icon-circle' style={{ backgroundColor: '#ffffff' }}>
-                      <Image src={getIconifyUrl(item.icon, item.theme)} className='iconify-inner' />
+                    <View className='icon-circle'>
+                      <Image src={getIconifyUrl(item.icon, '#D4B185')} className='iconify-inner' />
                     </View>
                   </View>
                   <View className='card-body'>
                     <Text className='p-name'>{item.name}</Text>
                     <Text className='p-desc'>{item.desc}</Text>
                     <View className='p-footer'>
-                      <Text className='p-price' style={{ color: item.theme }}>{item.points} 💰</Text>
+                      <Text className='p-price'>{item.points}</Text>
                     </View>
                   </View>
                 </DuxCard>
