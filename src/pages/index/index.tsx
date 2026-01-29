@@ -6,6 +6,7 @@ import './index.scss'
 export default function Index() {
   const [tasks, setTasks] = useState<any[]>([])
   const [points, setPoints] = useState(0)
+  const [todayChange, setTodayChange] = useState(0)
   const [currentUserId, setCurrentUserId] = useState('')
   const [partnerId, setPartnerId] = useState('')
   const [currentTab, setCurrentTab] = useState<'pending' | 'done' | 'all'>('pending')
@@ -43,6 +44,7 @@ export default function Index() {
         const myId = userData.user?._id
         const pId = userData.user?.partnerId
         setPoints(userData.user?.totalPoints || 0)
+        setTodayChange(userData.todayChange || 0)
         setCurrentUserId(myId)
         setPartnerId(pId || '')
 
@@ -105,6 +107,7 @@ export default function Index() {
       if (userData?.success) {
         // 安全读取：使用 totalPoints 字段名并配合可选链
         setPoints(userData.user?.totalPoints || 0)
+        setTodayChange(userData.todayChange || 0)
         setCurrentUserId(userData.user?._id || '')
         setPartnerId(userData.user?.partnerId || '')
       }
@@ -222,7 +225,7 @@ export default function Index() {
         </View>
         <View className='divider' />
         <View className='stat-item'>
-          <Text className='value'>0</Text>
+          <Text className='value'>{todayChange > 0 ? `+${todayChange}` : todayChange}</Text>
           <Text className='label'>今日变动</Text>
         </View>
       </View>
