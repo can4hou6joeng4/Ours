@@ -34,7 +34,7 @@ export default function History() {
     <View className='history-container'>
       <View className='history-header'>
         <Text className='title'>积分明细</Text>
-        <Text className='subtitle'>记录每一分的变化</Text>
+        <Text className='subtitle'>TRANSACTION HISTORY / 记录每一分的变化</Text>
       </View>
 
       <ScrollView scrollY className='records-list'>
