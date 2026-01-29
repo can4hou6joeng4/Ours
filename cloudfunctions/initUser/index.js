@@ -11,20 +11,6 @@ exports.main = async (event, context) => {
 
     if (userRes) {
       const userData = userRes.data
-      let partnerData = null
-
-      // 如果有绑定伙伴，拉取伙伴的基础资料和心情
-      if (userData.partnerId) {
-        const partnerRes = await db.collection('Users').doc(userData.partnerId).get().catch(() => null)
-        if (partnerRes) {
-          partnerData = {
-            nickName: partnerRes.data.nickName,
-            avatarUrl: partnerRes.data.avatarUrl,
-            currentMood: partnerRes.data.currentMood,
-            moodUpdateTime: partnerRes.data.moodUpdateTime
-          }
-        }
-      }
 
       // 聚合当日积分变动
       const today = new Date()
@@ -40,7 +26,6 @@ exports.main = async (event, context) => {
       return {
         success: true,
         user: userData,
-        partner: partnerData,
         todayChange
       }
     }
