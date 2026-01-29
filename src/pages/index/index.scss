@@ -15,20 +15,10 @@
     display: flex;
     flex-direction: row; // 横向排列
     justify-content: space-around;
-    padding: 40rpx 0;
+    padding: 60rpx 0; // 增加上下内边距，使布局在无标题时更饱满
     margin-bottom: 40rpx;
     position: relative;
-    border-radius: 24rpx; // 参考图圆角较小
-
-    &::before {
-      content: "◎ 任务看板";
-      position: absolute;
-      top: 20rpx;
-      left: 30rpx;
-      font-size: 24rpx;
-      color: $primary-color;
-      font-weight: bold;
-    }
+    border-radius: 24rpx;
 
     .stat-item {
       flex: 1;
