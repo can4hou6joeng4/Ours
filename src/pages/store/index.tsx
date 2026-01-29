@@ -125,11 +125,11 @@ export default function Store() {
           {/* 资产看板 (理物风格) */}
           <View className='minimal-assets-bar' onClick={() => Taro.navigateTo({ url: '/pages/history/index' })}>
             <View className='asset-info'>
-              <Text className='asset-num'>¥{totalPoints}.00</Text>
+              <Text className='asset-num'>{totalPoints}</Text>
               <Text className='asset-label'>总资产积分</Text>
             </View>
             <View className='asset-info'>
-              <Text className='asset-num'>¥0</Text>
+              <Text className='asset-num'>0</Text>
               <Text className='asset-label'>今日变动</Text>
             </View>
           </View>

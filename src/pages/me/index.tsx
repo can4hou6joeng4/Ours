@@ -32,11 +32,13 @@ export default function Me() {
     <View className='container'>
       {/* 个人资料卡片 (黑金风格) */}
       <View className='user-card'>
-        <View className='avatar-placeholder'>◎</View>
+        <View className='avatar-placeholder'>
+          <Image src={getIconifyUrl('tabler:user-circle', '#D4B185')} className='avatar-icon' />
+        </View>
         <View className='info'>
           <Text className='nickname'>{userInfo?.partnerId ? 'PREMIUM USER / 已绑定' : 'GUEST / 尚未绑定'}</Text>
           <Text className={`points ${(userInfo?.totalPoints || 0) < 0 ? 'negative' : ''}`}>
-            CURRENT ASSETS / 当前积分：{userInfo?.totalPoints || 0}.00
+            CURRENT ASSETS / 当前积分：{userInfo?.totalPoints || 0}
           </Text>
         </View>
       </View>

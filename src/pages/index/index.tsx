@@ -217,12 +217,12 @@ export default function Index() {
       {/* 积分看板 (理物风格) */}
       <View className='score-board'>
         <View className='stat-item'>
-          <Text className='value'>¥{points}.00</Text>
+          <Text className='value'>{points}</Text>
           <Text className='label'>总资产积分</Text>
         </View>
         <View className='divider' />
         <View className='stat-item'>
-          <Text className='value'>¥0</Text>
+          <Text className='value'>0</Text>
           <Text className='label'>今日变动</Text>
         </View>
       </View>
