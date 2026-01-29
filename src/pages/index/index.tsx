@@ -16,6 +16,8 @@ export default function Index() {
   const [newTaskPoints, setNewTaskPoints] = useState('')
   const [newTaskType, setNewTaskType] = useState<'reward' | 'penalty'>('reward')
   const [loading, setLoading] = useState(true)
+  const [showDetailModal, setShowDetailModal] = useState(false)
+  const [selectedTask, setSelectedTask] = useState<any>(null)
   const watcher = useRef<any>(null)
   const userWatcher = useRef<any>(null)
 
@@ -209,13 +211,18 @@ export default function Index() {
       const data = res.result as any
       if (data.success) {
         Taro.showToast({ title: `获得 ${data.points} 积分！`, icon: 'success' })
-        // watch 会自动更新
+        setShowDetailModal(false) // 如果在详情页完成，关闭弹窗
       }
     } catch (e) {
       Taro.showToast({ title: '操作失败', icon: 'none' })
     } finally {
       Taro.hideLoading()
     }
+  }
+
+  const handleShowDetail = (task: any) => {
+    setSelectedTask(task)
+    setShowDetailModal(true)
   }
 
   // 综合过滤逻辑：共有奖赏 + 私有惩罚
@@ -281,9 +288,13 @@ export default function Index() {
           />
         ) : (
           filteredTasks.map(task => (
-            <View key={task._id} className={`task-card-v2 ${task.type}`}>
+            <View
+              key={task._id}
+              className={`task-card-v2 ${task.type}`}
+              onClick={() => handleShowDetail(task)}
+            >
               <View className='left'>
-                <Text className='title'>{task.title}</Text>
+                <Text className='title-truncated'>{task.title}</Text>
                 <View className='tags'>
                   <Text className={`tag ${task.type}`}>{task.type === 'reward' ? '奖赏' : '惩罚'}</Text>
                   {/* 身份关系标签 */}
@@ -297,7 +308,6 @@ export default function Index() {
                       {task.type === 'reward' ? '给我的' : '我被罚'}
                     </Text>
                   )}
-                  <Text className='time'>{task.createTime ? new Date(task.createTime).toLocaleString().slice(5, 16) : '刚刚'}</Text>
                 </View>
               </View>
               <View className='right'>
@@ -306,10 +316,15 @@ export default function Index() {
                 </Text>
                 <View className='actions'>
                   {task.status === 'pending' && (
-                    <Button className='done-btn' onClick={() => handleDone(task._id)}>完成</Button>
-                  )}
-                  {task.creatorId === currentUserId && (
-                    <Button className='revoke-btn' onClick={() => handleRevoke(task._id)}>撤销</Button>
+                    <Button
+                      className='done-btn'
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleDone(task._id)
+                      }}
+                    >
+                      完成
+                    </Button>
                   )}
                 </View>
               </View>
@@ -317,6 +332,64 @@ export default function Index() {
           ))
         )}
       </ScrollView>
+
+      {/* 任务详情弹窗 */}
+      {showDetailModal && selectedTask && (
+        <View className='modal-overlay detail-modal' onClick={() => setShowDetailModal(false)}>
+          <View className='modal-content' onClick={e => e.stopPropagation()}>
+            <View className='detail-header'>
+              <Text className={`type-tag ${selectedTask.type}`}>
+                {selectedTask.type === 'reward' ? '奖赏任务' : '惩罚任务'}
+              </Text>
+              <Text className='close-icon' onClick={() => setShowDetailModal(false)}>×</Text>
+            </View>
+
+            <View className='detail-body'>
+              <Text className='full-title'>{selectedTask.title}</Text>
+
+              <View className='info-group'>
+                <View className='info-row'>
+                  <Text className='label'>积分价值</Text>
+                  <Text className={`value points ${selectedTask.type}`}>
+                    {selectedTask.type === 'reward' ? '+' : '-'}{selectedTask.points}
+                  </Text>
+                </View>
+                <View className='info-row'>
+                  <Text className='label'>发布时间</Text>
+                  <Text className='value'>
+                    {selectedTask.createTime ? new Date(selectedTask.createTime).toLocaleString() : '刚刚'}
+                  </Text>
+                </View>
+                <View className='info-row'>
+                  <Text className='label'>关联身份</Text>
+                  <Text className='value'>
+                    {selectedTask.creatorId === currentUserId ? '由我发布' : '对方发布'}
+                    {selectedTask.targetId === currentUserId ? ' (指向我)' : ''}
+                  </Text>
+                </View>
+                <View className='info-row'>
+                  <Text className='label'>当前状态</Text>
+                  <Text className={`value status-${selectedTask.status}`}>
+                    {selectedTask.status === 'pending' ? '等待完成' : '已达成'}
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            <View className='detail-footer'>
+              {selectedTask.status === 'pending' && (
+                <Button className='action-btn confirm' onClick={() => handleDone(selectedTask._id)}>确认完成</Button>
+              )}
+              {selectedTask.creatorId === currentUserId && selectedTask.status !== 'revoked' && (
+                <Button className='action-btn revoke' onClick={() => {
+                  setShowDetailModal(false)
+                  handleRevoke(selectedTask._id)
+                }}>撤销任务</Button>
+              )}
+            </View>
+          </View>
+        </View>
+      )}
 
       {/* 发布弹窗 */}
       {showAddModal && (
