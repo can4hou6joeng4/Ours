@@ -7,106 +7,92 @@
   flex-direction: column;
 
   .tabs-header {
-    background: #1a1a1a; // 深色选项卡
+    background: transparent; // 移除深色背景
     display: flex;
-    padding: 30rpx 40rpx;
+    justify-content: flex-start;
+    gap: 40rpx;
+    padding: 20rpx 40rpx;
     position: relative;
-    box-shadow: 0 10rpx 30rpx rgba(0, 0, 0, 0.1);
+    box-shadow: none;
 
     .tab-item {
-      flex: 1;
-      text-align: center;
+      flex: none;
       font-size: 28rpx;
-      color: #8e8e93;
-      font-weight: 500;
-      transition: all 0.3s ease;
-      z-index: 2;
+      color: $text-sub;
+      font-weight: bold;
+      transition: all 0.2s;
 
       &.active {
-        color: #ffffff;
-        font-weight: 800;
+        color: $text-main;
+        font-size: 32rpx;
       }
     }
 
     .tab-line {
-      position: absolute;
-      bottom: 20rpx;
-      width: 40rpx;
-      height: 6rpx;
-      background: #ff6b00; // 能量橙
-      border-radius: 3rpx;
-      transform: translateX(-50%);
-      transition: left 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      display: none; // 移除原有的线条，采用字号加粗指示
     }
   }
 
   .items-scroll {
     flex: 1;
     .items-inner {
-      padding: 40rpx 32rpx;
-    }
-
-    .items-grid {
-      display: flex;
-      flex-direction: column;
+      padding: 32rpx;
     }
 
     .item-card-v4 {
       background: #fff;
       padding: 32rpx;
-      border-radius: 40rpx;
+      border-radius: 24rpx; // 统一圆角
       margin-bottom: 24rpx;
       display: flex;
       align-items: center;
-      box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.02);
-      border: 1px solid #f0f0f0;
+      box-shadow: $card-shadow;
+      border: 1rpx solid #f0f0f0;
 
       &.used {
-        opacity: 0.6;
-        filter: grayscale(1);
+        opacity: 0.5;
+        filter: grayscale(0.8);
       }
 
       .item-icon-box {
         width: 100rpx;
         height: 100rpx;
         background: #f8f8f8;
-        border-radius: 28rpx;
+        border-radius: 16rpx;
         @include flex-center;
         margin-right: 24rpx;
         .inner-icon {
-          width: 52rpx;
-          height: 52rpx;
+          width: 56rpx;
+          height: 56rpx;
         }
       }
 
       .item-info {
         flex: 1;
         .item-name {
-          font-size: 32rpx;
-          font-weight: 800;
-          color: #1a1a1a;
+          font-size: 30rpx;
+          font-weight: bold;
+          color: $text-main;
           display: block;
           margin-bottom: 6rpx;
         }
         .item-time {
-          font-size: 22rpx;
-          color: #8e8e93;
-          font-weight: 500;
+          font-size: 20rpx;
+          color: $text-sub;
         }
       }
 
       .use-btn-pill {
-        background: #1a1a1a;
-        color: #ff6b00;
+        background: $primary-color; // 切换为香槟金
+        color: #fff;
         font-size: 24rpx;
-        padding: 14rpx 32rpx;
-        border-radius: 20rpx;
-        font-weight: 800;
-        box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
+        padding: 12rpx 32rpx;
+        border-radius: 40rpx;
+        font-weight: bold;
 
         &:active {
           transform: scale(0.95);
-          background: #000;
+          opacity: 0.8;
         }
       }
     }
