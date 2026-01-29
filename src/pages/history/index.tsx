@@ -54,7 +54,7 @@ export default function History() {
         <View className='asset-tag'>History</View>
       </View>
 
-      <View className='records-list'>
+      <ScrollView scrollY className='records-list'>
         <Text className='section-title'>TRANSACTION RECORDS / 往期明细</Text>
         {records.length === 0 && !loading ? (
           <View className='empty-state'>
