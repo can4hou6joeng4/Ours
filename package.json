@@ -24,6 +24,7 @@
     "@tarojs/taro": "4.1.11",
     "@tarojs/webpack5-runner": "^4.1.11",
     "dayjs": "^1.11.19",
+    "dux-ui": "^1.3.4",
     "react": "^18.0.0",
     "react-dom": "^18.0.0"
   },
