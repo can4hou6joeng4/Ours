@@ -230,91 +230,117 @@
     }
   }
 
-  // 详情弹窗增强
-  .detail-modal {
-    z-index: 1001; // 提升至最高层级，超过 FAB 按钮
+  // 详情弹窗系统重塑 (圆角居中)
+  .detail-modal-root {
+    z-index: 1100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40rpx;
 
-    .modal-content {
-      padding: 0;
+    .modal-card {
+      width: 100%;
+      max-width: 600rpx;
+      background: #FFFFFF;
+      border-radius: 48rpx; // 更大的圆角，极致细腻
       overflow: hidden;
-      width: 85%; // 略微加宽，视觉更饱满
+      box-shadow: 0 40rpx 100rpx rgba(0, 0, 0, 0.25);
+      animation: modal-pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 
-      .detail-header {
-        padding: 40rpx;
+      .card-header {
+        padding: 32rpx 40rpx;
+        background: #FAFAFA;
         display: flex;
         justify-content: space-between;
         align-items: center;
-        background: #FAFAFA;
 
-        .type-tag {
-          font-size: 24rpx;
-          font-weight: bold;
-          padding: 8rpx 24rpx;
-          border-radius: 40rpx;
-          &.reward { background: rgba($primary-color, 0.1); color: $primary-color; }
+        .category-label {
+          font-size: 22rpx;
+          font-weight: 800;
+          padding: 6rpx 20rpx;
+          border-radius: 30rpx;
+          letter-spacing: 2rpx;
+          &.reward { background: rgba($primary-color, 0.15); color: $primary-color; }
           &.penalty { background: rgba(255, 77, 79, 0.1); color: #FF4D4F; }
         }
 
-        .close-icon { font-size: 44rpx; color: #CCC; padding: 10rpx; }
+        .close-btn {
+          font-size: 48rpx;
+          color: #DDD;
+          line-height: 1;
+          padding: 10rpx;
+        }
       }
 
-      .detail-body {
-        padding: 48rpx 40rpx;
+      .card-body {
+        padding: 60rpx 48rpx;
 
-        .full-title {
-          font-size: 36rpx;
+        .task-title {
+          font-size: 40rpx;
           font-weight: bold;
-          color: #333;
-          line-height: 1.5;
+          color: #1A1A1A;
+          line-height: 1.4;
           display: block;
-          margin-bottom: 48rpx;
+          margin-bottom: 60rpx;
           word-break: break-all;
         }
 
-        .info-group {
-          .info-row {
+        .info-list {
+          .info-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 24rpx 0;
-            border-bottom: 1rpx solid #F5F5F5;
-            &:last-child { border-bottom: none; }
+            margin-bottom: 30rpx;
+            &:last-child { margin-bottom: 0; }
 
-            .label { font-size: 24rpx; color: #999; }
+            .label { font-size: 24rpx; color: #BBB; font-weight: 500; }
             .value {
-              font-size: 26rpx;
+              font-size: 28rpx;
               color: #333;
-              font-weight: 500;
+              font-weight: 600;
+
               &.points {
                 font-size: 32rpx;
-                font-weight: bold;
                 &.reward { color: $primary-color; }
                 &.penalty { color: #FF4D4F; }
               }
-              &.status-done { color: #52C41A; }
             }
           }
         }
       }
 
-      .detail-footer {
-        padding: 40rpx;
+      .card-footer {
+        padding: 0 48rpx 60rpx;
         display: flex;
+        flex-direction: column;
         gap: 20rpx;
 
-        .action-btn {
-          flex: 1;
-          height: 88rpx;
-          line-height: 88rpx;
-          border-radius: 44rpx;
-          font-size: 28rpx;
+        Button {
+          width: 100%;
+          height: 96rpx;
+          line-height: 96rpx;
+          border-radius: 48rpx;
+          font-size: 30rpx;
           font-weight: bold;
           &::after { border: none; }
+        }
 
-          &.confirm { background: linear-gradient(135deg, $primary-color, #E5C59F); color: #fff; }
-          &.revoke { background: #F5F5F5; color: #999; }
+        .btn-primary {
+          background: linear-gradient(135deg, $primary-color, #E5C59F);
+          color: #fff;
+          box-shadow: 0 12rpx 24rpx rgba($primary-color, 0.25);
+        }
+
+        .btn-secondary {
+          background: #F5F5F5;
+          color: #999;
         }
       }
     }
+  }
+
+  @keyframes modal-pop {
+    0% { transform: scale(0.9); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
   }
 }
