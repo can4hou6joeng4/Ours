@@ -1,0 +1,54 @@
+# Design System Rules: Kulik Oleg Style (Ours Mini Program)
+
+## 1. Token Definitions
+Design tokens are centralized in `src/styles/theme.scss`. All styles MUST reference these variables.
+
+```scss
+// Colors
+$primary-color: #7B61FF;    // Figma Purple
+$bg-color: #F8F9FE;         // Page background
+$text-main: #1A1D1E;        // Dark primary text
+$text-sub: #6A6A6A;         // Muted secondary text
+
+// Radii
+$border-radius-lg: 48rpx;   // Card/Header (24px)
+$border-radius-md: 24rpx;   // Buttons/Tags (12px)
+
+// Glassmorphism
+$glass-bg: rgba(255, 255, 255, 0.15);
+$glass-border: rgba(255, 255, 255, 0.2);
+$glass-blur: 10px;
+```
+
+## 2. Component Architecture
+
+### DuxCard (Base Container)
+- **File**: `src/components/DuxCard/index.tsx`
+- **Pattern**: Must use `$border-radius-lg` and `$card-shadow`.
+- **Constraint**: No hardcoded widths; use Flexbox/Grid for responsiveness.
+
+### DuxGrid (Layout)
+- **File**: `src/components/DuxGrid/index.tsx`
+- **Pattern**: Standard 2-column layout for products. Gap must be `24rpx` or `32rpx`.
+
+## 3. Visual Patterns
+
+### Glassmorphism (Glass Header)
+When creating asset cards (like the Points card), use this pattern:
+```scss
+.glass-container {
+  background: $glass-bg;
+  backdrop-filter: blur($glass-blur);
+  border: 1px solid $glass-border;
+  border-radius: $border-radius-lg;
+}
+```
+
+### Typography Hierarchy
+- **Heading**: `font-weight: 800; font-size: 40rpx;`
+- **Body**: `font-weight: 500; font-size: 28rpx; color: $text-main;`
+- **Caption**: `font-weight: 400; font-size: 22rpx; color: rgba($text-white, 0.7);`
+
+## 4. Asset Management
+- **Icons**: Use `src/utils/assets.ts` -> `getIconifyUrl()`.
+- **Scaling**: All interactive elements (cards/buttons) MUST have `:active { transform: scale(0.96); }`.

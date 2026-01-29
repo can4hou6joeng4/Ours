@@ -1,20 +1,74 @@
-import { View, Text, ScrollView, Button } from '@tarojs/components'
+import { View, Text, ScrollView, Button, Image } from '@tarojs/components'
 import Taro, { useDidShow } from '@tarojs/taro'
 import { useState } from 'react'
 import DuxGrid from '../../components/DuxGrid'
 import DuxCard from '../../components/DuxCard'
+import { getIconifyUrl, getPexelsUrl } from '../../utils/assets'
 import './index.scss'
 
 const PRODUCTS = [
-  { id: 1, name: '电影日', points: 500, desc: '一起看一场想看的电影', icon: '🎬', type: 'movie' },
-  { id: 2, name: '家务抵用券', points: 300, desc: '对方帮你分担一次家务', icon: '🧹', type: 'chore' },
-  { id: 3, name: '整蛊盲盒', points: 200, desc: '随机触发一个有趣的整蛊', icon: '🎁', type: 'box' },
-  { id: 4, name: '奶茶自由', points: 150, desc: '获得一杯心仪的奶茶', icon: '🧋', type: 'tea' },
-  { id: 5, name: '免死金牌', points: 1000, desc: '犯错时可抵消一次惩罚', icon: '🏅', type: 'medal' }
+  {
+    id: 1,
+    name: '电影日',
+    points: 500,
+    desc: '一起看一场想看的电影',
+    icon: 'tabler:movie',
+    type: 'movie',
+    theme: '#FF6B00',
+    bgColor: '#ffffff'
+  },
+  {
+    id: 2,
+    name: '家务抵用券',
+    points: 300,
+    desc: '对方帮你分担一次家务',
+    icon: 'tabler:vacuum-cleaner',
+    type: 'chore',
+    theme: '#FF6B00',
+    bgColor: '#ffffff'
+  },
+  {
+    id: 3,
+    name: '整蛊盲盒',
+    points: 200,
+    desc: '随机触发一个有趣的整蛊',
+    icon: 'tabler:gift',
+    type: 'box',
+    theme: '#FF6B00',
+    bgColor: '#ffffff'
+  },
+  {
+    id: 4,
+    name: '奶茶自由',
+    points: 150,
+    desc: '获得一杯心仪的奶茶',
+    icon: 'tabler:cup',
+    type: 'tea',
+    theme: '#FF6B00',
+    bgColor: '#ffffff'
+  },
+  {
+    id: 5,
+    name: '免死金牌',
+    points: 1000,
+    desc: '犯错时可抵消一次惩罚',
+    icon: 'tabler:medal',
+    type: 'medal',
+    theme: '#FF6B00',
+    bgColor: '#ffffff'
+  }
+]
+
+const CATEGORIES = [
+  { id: 'all', name: '全部', icon: 'tabler:apps', color: '#7B61FF' },
+  { id: 'movie', name: '娱乐', icon: 'tabler:device-tv', color: '#3B82F6' },
+  { id: 'chore', name: '生活', icon: 'tabler:home-heart', color: '#10B981' },
+  { id: 'gift', name: '惊喜', icon: 'tabler:gift', color: '#F59E0B' },
 ]
 
 export default function Store() {
   const [totalPoints, setTotalPoints] = useState(0)
+  const [activeTab, setActiveTab] = useState('all')
 
   useDidShow(() => {
     fetchUserInfo()
@@ -66,36 +120,48 @@ export default function Store() {
 
   return (
     <View className='store-v2-container'>
-      <View className='header-section'>
-        <View className='user-points-badge' onClick={() => Taro.navigateTo({ url: '/pages/history/index' })}>
-          <Text className='coin-icon'>💰</Text>
-          <Text className='points-val'>{totalPoints}</Text>
-          <Text className='points-label'>我的积分 ⟩</Text>
-        </View>
-      </View>
-
       <ScrollView scrollY className='store-scroll-view'>
-        <View className='cards-wrapper'>
-          <DuxGrid column={2} gap={24}>
-            {PRODUCTS.map(item => (
-              <DuxCard key={item.id} className='product-card-local' onClick={() => handleBuy(item)}>
-                <View className={`icon-wrapper ${item.type}`}>
-                  <Text className='emoji-icon'>{item.icon}</Text>
-                </View>
-                <View className='content-wrapper'>
-                  <Text className='product-name'>{item.name}</Text>
-                  <Text className='product-desc'>{item.desc}</Text>
-                  <View className='price-tag'>
-                    <Text className='price-num'>{item.points}</Text>
-                    <Text className='price-unit'>积分</Text>
+        <View className='store-inner-content'>
+          {/* 极简资产条 - 整合进滚动流 */}
+          <View className='minimal-assets-bar' onClick={() => Taro.navigateTo({ url: '/pages/history/index' })}>
+            <View className='asset-info'>
+              <Text className='asset-label'>当前积分</Text>
+              <View className='asset-value-row'>
+                <Text className='asset-coin'>💰</Text>
+                <Text className='asset-num'>{totalPoints}</Text>
+              </View>
+            </View>
+            <View className='asset-btn'>
+              <Text>明细 ⟩</Text>
+            </View>
+          </View>
+
+          <View className='cards-wrapper'>
+            <DuxGrid column={2} gap={24}>
+              {PRODUCTS.map(item => (
+                <DuxCard
+                  key={item.id}
+                  className='product-card-v4'
+                  onClick={() => handleBuy(item)}
+                  style={{ backgroundColor: item.bgColor }}
+                  shadow={false}
+                >
+                  <View className='card-top'>
+                    <View className='icon-circle' style={{ backgroundColor: '#ffffff' }}>
+                      <Image src={getIconifyUrl(item.icon, item.theme)} className='iconify-inner' />
+                    </View>
                   </View>
-                </View>
-                <Button className='buy-btn'>
-                  立即兑换
-                </Button>
-              </DuxCard>
-            ))}
-          </DuxGrid>
+                  <View className='card-body'>
+                    <Text className='p-name'>{item.name}</Text>
+                    <Text className='p-desc'>{item.desc}</Text>
+                    <View className='p-footer'>
+                      <Text className='p-price' style={{ color: item.theme }}>{item.points} 💰</Text>
+                    </View>
+                  </View>
+                </DuxCard>
+              ))}
+            </DuxGrid>
+          </View>
         </View>
       </ScrollView>
     </View>

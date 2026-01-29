@@ -39,7 +39,7 @@
     "webpack": "5.91.0"
   },
   "overrides": {
-    "react": "$react",
-    "react-dom": "$react-dom"
+    "react": "18.0.0",
+    "react-dom": "18.0.0"
   }
 }

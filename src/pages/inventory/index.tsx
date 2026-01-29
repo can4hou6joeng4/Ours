@@ -1,7 +1,8 @@
-import { View, Text, ScrollView } from '@tarojs/components'
+import { View, Text, ScrollView, Image } from '@tarojs/components'
 import Taro, { useDidShow } from '@tarojs/taro'
 import { useState } from 'react'
 import dayjs from 'dayjs'
+import { getIconifyUrl } from '../../utils/assets'
 import './index.scss'
 
 export default function Inventory() {
@@ -57,6 +58,16 @@ export default function Inventory() {
 
   const filteredItems = items.filter(i => i.status === currentTab)
 
+  // 根据类型获取图标
+  const getItemIcon = (name: string) => {
+    if (name.includes('电影')) return 'tabler:movie'
+    if (name.includes('家务')) return 'tabler:vacuum-cleaner'
+    if (name.includes('盒')) return 'tabler:gift'
+    if (name.includes('奶茶')) return 'tabler:cup'
+    if (name.includes('金牌')) return 'tabler:medal'
+    return 'tabler:box'
+  }
+
   return (
     <View className='inventory-container'>
       <View className='tabs-header'>
@@ -72,37 +83,40 @@ export default function Inventory() {
         >
           已使用
         </View>
+        <View className='tab-line' style={{ left: currentTab === 'unused' ? '25%' : '75%' }} />
       </View>
 
       <ScrollView scrollY className='items-scroll'>
-        {filteredItems.length === 0 && !loading ? (
-          <View className='empty-state'>
-            <Text className='empty-icon'>📦</Text>
-            <Text>背包空空如也~</Text>
-          </View>
-        ) : (
-          <View className='items-grid'>
-            {filteredItems.map(item => (
-              <View key={item._id} className='item-card'>
-                <View className={`item-icon-bg ${item.type}`}>
-                  <Text className='item-icon'>🎁</Text>
+        <View className='items-inner'>
+          {filteredItems.length === 0 && !loading ? (
+            <View className='empty-state'>
+              <Image src={getIconifyUrl('tabler:package-off', '#8E8E93')} className='empty-icon-img' />
+              <Text className='empty-text'>背包空空如也</Text>
+            </View>
+          ) : (
+            <View className='items-grid'>
+              {filteredItems.map(item => (
+                <View key={item._id} className={`item-card-v4 ${currentTab}`}>
+                  <View className='item-icon-box'>
+                    <Image src={getIconifyUrl(getItemIcon(item.name), currentTab === 'unused' ? '#FF6B00' : '#8E8E93')} className='inner-icon' />
+                  </View>
+                  <View className='item-info'>
+                    <Text className='item-name'>{item.name}</Text>
+                    <Text className='item-time'>
+                      {currentTab === 'unused'
+                        ? `${dayjs(item.createTime).format('YYYY.MM.DD HH:mm')} 获得`
+                        : `${dayjs(item.useTime).format('YYYY.MM.DD HH:mm')} 已使用`
+                      }
+                    </Text>
+                  </View>
+                  {currentTab === 'unused' && (
+                    <View className='use-btn-pill' onClick={() => handleUse(item)}>使用</View>
+                  )}
                 </View>
-                <View className='item-info'>
-                  <Text className='item-name'>{item.name}</Text>
-                  <Text className='item-time'>
-                    {currentTab === 'unused'
-                      ? `获得于: ${dayjs(item.createTime).format('MM-DD HH:mm')}`
-                      : `使用于: ${dayjs(item.useTime).format('MM-DD HH:mm')}`
-                    }
-                  </Text>
-                </View>
-                {currentTab === 'unused' && (
-                  <View className='use-btn' onClick={() => handleUse(item)}>立即使用</View>
-                )}
-              </View>
-            ))}
-          </View>
-        )}
+              ))}
+            </View>
+          )}
+        </View>
       </ScrollView>
     </View>
   )
