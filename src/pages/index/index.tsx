@@ -216,12 +216,12 @@ export default function Index() {
     <View className='container'>
       {/* 积分看板 */}
       <View className='score-board'>
-        <View className='content'>
-          <Text className='label'>我的当前积分</Text>
-          <Text className={`value ${points < 0 ? 'negative' : ''}`}>{points}</Text>
-        </View>
-        <Button className='add-btn' onClick={() => setShowAddModal(true)}>+ 发布任务</Button>
+        <Text className='label'>ASSET OVERVIEW / 我的当前积分</Text>
+        <Text className={`value ${points < 0 ? 'negative' : ''}`}>{points}</Text>
       </View>
+
+      {/* 悬浮发布按钮 */}
+      <View className='fab-btn' onClick={() => setShowAddModal(true)}>+</View>
 
       {/* Tab 切换 */}
       <View className='tab-bar'>
