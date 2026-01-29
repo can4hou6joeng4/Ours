@@ -21,7 +21,7 @@
     border-radius: 24rpx; // 参考图圆角较小
 
     &::before {
-      content: "◎ 资产概览";
+      content: "◎ 任务看板";
       position: absolute;
       top: 20rpx;
       left: 30rpx;
@@ -36,14 +36,14 @@
       margin-top: 20rpx;
 
       .label {
-        font-size: 22rpx;
-        opacity: 0.6;
+        font-size: 20rpx; // 略微缩小指标文案
+        opacity: 0.5;
         display: block;
         margin-top: 10rpx;
         color: #fff;
       }
       .value {
-        font-size: 40rpx; // 缩小字号，更显精致
+        font-size: 36rpx; // 调整指标数值大小
         font-weight: bold;
         display: block;
         color: $primary-color; // 香槟金

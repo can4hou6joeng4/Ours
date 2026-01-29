@@ -17,11 +17,40 @@
     padding-bottom: 40rpx;
   }
 
+  .section-group {
+    background: #ffffff;
+    border-radius: 24rpx;
+    padding: 32rpx;
+    margin-bottom: 32rpx;
+    box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.02);
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 24rpx;
+
+      .accent {
+        width: 6rpx;
+        height: 28rpx;
+        background-color: $primary-color;
+        border-radius: 4rpx;
+        margin-right: 12rpx;
+      }
+
+      .title {
+        font-size: 26rpx;
+        font-weight: bold;
+        color: #333;
+      }
+    }
+  }
+
   .core-info-section {
     display: flex;
     flex-direction: row;
-    align-items: flex-start;
+    align-items: center;
     gap: 32rpx;
+    padding: 40rpx 32rpx;
 
     .left-upload {
       flex-shrink: 0;
@@ -62,27 +91,27 @@
       flex: 1;
       display: flex;
       flex-direction: column;
-      gap: 20rpx;
+      gap: 24rpx;
 
       .form-item {
-        margin-bottom: 0;
-
         .label {
           font-size: 22rpx;
           color: #999;
           margin-bottom: 8rpx;
+          display: block;
         }
 
         .input {
-          height: 72rpx;
+          height: 64rpx;
+          padding: 0 20rpx;
           font-size: 26rpx;
           background: #F9F9F9;
+          border-radius: 12rpx;
+          color: #333;
         }
       }
     }
   }
-
-  .section-group {
 
   .footer-btns {
     position: fixed;

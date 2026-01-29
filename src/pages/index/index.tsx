@@ -19,6 +19,20 @@ export default function Index() {
   const watcher = useRef<any>(null)
   const userWatcher = useRef<any>(null)
 
+  // 实时任务指标计算
+  const taskStats = {
+    pending: tasks.filter(t => t.status === 'pending').length,
+    todayAdded: tasks.filter(t => {
+      if (!t.createTime) return false
+      const d = new Date(t.createTime)
+      const today = new Date()
+      return d.getFullYear() === today.getFullYear() &&
+             d.getMonth() === today.getMonth() &&
+             d.getDate() === today.getDate()
+    }).length,
+    completed: tasks.filter(t => t.status === 'done').length
+  }
+
   useDidShow(() => {
     initDataAndWatch()
   })
@@ -218,16 +232,21 @@ export default function Index() {
 
   return (
     <View className='container'>
-      {/* 积分看板 (理物风格) */}
-      <View className='score-board'>
+      {/* 任务看板 */}
+      <View className='score-board task-overview-card'>
         <View className='stat-item'>
-          <Text className='value'>{points}</Text>
-          <Text className='label'>总资产积分</Text>
+          <Text className='value'>{taskStats.pending}</Text>
+          <Text className='label'>待处理</Text>
         </View>
         <View className='divider' />
         <View className='stat-item'>
-          <Text className='value'>{todayChange > 0 ? `+${todayChange}` : todayChange}</Text>
-          <Text className='label'>今日变动</Text>
+          <Text className='value'>{taskStats.todayAdded}</Text>
+          <Text className='label'>今日新增</Text>
+        </View>
+        <View className='divider' />
+        <View className='stat-item'>
+          <Text className='value'>{taskStats.completed}</Text>
+          <Text className='label'>累计完成</Text>
         </View>
       </View>
 

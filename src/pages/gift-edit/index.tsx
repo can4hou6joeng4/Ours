@@ -104,46 +104,39 @@ export default function GiftEdit() {
     <View className='gift-edit-container'>
       <ScrollView scrollY className='edit-scroll-view'>
         <View className='scroll-content'>
-          <View className='section-group'>
-            <View className='section-header'>
-              <View className='accent' />
-              <Text className='title'>物品图片</Text>
-            </View>
-            <View className='upload-area' onClick={handleUploadImg}>
+          {/* 核心信息区块：图左文右布局 */}
+          <View className='section-group core-info-section'>
+            <View className='left-upload' onClick={handleUploadImg}>
               {giftData.coverImg ? (
                 <Image src={giftData.coverImg} mode='aspectFill' className='preview-img' />
               ) : (
                 <View className='upload-placeholder'>
-                  <Image src={getIconifyUrl('tabler:cloud-upload', '#D4B185')} className='upload-icon' />
-                  <Text className='upload-text'>点击上传图片</Text>
+                  <Image src={getIconifyUrl('tabler:camera', '#D4B185')} className='upload-icon' />
+                  <Text className='upload-text'>添加图片</Text>
                 </View>
               )}
             </View>
-          </View>
 
-          <View className='section-group'>
-            <View className='section-header'>
-              <View className='accent' />
-              <Text className='title'>基础信息</Text>
-            </View>
-            <View className='form-item'>
-              <Text className='label'>物品名称 *</Text>
-              <Input
-                className='input'
-                placeholder='请输入物品名称'
-                value={giftData.name}
-                onInput={e => setGiftData({ ...giftData, name: e.detail.value })}
-              />
-            </View>
-            <View className='form-item'>
-              <Text className='label'>所需积分 *</Text>
-              <Input
-                className='input'
-                type='number'
-                placeholder='请输入积分数值'
-                value={giftData.points}
-                onInput={e => setGiftData({ ...giftData, points: e.detail.value })}
-              />
+            <View className='right-inputs'>
+              <View className='form-item'>
+                <Text className='label'>物品名称 *</Text>
+                <Input
+                  className='input'
+                  placeholder='例如：洗碗券'
+                  value={giftData.name}
+                  onInput={e => setGiftData({ ...giftData, name: e.detail.value })}
+                />
+              </View>
+              <View className='form-item'>
+                <Text className='label'>所需积分 *</Text>
+                <Input
+                  className='input'
+                  type='number'
+                  placeholder='0'
+                  value={giftData.points}
+                  onInput={e => setGiftData({ ...giftData, points: e.detail.value })}
+                />
+              </View>
             </View>
           </View>
 
