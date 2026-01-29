@@ -1,34 +1,91 @@
-// Figma 风格全局主题变量
+// MASTER.md 风格全局设计变量
 
-// 核心配色
-$primary-color: #7B61FF;    // Figma 紫色
-$secondary-color: #FF7EB3;  // 搞怪/辅助色
-$success-color: #4CAF50;
-$warning-color: #FF9800;
-$danger-color: #F44336;
-$bg-color: #F8F9FE;         // 浅色背景
+:root {
+  // 核心配色
+  --color-primary: #3B82F6;
+  --color-secondary: #60A5FA;
+  --color-cta: #F97316;
+  --color-background: #F8FAFC;
+  --color-text: #1E293B;
 
-// 文字颜色
-$text-main: #1A1D1E;
-$text-sub: #6A6A6A;
-$text-white: #FFFFFF;
+  // 间距规范
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+  --space-3xl: 64px;
 
-// 布局规范
-$border-radius-lg: 24px;    // 卡片大圆角
+  // 阴影深度 (Spatial UI)
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.15);
+
+  // VisionOS 材质
+  --glass-background: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.3);
+  --glass-blur: 12px;
+}
+
+// SCSS 变量映射 (方便旧代码兼容及工具使用)
+$primary-color: #3B82F6;
+$secondary-color: #60A5FA;
+$cta-color: #F97316;
+$bg-color: #F8FAFC;
+$text-main: #1E293B;
+
+$spacing-xs: 4px;
+$spacing-sm: 8px;
+$spacing-md: 16px;
+$spacing-lg: 24px;
+$spacing-xl: 32px;
+
+$border-radius-lg: 24px;
 $border-radius-md: 12px;
-$spacing-base: 16px;
-$card-shadow: 0 8px 24px rgba(123, 97, 255, 0.1);
+$border-radius-sm: 8px;
 
-// 混入
+// 混入 (Mixins)
+
+// 基础 Flex 居中
 @mixin flex-center {
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-@mixin card-base {
-  background: $text-white;
+// VisionOS 玻璃态卡片
+@mixin glass-card {
+  background: var(--glass-background);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
   border-radius: $border-radius-lg;
-  padding: $spacing-base;
-  box-shadow: $card-shadow;
+  box-shadow: var(--shadow-md);
+  transition: all 200ms ease;
+
+  &:active {
+    transform: scale(0.98);
+    box-shadow: var(--shadow-sm);
+  }
+}
+
+// 空间按钮效果
+@mixin spatial-button($bg: var(--color-primary)) {
+  background: $bg;
+  color: white;
+  padding: 12px 24px;
+  border-radius: $border-radius-sm;
+  font-weight: 600;
+  transition: all 200ms ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+
+  &:active {
+    opacity: 0.9;
+    transform: translateY(1px);
+  }
 }
