@@ -169,24 +169,28 @@ export default function Store() {
                   <DuxCard
                     key={item._id}
                     className='product-card-v4'
-                    onClick={() => handleBuy(item)}
-                    onLongPress={() => handleLongPress(item)}
                     shadow={false}
                   >
-                    <View className='card-top'>
-                      {item.coverImg ? (
-                        <Image src={item.coverImg} mode='aspectFit' className='product-image' />
-                      ) : (
-                        <View className='icon-circle'>
-                          <Image src={getIconifyUrl('tabler:gift', '#D4B185')} className='iconify-inner' />
+                    <View
+                      className='card-inner-touch'
+                      onClick={() => handleBuy(item)}
+                      onLongPress={() => handleLongPress(item)}
+                    >
+                      <View className='card-top'>
+                        {item.coverImg ? (
+                          <Image src={item.coverImg} mode='aspectFill' className='product-image' />
+                        ) : (
+                          <View className='icon-circle'>
+                            <Image src={getIconifyUrl('tabler:gift', '#D4B185')} className='iconify-inner' />
+                          </View>
+                        )}
+                      </View>
+                      <View className='card-body'>
+                        <Text className='p-name'>{item.name}</Text>
+                        <Text className='p-desc'>{item.desc || '暂无描述'}</Text>
+                        <View className='p-footer'>
+                          <Text className='p-price'>{item.points}</Text>
                         </View>
-                      )}
-                    </View>
-                    <View className='card-body'>
-                      <Text className='p-name'>{item.name}</Text>
-                      <Text className='p-desc'>{item.desc || '暂无描述'}</Text>
-                      <View className='p-footer'>
-                        <Text className='p-price'>{item.points}</Text>
                       </View>
                     </View>
                   </DuxCard>

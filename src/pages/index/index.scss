@@ -15,7 +15,7 @@
     display: flex;
     flex-direction: row; // 横向排列
     justify-content: space-around;
-    padding: 60rpx 0; // 增加上下内边距，使布局在无标题时更饱满
+    padding: 40rpx 0; // 收紧内边距，消除空洞感
     margin-bottom: 40rpx;
     position: relative;
     border-radius: 24rpx;

@@ -80,25 +80,33 @@
     .cards-wrapper {
       .product-card-v4 {
         background: #ffffff;
-        padding: 0; // 移除内边距，让图片撑满顶部
+        padding: 0;
         overflow: hidden;
         border-radius: 28rpx;
         border: 1rpx solid #F0F0F0;
         box-shadow: $card-shadow;
 
+        .card-inner-touch {
+          width: 100%;
+          height: 100%;
+        }
+
         .card-top {
           width: 100%;
           height: 240rpx;
-          background: #ffffff; // 配合 aspectFit 使用白色背景更自然
+          background: #ffffff;
           margin-bottom: 0;
           @include flex-center;
           position: relative;
-          padding: 20rpx; // 增加内边距，让全幅图片展示更有序
+          padding: 4rpx; // 极简边距，实现贴合感
           box-sizing: border-box;
+          overflow: hidden;
 
           .product-image {
             width: 100%;
             height: 100%;
+            border-top-left-radius: 24rpx; // 同步卡片圆角
+            border-top-right-radius: 24rpx;
           }
 
           .icon-circle {
