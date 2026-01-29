@@ -44,7 +44,7 @@ export default function Binding() {
     <View className='container'>
       <View className='card'>
         <Text className='title'>建立 1对1 绑定</Text>
-        <Text className='subtitle'>让这个空间成为你们的专属</Text>
+        <Text className='subtitle'>ESTABLISH CONNECTION / 开启专属空间</Text>
 
         <View className='section'>
           <Text className='label'>我的邀请码</Text>
