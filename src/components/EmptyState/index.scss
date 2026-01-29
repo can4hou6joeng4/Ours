@@ -1,0 +1,59 @@
+@import "../../styles/theme.scss";
+
+.empty-state-v2 {
+  padding: 120rpx 60rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+
+  .icon-box {
+    width: 160rpx;
+    height: 160rpx;
+    background: #F9F9F9;
+    border-radius: 50%;
+    margin-bottom: 40rpx;
+    @include flex-center;
+    box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.03);
+
+    .icon {
+      width: 80rpx;
+      height: 80rpx;
+      opacity: 0.8;
+    }
+  }
+
+  .title {
+    font-size: 32rpx;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 16rpx;
+  }
+
+  .desc {
+    font-size: 26rpx;
+    color: #999;
+    margin-bottom: 60rpx;
+    line-height: 1.6;
+    max-width: 80%;
+  }
+
+  .action-btn {
+    width: 320rpx;
+    height: 88rpx;
+    line-height: 88rpx;
+    background: linear-gradient(135deg, $primary-color, #E5C59F);
+    color: #fff;
+    font-size: 28rpx;
+    font-weight: bold;
+    border-radius: 44rpx;
+    box-shadow: 0 12rpx 24rpx rgba($primary-color, 0.25);
+    &::after { border: none; }
+
+    &:active {
+      opacity: 0.9;
+      transform: scale(0.98);
+    }
+  }
+}

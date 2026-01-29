@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import Taro, { useDidShow } from '@tarojs/taro'
 import { View, Text, ScrollView, Button, Input } from '@tarojs/components'
+import EmptyState from '../../components/EmptyState'
 import './index.scss'
 
 export default function Index() {
@@ -242,8 +243,20 @@ export default function Index() {
 
       {/* 任务列表 */}
       <ScrollView scrollY className='task-list-main'>
-        {filteredTasks.length === 0 ? (
-          <View className='empty-state'><Text>暂无相关任务</Text></View>
+        {!partnerId ? (
+          <EmptyState
+            icon='tabler:link'
+            title='尚未开启连接'
+            desc='完成另一半绑定后，方可发布与查看双人任务'
+            btnText='去绑定'
+            onAction={() => Taro.navigateTo({ url: '/pages/binding/index' })}
+          />
+        ) : filteredTasks.length === 0 ? (
+          <EmptyState
+            icon='tabler:mood-smile'
+            title='暂无相关任务'
+            desc='点击右下角“+”号发布一个新任务吧'
+          />
         ) : (
           filteredTasks.map(task => (
             <View key={task._id} className={`task-card-v2 ${task.type}`}>

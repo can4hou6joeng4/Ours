@@ -3,6 +3,7 @@ import Taro, { useDidShow, eventCenter } from '@tarojs/taro'
 import { useState, useEffect } from 'react'
 import DuxGrid from '../../components/DuxGrid'
 import DuxCard from '../../components/DuxCard'
+import EmptyState from '../../components/EmptyState'
 import { getIconifyUrl } from '../../utils/assets'
 import './index.scss'
 
@@ -11,6 +12,7 @@ export default function Store() {
   const [products, setProducts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [isAdmin, setIsAdmin] = useState(false)
+  const [hasPartner, setHasPartner] = useState(false)
 
   useDidShow(() => {
     fetchData()
@@ -30,9 +32,10 @@ export default function Store() {
       ])
 
       if (userRes.result.success) {
-        setTotalPoints(userRes.result.user.totalPoints)
-        // 简单判断：有伙伴且是发起绑定的人视为管理员，或者根据业务逻辑调整
-        setIsAdmin(true)
+        const user = userRes.result.user
+        setTotalPoints(user.totalPoints || 0)
+        setHasPartner(!!user.partnerId)
+        setIsAdmin(true) // 这里的逻辑可以根据需求精细化
       }
 
       if (giftsRes.result.success) {
@@ -134,8 +137,20 @@ export default function Store() {
           )}
 
           <View className='cards-wrapper'>
-            {products.length === 0 && !loading ? (
-              <View className='empty-state'>暂无礼品，请联系管理员添加</View>
+            {!hasPartner ? (
+              <EmptyState
+                icon='tabler:link'
+                title='兑换中心尚未开启'
+                desc='绑定另一半后，可以使用积分兑换心仪的礼品'
+                btnText='去绑定'
+                onAction={() => Taro.navigateTo({ url: '/pages/binding/index' })}
+              />
+            ) : products.length === 0 && !loading ? (
+              <EmptyState
+                icon='tabler:package-off'
+                title='货架空空如也'
+                desc='点击上方“新增礼品”按钮丰富商店内容吧'
+              />
             ) : (
               <DuxGrid column={2} gap={32}>
                 {products.map(item => (
