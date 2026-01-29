@@ -122,17 +122,15 @@ export default function Store() {
     <View className='store-v2-container'>
       <ScrollView scrollY className='store-scroll-view'>
         <View className='store-inner-content'>
-          {/* 极简资产条 - 整合进滚动流 */}
+          {/* 资产看板 (理物风格) */}
           <View className='minimal-assets-bar' onClick={() => Taro.navigateTo({ url: '/pages/history/index' })}>
             <View className='asset-info'>
-              <Text className='asset-label'>当前积分</Text>
-              <View className='asset-value-row'>
-                <Text className='asset-coin'>💰</Text>
-                <Text className='asset-num'>{totalPoints}</Text>
-              </View>
+              <Text className='asset-num'>¥{totalPoints}.00</Text>
+              <Text className='asset-label'>总资产积分</Text>
             </View>
-            <View className='asset-btn'>
-              <Text>明细 ⟩</Text>
+            <View className='asset-info'>
+              <Text className='asset-num'>¥0</Text>
+              <Text className='asset-label'>今日变动</Text>
             </View>
           </View>
 
