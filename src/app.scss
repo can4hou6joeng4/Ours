@@ -4,7 +4,7 @@ page {
   background-color: $bg-color;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
-  padding-bottom: calc(180rpx + env(safe-area-inset-bottom)); // 为悬浮 TabBar 预留空间
+  padding-bottom: calc(240rpx + env(safe-area-inset-bottom)); // 增加留白，确保内容不会在 TabBar 下方显得拥挤
 }
 
 .container {

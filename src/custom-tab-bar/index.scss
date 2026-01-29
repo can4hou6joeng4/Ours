@@ -12,17 +12,17 @@
 
   .tab-bar-capsule {
     pointer-events: auto;
-    width: 85%;
-    height: 110rpx;
-    background: rgba(255, 255, 255, 0.9);
-    backdrop-filter: blur(20px);
+    width: 480rpx; // 缩减宽度，使其更像紧凑的胶囊
+    height: 100rpx; // 略微减小高度，更显精致
+    background: rgba(255, 255, 255, 0.95); // 增加不透明度，减少背景干扰
+    backdrop-filter: blur(15px);
     border-radius: 100rpx;
     display: flex;
     align-items: center;
     justify-content: space-around;
-    padding: 0 20rpx;
+    padding: 0 30rpx;
     border: 1rpx solid rgba(0, 0, 0, 0.05);
-    box-shadow: 0 16rpx 48rpx rgba(0, 0, 0, 0.08);
+    box-shadow: 0 20rpx 40rpx rgba(0, 0, 0, 0.1);
 
     .tab-item {
       flex: 1;
@@ -33,14 +33,14 @@
       transition: all 0.2s;
 
       .tab-icon {
-        width: 44rpx;
-        height: 44rpx;
-        margin-bottom: 4rpx;
+        width: 40rpx; // 缩小图标，增加呼吸感
+        height: 40rpx;
+        margin-bottom: 2rpx;
       }
 
       .tab-text {
-        font-size: 20rpx;
-        color: #666;
+        font-size: 18rpx; // 缩小文字，符合比例
+        color: #888;
         font-weight: 500;
       }
 
