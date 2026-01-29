@@ -42,9 +42,19 @@ $spacing-md: 16px;
 $spacing-lg: 24px;
 $spacing-xl: 32px;
 
+// 别名兼容 (兼容旧代码)
 $border-radius-lg: 24px;
 $border-radius-md: 12px;
 $border-radius-sm: 8px;
+
+// 别名与缺失变量兼容
+$spacing-base: $spacing-md;
+$text-sub: #6A6A6A;
+$text-white: #FFFFFF;
+$success-color: #4CAF50;
+$warning-color: #FF9800;
+$danger-color: #F44336;
+$card-shadow: var(--shadow-md);
 
 // 混入 (Mixins)
 
@@ -53,6 +63,14 @@ $border-radius-sm: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+// 兼容旧版的基础卡片
+@mixin card-base {
+  background: $text-white;
+  border-radius: $border-radius-lg;
+  padding: $spacing-base;
+  box-shadow: $card-shadow;
 }
 
 // VisionOS 玻璃态卡片
