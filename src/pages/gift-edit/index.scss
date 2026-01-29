@@ -17,49 +17,22 @@
     padding-bottom: 40rpx;
   }
 
-  .section-group {
-    background: #ffffff;
-    border-radius: 24rpx;
-    padding: 40rpx;
-    margin-bottom: 32rpx;
-    box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.02);
+  .core-info-section {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 32rpx;
 
-    .section-header {
-      display: flex;
-      align-items: center;
-      margin-bottom: 32rpx;
-
-      .accent {
-        width: 8rpx;
-        height: 32rpx;
-        background-color: $primary-color;
-        border-radius: 4rpx;
-        margin-right: 16rpx;
-      }
-
-      .title {
-        font-size: 28rpx;
-        font-weight: bold;
-        color: #333;
-      }
-    }
-
-    .upload-area {
-      width: 200rpx; // 缩小为正方形缩略图尺寸
-      height: 200rpx;
+    .left-upload {
+      flex-shrink: 0;
+      width: 180rpx;
+      height: 180rpx;
       background: #F9F9F9;
       border: 2rpx dashed #EEEEEE;
       border-radius: 20rpx;
-      margin: 0 auto; // 居中展示
       @include flex-center;
       overflow: hidden;
       position: relative;
-      transition: all 0.3s;
-
-      &:active {
-        background: #F0F0F0;
-        border-color: $primary-color;
-      }
 
       .upload-placeholder {
         display: flex;
@@ -67,14 +40,14 @@
         align-items: center;
 
         .upload-icon {
-          width: 80rpx;
-          height: 80rpx;
-          margin-bottom: 16rpx;
-          opacity: 0.6;
+          width: 56rpx;
+          height: 56rpx;
+          margin-bottom: 8rpx;
+          opacity: 0.5;
         }
 
         .upload-text {
-          font-size: 26rpx;
+          font-size: 20rpx;
           color: #999;
         }
       }
@@ -85,45 +58,31 @@
       }
     }
 
-    .form-item {
-      margin-bottom: 32rpx;
+    .right-inputs {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 20rpx;
 
-      &:last-child { margin-bottom: 0; }
+      .form-item {
+        margin-bottom: 0;
 
-      .label {
-        font-size: 26rpx;
-        color: #666;
-        margin-bottom: 16rpx;
-        display: block;
-      }
+        .label {
+          font-size: 22rpx;
+          color: #999;
+          margin-bottom: 8rpx;
+        }
 
-      .input {
-        background: #F9F9F9;
-        height: 96rpx;
-        padding: 0 24rpx;
-        border-radius: 16rpx;
-        font-size: 28rpx;
-        color: #333;
-      }
-
-      .picker-value {
-        background: #F9F9F9;
-        height: 96rpx;
-        padding: 0 24rpx;
-        border-radius: 16rpx;
-        font-size: 28rpx;
-        color: #333;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-
-        .arrow {
-          color: #CCC;
-          font-size: 32rpx;
+        .input {
+          height: 72rpx;
+          font-size: 26rpx;
+          background: #F9F9F9;
         }
       }
     }
   }
+
+  .section-group {
 
   .footer-btns {
     position: fixed;
