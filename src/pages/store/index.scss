@@ -78,6 +78,20 @@
     }
 
     .cards-wrapper {
+      .masonry-grid {
+        display: flex;
+        flex-direction: row;
+        gap: 32rpx;
+        align-items: flex-start;
+
+        .masonry-column {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          gap: 32rpx;
+        }
+      }
+
       .product-card-v4 {
         background: #ffffff;
         padding: 0;
@@ -85,28 +99,23 @@
         border-radius: 28rpx;
         border: 1rpx solid #F0F0F0;
         box-shadow: $card-shadow;
-
-        .card-inner-touch {
-          width: 100%;
-          height: 100%;
-        }
+        width: 100%; // 确保占满列宽
 
         .card-top {
           width: 100%;
-          height: 240rpx;
+          min-height: 160rpx; // 保持最小高度，防止空白
           background: #ffffff;
-          margin-bottom: 0;
           @include flex-center;
           position: relative;
-          padding: 4rpx; // 极简边距，实现贴合感
+          padding: 4rpx;
           box-sizing: border-box;
-          overflow: hidden;
 
           .product-image {
             width: 100%;
-            height: 100%;
-            border-top-left-radius: 24rpx; // 同步卡片圆角
+            height: auto; // 配合 widthFix
+            border-top-left-radius: 24rpx;
             border-top-right-radius: 24rpx;
+            display: block; // 消除底部间隙
           }
 
           .icon-circle {
