@@ -53,27 +53,35 @@
   .fab-btn {
     position: fixed;
     right: 48rpx;
-    bottom: calc(160rpx + env(safe-area-inset-bottom));
+    bottom: calc(200rpx + env(safe-area-inset-bottom)); // 进一步提高位置，消除沉底感
     width: 110rpx;
     height: 110rpx;
     background: linear-gradient(135deg, $primary-color, #E5C59F);
     border-radius: 50%;
     @include flex-center;
-    // 多重弥散投影，增加悬浮感
+    // 升级为极其弥散、轻盈的渐变阴影
     box-shadow:
-      0 12rpx 32rpx rgba($primary-color, 0.3),
-      0 20rpx 60rpx rgba(0, 0, 0, 0.15);
+      0 30rpx 60rpx rgba($primary-color, 0.35),
+      0 10rpx 30rpx rgba(0, 0, 0, 0.1);
     color: #fff;
     font-size: 64rpx;
     z-index: 999;
     font-weight: 300;
-    border: 4rpx solid rgba(255, 255, 255, 0.4); // 增加一个柔和的白色边缘，增强立体感
+    border: 4rpx solid rgba(255, 255, 255, 0.5);
+    // 增加细微的呼吸悬浮动画
+    animation: fab-float 3s ease-in-out infinite;
 
     &:active {
       transform: scale(0.9) translateY(4rpx);
-      box-shadow: 0 4rpx 12rpx rgba($primary-color, 0.2);
-      transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      box-shadow: 0 10rpx 20rpx rgba($primary-color, 0.2);
+      transition: all 0.2s;
     }
+  }
+
+  @keyframes fab-float {
+    0% { transform: translateY(0); }
+    50% { transform: translateY(-16rpx); } // 向上浮动
+    100% { transform: translateY(0); }
   }
 
   // 两级 Tab (简化版实现)
