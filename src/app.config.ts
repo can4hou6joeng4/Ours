@@ -26,7 +26,7 @@ export default defineAppConfig({
       },
       {
         pagePath: 'pages/store/index',
-        text: '商城'
+        text: '兑换'
       },
       {
         pagePath: 'pages/me/index',

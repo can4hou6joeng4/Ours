@@ -86,13 +86,32 @@
 
         .card-body {
           padding: 24rpx;
-          .p-name { font-size: 28rpx; color: $text-main; font-weight: bold; }
-          .p-desc { font-size: 20rpx; color: $text-sub; margin: 8rpx 0 16rpx; }
+          display: flex;
+          flex-direction: column;
+          align-items: center; // 标题居中
+          text-align: center;
+
+          .p-name {
+            font-size: 30rpx;
+            color: $text-main;
+            font-weight: bold;
+            line-height: 1.4;
+            margin-bottom: 8rpx;
+            word-break: break-all; // 允许换行
+          }
+          .p-desc {
+            font-size: 22rpx;
+            color: $text-sub;
+            margin-bottom: 20rpx;
+            line-height: 1.5;
+            word-break: break-all; // 允许换行
+          }
           .p-footer {
             .p-price {
-              font-size: 32rpx;
-              color: $primary-color !important; // 香槟金
-              font-weight: bold;
+              font-size: 38rpx;
+              color: #FF4D4F !important; // 使用鲜艳的红橙色吸引兑换
+              font-weight: 900;
+              text-shadow: 0 4rpx 10rpx rgba(255, 77, 79, 0.1);
             }
           }
         }
