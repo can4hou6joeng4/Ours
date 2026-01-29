@@ -230,22 +230,30 @@
     }
   }
 
-  // 详情弹窗系统重塑 (圆角居中)
+  // 详情弹窗系统重塑 (绝对定位/圆角居中/毛玻璃遮罩)
   .detail-modal-root {
-    z-index: 1100;
+    position: fixed; // 关键：确保固定定位
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.65); // 半透明深色遮罩
+    backdrop-filter: blur(20rpx); // 虚化蒙住的效果
+    z-index: 2000; // 绝对置顶，覆盖全屏
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 40rpx;
+    padding: 60rpx;
+    box-sizing: border-box;
 
     .modal-card {
       width: 100%;
-      max-width: 600rpx;
       background: #FFFFFF;
-      border-radius: 48rpx; // 更大的圆角，极致细腻
+      border-radius: 48rpx;
       overflow: hidden;
-      box-shadow: 0 40rpx 100rpx rgba(0, 0, 0, 0.25);
-      animation: modal-pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      box-shadow: 0 40rpx 100rpx rgba(0, 0, 0, 0.4);
+      animation: modal-pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      position: relative;
 
       .card-header {
         padding: 32rpx 40rpx;
