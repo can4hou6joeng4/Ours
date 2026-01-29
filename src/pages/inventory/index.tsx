@@ -71,19 +71,20 @@ export default function Inventory() {
   return (
     <View className='inventory-container'>
       <View className='tabs-header'>
-        <View
-          className={`tab-item ${currentTab === 'unused' ? 'active' : ''}`}
-          onClick={() => setCurrentTab('unused')}
-        >
-          待使用
+        <View className='tabs-capsule'>
+          <View
+            className={`tab-item ${currentTab === 'unused' ? 'active' : ''}`}
+            onClick={() => setCurrentTab('unused')}
+          >
+            待使用
+          </View>
+          <View
+            className={`tab-item ${currentTab === 'used' ? 'active' : ''}`}
+            onClick={() => setCurrentTab('used')}
+          >
+            已使用
+          </View>
         </View>
-        <View
-          className={`tab-item ${currentTab === 'used' ? 'active' : ''}`}
-          onClick={() => setCurrentTab('used')}
-        >
-          已使用
-        </View>
-        <View className='tab-line' style={{ left: currentTab === 'unused' ? '25%' : '75%' }} />
       </View>
 
       <ScrollView scrollY className='items-scroll'>

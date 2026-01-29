@@ -7,30 +7,39 @@
   flex-direction: column;
 
   .tabs-header {
-    background: transparent; // 移除深色背景
+    background: transparent;
     display: flex;
-    justify-content: flex-start;
-    gap: 40rpx;
-    padding: 20rpx 40rpx;
+    justify-content: center; // 居中显示胶囊
+    padding: 32rpx;
     position: relative;
-    box-shadow: none;
 
-    .tab-item {
-      flex: none;
-      font-size: 28rpx;
-      color: $text-sub;
-      font-weight: bold;
-      transition: all 0.2s;
+    .tabs-capsule {
+      background: #F0F0F0;
+      display: flex;
+      padding: 8rpx;
+      border-radius: 40rpx; // 大圆角
+      width: 80%; // 限制宽度，更精致
 
-      &.active {
-        color: $text-main;
-        font-size: 32rpx;
+      .tab-item {
+        flex: 1;
+        text-align: center;
+        font-size: 26rpx;
+        color: #999;
+        padding: 16rpx 0;
+        border-radius: 32rpx;
+        transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        font-weight: 500;
+
+        &.active {
+          background: $secondary-color; // 碳黑
+          color: #fff;
+          font-weight: bold;
+          box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.2);
+        }
       }
     }
 
-    .tab-line {
-      display: none; // 移除原有的线条，采用字号加粗指示
-    }
+    .tab-line { display: none; }
   }
 
   .items-scroll {
