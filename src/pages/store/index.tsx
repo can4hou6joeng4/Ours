@@ -1,6 +1,7 @@
 import { View, Text, ScrollView } from '@tarojs/components'
 import Taro, { useDidShow } from '@tarojs/taro'
 import { useState } from 'react'
+import { Grid, Card, Button, Box, Space } from 'dux-ui'
 import './index.scss'
 
 const PRODUCTS = [
@@ -30,6 +31,7 @@ export default function Store() {
   }
 
   const handleBuy = async (item) => {
+    // TODO: 请用户在此处完善具体的积分余额校验逻辑
     if (totalPoints < item.points) {
       Taro.showToast({ title: '积分不足', icon: 'error' })
       return
@@ -65,33 +67,35 @@ export default function Store() {
   return (
     <View className='store-v2-container'>
       <View className='header-section'>
-        <View className='user-points-badge' onClick={() => Taro.navigateTo({ url: '/pages/history/index' })}>
+        <Box className='user-points-badge' onClick={() => Taro.navigateTo({ url: '/pages/history/index' })}>
           <Text className='coin-icon'>💰</Text>
           <Text className='points-val'>{totalPoints}</Text>
           <Text className='points-label'>我的积分 ⟩</Text>
-        </View>
+        </Box>
       </View>
 
       <ScrollView scrollY className='store-scroll-view'>
-        <View className='cards-grid'>
-          {PRODUCTS.map(item => (
-            <View key={item.id} className='product-card' onClick={() => handleBuy(item)}>
-              <View className={`icon-wrapper ${item.type}`}>
-                <Text className='emoji-icon'>{item.icon}</Text>
-              </View>
-              <View className='content-wrapper'>
-                <Text className='product-name'>{item.name}</Text>
-                <Text className='product-desc'>{item.desc}</Text>
-                <View className='price-tag'>
-                  <Text className='price-num'>{item.points}</Text>
-                  <Text className='price-unit'>积分</Text>
+        <View className='cards-wrapper'>
+          <Grid column={2} gap={24}>
+            {PRODUCTS.map(item => (
+              <Card key={item.id} className='product-card-dux' shadow onClick={() => handleBuy(item)}>
+                <View className={`icon-wrapper ${item.type}`}>
+                  <Text className='emoji-icon'>{item.icon}</Text>
                 </View>
-              </View>
-              <View className='buy-action-overlay'>
-                <Text>立即兑换</Text>
-              </View>
-            </View>
-          ))}
+                <Box padding className='content-wrapper'>
+                  <Text className='product-name'>{item.name}</Text>
+                  <Text className='product-desc'>{item.desc}</Text>
+                  <Space align='baseline' className='price-tag'>
+                    <Text className='price-num'>{item.points}</Text>
+                    <Text className='price-unit'>积分</Text>
+                  </Space>
+                </Box>
+                <Button className='buy-btn' type='primary' block radiusType='none'>
+                  立即兑换
+                </Button>
+              </Card>
+            ))}
+          </Grid>
         </View>
       </ScrollView>
     </View>
