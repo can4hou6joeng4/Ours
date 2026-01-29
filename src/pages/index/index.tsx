@@ -242,7 +242,10 @@ export default function Index() {
       </View>
 
       {/* 任务列表 */}
-      <ScrollView scrollY className='task-list-main'>
+      <ScrollView
+        scrollY={partnerId && filteredTasks.length > 0}
+        className='task-list-main'
+      >
         {!partnerId ? (
           <EmptyState
             icon='tabler:link'

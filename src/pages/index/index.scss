@@ -59,20 +59,26 @@
     }
   }
 
-  // 悬浮操作按钮 (FAB) - 参考图色值
+  // 悬浮操作按钮 (FAB)
   .fab-btn {
     position: fixed;
     right: 40rpx;
-    bottom: calc(40rpx + env(safe-area-inset-bottom));
+    bottom: calc(140rpx + env(safe-area-inset-bottom));
     width: 100rpx;
     height: 100rpx;
-    background: $accent-color; // 浅米色
+    background: linear-gradient(135deg, $primary-color, #E5C59F);
     border-radius: 50%;
     @include flex-center;
-    box-shadow: 0 12rpx 24rpx rgba(0, 0, 0, 0.15);
+    box-shadow: 0 12rpx 32rpx rgba($primary-color, 0.3);
     color: #fff;
     font-size: 60rpx;
-    z-index: 99;
+    z-index: 999;
+    font-weight: 300;
+
+    &:active {
+      transform: scale(0.9) rotate(90deg);
+      transition: all 0.2s;
+    }
   }
 
   // 两级 Tab (简化版实现)
