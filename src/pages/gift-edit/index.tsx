@@ -34,19 +34,32 @@ export default function GiftEdit() {
 
   const handleUploadImg = async () => {
     try {
-      const res = await Taro.chooseImage({ count: 1 })
-      const tempFilePath = res.tempFilePaths[0]
+      const res = await Taro.chooseImage({
+        count: 1,
+        sizeType: ['compressed'], // 优先使用压缩图
+        sourceType: ['album', 'camera']
+      })
+      let tempFilePath = res.tempFilePaths[0]
 
-      Taro.showLoading({ title: '上传中...' })
+      Taro.showLoading({ title: '处理中...' })
+
+      // 1. 前端质量压缩：适配缩略图尺寸，减少上传体积
+      const compressRes = await Taro.compressImage({
+        src: tempFilePath,
+        quality: 80 // 压缩质量
+      })
+      tempFilePath = compressRes.tempFilePath
+
+      // 2. 上传到云存储
       const uploadRes = await Taro.cloud.uploadFile({
         cloudPath: `gifts/${Date.now()}-${Math.random().toString(36).slice(-6)}.png`,
         filePath: tempFilePath
       })
 
       setGiftData({ ...giftData, coverImg: uploadRes.fileID })
-      Taro.showToast({ title: '上传成功' })
+      Taro.showToast({ title: '上传并压缩成功' })
     } catch (e) {
-      console.error(e)
+      console.error('上传失败', e)
     } finally {
       Taro.hideLoading()
     }
