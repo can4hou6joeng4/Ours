@@ -30,13 +30,13 @@ export default function Me() {
 
   return (
     <View className='container'>
-      {/* 个人资料卡片 */}
+      {/* 个人资料卡片 (黑金风格) */}
       <View className='user-card'>
-        <View className='avatar-placeholder'>👤</View>
+        <View className='avatar-placeholder'>◎</View>
         <View className='info'>
-          <Text className='nickname'>{userInfo?.partnerId ? '已绑定关系' : '尚未绑定关系'}</Text>
+          <Text className='nickname'>{userInfo?.partnerId ? 'PREMIUM USER / 已绑定' : 'GUEST / 尚未绑定'}</Text>
           <Text className={`points ${(userInfo?.totalPoints || 0) < 0 ? 'negative' : ''}`}>
-            当前积分：{userInfo?.totalPoints || 0}
+            CURRENT ASSETS / 当前积分：{userInfo?.totalPoints || 0}.00
           </Text>
         </View>
       </View>
@@ -45,7 +45,7 @@ export default function Me() {
       <View className='menu-list'>
         <View className='menu-item' onClick={() => Taro.navigateTo({ url: '/pages/inventory/index' })}>
           <View className='menu-left'>
-            <Text className='menu-icon'>📦</Text>
+            <Text className='menu-icon'>◎</Text>
             <Text className='menu-label'>我的背包</Text>
           </View>
           <Text className='menu-arrow'>⟩</Text>
@@ -54,7 +54,7 @@ export default function Me() {
 
       {/* 另一半/绑定状态区 */}
       <View className='binding-section'>
-        <Text className='section-label'>我的另一半</Text>
+        <Text className='section-label'>PARTNER INFO / 我的另一半</Text>
         <View className='binding-card'>
           {!userInfo?.partnerId ? (
             <View className='binding-guide'>
