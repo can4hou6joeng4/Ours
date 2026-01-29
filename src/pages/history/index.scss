@@ -70,6 +70,16 @@
       letter-spacing: 2rpx;
     }
 
+    .record-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 32rpx;
+      background: #fff;
+      border-radius: 20rpx;
+      margin-bottom: 20rpx;
+      box-shadow: $card-shadow;
+
       .left {
         display: flex;
         flex-direction: column;
