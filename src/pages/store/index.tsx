@@ -13,6 +13,8 @@ export default function Store() {
   const [loading, setLoading] = useState(true)
   const [isAdmin, setIsAdmin] = useState(false)
   const [hasPartner, setHasPartner] = useState(false)
+  const [showManageMenu, setShowManageMenu] = useState(false)
+  const [selectedGift, setSelectedGift] = useState<any>(null)
 
   useDidShow(() => {
     fetchData()
@@ -50,22 +52,19 @@ export default function Store() {
 
   const handleLongPress = (item) => {
     if (!isAdmin) return
+    setSelectedGift(item)
+    setShowManageMenu(true)
+  }
 
-    Taro.showActionSheet({
-      itemList: ['编辑礼品', '删除礼品'],
-      itemColor: '#333',
-      success: (res) => {
-        if (res.tapIndex === 0) {
-          // 编辑
-          Taro.navigateTo({
-            url: `/pages/gift-edit/index?id=${item._id}&data=${encodeURIComponent(JSON.stringify(item))}`
-          })
-        } else if (res.tapIndex === 1) {
-          // 删除
-          handleDelete(item)
-        }
-      }
-    })
+  const handleAction = (type: 'edit' | 'delete') => {
+    setShowManageMenu(false)
+    if (type === 'edit') {
+      Taro.navigateTo({
+        url: `/pages/gift-edit/index?id=${selectedGift._id}&data=${encodeURIComponent(JSON.stringify(selectedGift))}`
+      })
+    } else {
+      handleDelete(selectedGift)
+    }
   }
 
   const handleDelete = (item) => {
@@ -207,6 +206,23 @@ export default function Store() {
           </View>
         </View>
       </ScrollView>
+
+      {/* 礼品管理毛玻璃菜单 */}
+      {showManageMenu && (
+        <View className='modal-overlay masonry-manage-modal' onClick={() => setShowManageMenu(false)}>
+          <View className='manage-card' onClick={e => e.stopPropagation()}>
+            <View className='manage-item edit' onClick={() => handleAction('edit')}>
+              <Text className='item-text'>编辑此礼品</Text>
+            </View>
+            <View className='manage-item delete' onClick={() => handleAction('delete')}>
+              <Text className='item-text'>删除此礼品</Text>
+            </View>
+            <View className='manage-cancel' onClick={() => setShowManageMenu(false)}>
+              <Text className='cancel-text'>取消</Text>
+            </View>
+          </View>
+        </View>
+      )}
     </View>
   )
 }

@@ -342,14 +342,17 @@ export default function Index() {
         >
           <View className='modal-card' onClick={e => e.stopPropagation()}>
             <View className='card-header'>
-              <Text className={`category-label ${selectedTask.type}`}>
-                {selectedTask.type === 'reward' ? '奖赏任务' : '惩罚任务'}
-              </Text>
-              <View className='close-btn' onClick={() => setShowDetailModal(false)}>×</View>
+              <View className='close-btn' style={{ marginLeft: 'auto' }} onClick={() => setShowDetailModal(false)}>×</View>
             </View>
 
             <View className='card-body'>
               <Text className='task-title'>{selectedTask.title}</Text>
+              <View className='task-type-sub'>
+                <Text className={`category-label ${selectedTask.type}`}>
+                  {selectedTask.type === 'reward' ? '奖赏任务' : '惩罚任务'}
+                </Text>
+              </View>
+
               <View className='info-list'>
                 <View className='info-item'>
                   <Text className='label'>积分奖励</Text>
@@ -360,7 +363,7 @@ export default function Index() {
                 <View className='info-item'>
                   <Text className='label'>发布时间</Text>
                   <Text className='value'>
-                    {selectedTask.createTime ? new Date(selectedTask.createTime).toLocaleString() : '刚刚'}
+                    {selectedTask.createTime ? new Date(selectedTask.createTime).toLocaleString([], { year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '刚刚'}
                   </Text>
                 </View>
                 <View className='info-item'>

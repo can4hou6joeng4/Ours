@@ -281,7 +281,7 @@
       }
 
       .card-body {
-        padding: 60rpx 48rpx;
+        padding: 40rpx 48rpx 60rpx;
 
         .task-title {
           font-size: 40rpx;
@@ -289,8 +289,21 @@
           color: #1A1A1A;
           line-height: 1.4;
           display: block;
-          margin-bottom: 60rpx;
+          margin-bottom: 20rpx;
           word-break: break-all;
+        }
+
+        .task-type-sub {
+          margin-bottom: 60rpx;
+          .category-label {
+            font-size: 22rpx;
+            font-weight: 800;
+            padding: 6rpx 20rpx;
+            border-radius: 30rpx;
+            letter-spacing: 2rpx;
+            &.reward { background: rgba($primary-color, 0.15); color: $primary-color; }
+            &.penalty { background: rgba(255, 77, 79, 0.1); color: #FF4D4F; }
+          }
         }
 
         .info-list {
