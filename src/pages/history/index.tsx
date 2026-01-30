@@ -113,7 +113,7 @@ export default function History() {
             </View>
 
             <View className='card-body'>
-              <Text className='task-title'>{selectedRecord.cleanTitle}</Text>
+              <Text className='record-detail-title'>{selectedRecord.cleanTitle}</Text>
 
               <View className='task-type-sub'>
                 <Text className={`category-label ${selectedRecord.type === 'reward' || (selectedRecord.amount || 0) > 0 ? 'reward' : 'penalty'}`}>
@@ -123,15 +123,15 @@ export default function History() {
 
               <View className='info-list'>
                 <View className='info-item'>
-                  <Text className='label'>积分奖励</Text>
+                  <Text className='label'>积分变动</Text>
                   <Text className={`value points ${selectedRecord.type === 'reward' || (selectedRecord.amount || 0) > 0 ? 'reward' : 'penalty'}`}>
                     {selectedRecord.type === 'reward' || (selectedRecord.amount || 0) > 0 ? '+' : '-'}{Math.abs(selectedRecord.amount || selectedRecord.points || 0)}
                   </Text>
                 </View>
                 <View className='info-item'>
-                  <Text className='label'>发布时间</Text>
+                  <Text className='label'>记录时间</Text>
                   <Text className='value'>
-                    {dayjs(selectedRecord.createTime || selectedRecord.timestamp).format('YYYY/MM/DD hh:mm A')}
+                    {dayjs(selectedRecord.createTime || selectedRecord.timestamp).format('YYYY/MM/DD HH:mm')}
                   </Text>
                 </View>
               </View>

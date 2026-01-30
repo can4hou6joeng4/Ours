@@ -172,14 +172,12 @@
       .card-body {
         padding: 0 48rpx 60rpx; // 顶部间距由 header 承担
 
-        .task-title {
-          font-size: 40rpx;
+        .record-detail-title {
+          font-size: 36rpx;
           font-weight: bold;
-          color: #1A1A1A;
-          line-height: 1.4;
-          display: block;
+          color: #333;
           margin-bottom: 20rpx;
-          word-break: break-all;
+          display: block;
         }
 
         .task-type-sub {
