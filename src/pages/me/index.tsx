@@ -37,47 +37,11 @@ export default function Me() {
     }
   }
 
-  const onChooseAvatar = async (e) => {
+  const onChooseAvatar = (e) => {
     const { avatarUrl } = e.detail
-    Taro.showLoading({ title: '上传中' })
-
-    try {
-      // 1. 上传到云存储
-      const suffix = /\.[^\.]+$/.exec(avatarUrl)?.[0] || '.png'
-      const uploadRes = await Taro.cloud.uploadFile({
-        cloudPath: `avatars/${Date.now()}-${Math.random().toString(36).slice(-6)}${suffix}`,
-        filePath: avatarUrl
-      })
-
-      // 2. 更新到数据库
-      await Taro.cloud.callFunction({
-        name: 'updateUserProfile',
-        data: { avatarUrl: uploadRes.fileID }
-      })
-
-      setUserInfo({ ...userInfo, avatarUrl: uploadRes.fileID })
-      Taro.showToast({ title: '头像已更新' })
-    } catch (err) {
-      console.error('上传头像失败', err)
-      Taro.showToast({ title: '更新失败', icon: 'none' })
-    } finally {
-      Taro.hideLoading()
-    }
-  }
-
-  const onNicknameBlur = async (e) => {
-    const nickName = e.detail.value
-    if (!nickName || nickName === userInfo?.nickName) return
-
-    try {
-      await Taro.cloud.callFunction({
-        name: 'updateUserProfile',
-        data: { nickName }
-      })
-      setUserInfo({ ...userInfo, nickName })
-      Taro.showToast({ title: '昵称已更新' })
-    } catch (err) {
-      console.error('更新昵称失败', err)
+    // 拦截取消选择的情况，不再抛出错误
+    if (avatarUrl) {
+      setTempAvatar(avatarUrl)
     }
   }
 
@@ -89,17 +53,38 @@ export default function Me() {
 
     setSaving(true)
     try {
+      let finalAvatarUrl = userInfo?.avatarUrl
+
+      // 1. 如果头像发生了变化（且是临时路径），则执行上传
+      if (tempAvatar && tempAvatar !== userInfo?.avatarUrl && !tempAvatar.startsWith('cloud://')) {
+        Taro.showLoading({ title: '正在上传头像...' })
+        const suffix = /\.[^\.]+$/.exec(tempAvatar)?.[0] || '.png'
+        const uploadRes = await Taro.cloud.uploadFile({
+          cloudPath: `avatars/${Date.now()}-${Math.random().toString(36).slice(-6)}${suffix}`,
+          filePath: tempAvatar
+        })
+        finalAvatarUrl = uploadRes.fileID
+      }
+
+      // 2. 统一更新用户资料
+      Taro.showLoading({ title: '正在保存...' })
       await Taro.cloud.callFunction({
         name: 'updateUserProfile',
-        data: { nickName: tempNickname }
+        data: {
+          nickName: tempNickname,
+          avatarUrl: finalAvatarUrl
+        }
       })
-      setUserInfo({ ...userInfo, nickName: tempNickname })
+
+      setUserInfo({ ...userInfo, nickName: tempNickname, avatarUrl: finalAvatarUrl })
       setShowEditSheet(false)
-      Taro.showToast({ title: '资料已更新' })
+      Taro.showToast({ title: '资料已更新', icon: 'success' })
     } catch (err) {
+      console.error('保存失败', err)
       Taro.showToast({ title: '保存失败', icon: 'none' })
     } finally {
       setSaving(false)
+      Taro.hideLoading()
     }
   }
 
@@ -107,7 +92,7 @@ export default function Me() {
 
   return (
     <View className='container'>
-      {/* 个人资料卡片 (黑金风格) */}
+      {/* 个人资料卡片 (去除多余图标) */}
       <View className='user-card' onClick={handleOpenEdit}>
         <View className='avatar-placeholder'>
           {userInfo?.avatarUrl ? (
@@ -123,9 +108,6 @@ export default function Me() {
           <Text className={`points ${(userInfo?.totalPoints || 0) < 0 ? 'negative' : ''}`}>
             积分资产：{userInfo?.totalPoints || 0}
           </Text>
-        </View>
-        <View className='edit-indicator'>
-          <Image src={getIconifyUrl('tabler:edit-circle', '#D4B185')} className='edit-icon' />
         </View>
       </View>
 
