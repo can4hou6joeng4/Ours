@@ -317,14 +317,25 @@ export default function Index() {
         </View>
       </View>
 
-      {/* 悬浮发布按钮 */}
-      <View className='fab-btn' onClick={() => setShowAddModal(true)}>+</View>
+      {/* 悬浮发布按钮 (v2) */}
+      <Button
+        className='fab-btn-v2'
+        onClick={() => setShowAddModal(true)}
+      >
+        +
+      </Button>
 
-      {/* Tab 切换 */}
-      <View className='tab-bar'>
-        <View className={`tab-item ${currentTab === 'pending' ? 'active' : ''}`} onClick={() => setCurrentTab('pending')}>待完成</View>
-        <View className={`tab-item ${currentTab === 'done' ? 'active' : ''}`} onClick={() => setCurrentTab('done')}>已完成</View>
-        <View className={`tab-item ${currentTab === 'all' ? 'active' : ''}`} onClick={() => setCurrentTab('all')}>全部</View>
+      {/* Taroify Tabs 切换 (v2) */}
+      <View className='main-tabs-wrapper'>
+        <Tabs
+          active={currentTab}
+          className='custom-main-tabs'
+          onChange={(v: any) => setCurrentTab(v)}
+        >
+          <Tabs.Tab title='待完成' value='pending' />
+          <Tabs.Tab title='已完成' value='done' />
+          <Tabs.Tab title='全部' value='all' />
+        </Tabs>
       </View>
 
       {/* 任务列表 */}
