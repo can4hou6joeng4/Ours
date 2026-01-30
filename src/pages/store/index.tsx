@@ -138,17 +138,18 @@ export default function Store() {
 
     setSaving(true)
     try {
+      const isEdit = !!selectedGift
       const res: any = await Taro.cloud.callFunction({
         name: 'manageGift',
         data: {
-          action: 'update',
-          giftId: selectedGift._id,
+          action: isEdit ? 'update' : 'add',
+          giftId: isEdit ? selectedGift._id : undefined,
           giftData: { ...editData, points: Number(editData.points) }
         }
       })
 
       if (res.result.success) {
-        Taro.showToast({ title: '更新成功' })
+        Taro.showToast({ title: isEdit ? '更新成功' : '添加成功' })
         setShowEditSheet(false)
         fetchData()
       }
@@ -176,7 +177,13 @@ export default function Store() {
     try {
       const { result }: any = await Taro.cloud.callFunction({
         name: 'buyItem',
-        data: { item: { name: item.name, points: item.points } }
+        data: {
+          item: {
+            name: item.name,
+            points: item.points,
+            image: item.coverImg // 关键修复：补全图片字段传递
+          }
+        }
       })
 
       if (result.success) {
@@ -251,7 +258,11 @@ export default function Store() {
 
           {isAdmin && (
             <View className='admin-actions'>
-              <Button className='add-btn' onClick={() => Taro.navigateTo({ url: '/pages/gift-edit/index' })}>
+              <Button className='add-btn' onClick={() => {
+                setSelectedGift(null)
+                setEditData({ name: '', points: '', coverImg: '', desc: '' })
+                setShowEditSheet(true)
+              }}>
                 + 新增礼品
               </Button>
             </View>
@@ -307,7 +318,7 @@ export default function Store() {
         <View className='edit-sheet-root' onClick={() => !saving && setShowEditSheet(false)}>
           <View className='sheet-content' onClick={e => e.stopPropagation()}>
             <View className='sheet-header'>
-              <Text className='title'>编辑礼品</Text>
+              <Text className='title'>{selectedGift ? '编辑礼品' : '新增礼品'}</Text>
               <View className='close' onClick={() => !saving && setShowEditSheet(false)}>×</View>
             </View>
 
@@ -362,7 +373,7 @@ export default function Store() {
                 loading={saving}
                 onClick={handleUpdateGift}
               >
-                保存修改
+                {selectedGift ? '保存修改' : '确认添加'}
               </Button>
             </View>
           </View>
