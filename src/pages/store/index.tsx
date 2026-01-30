@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, Button, Image } from '@tarojs/components'
+import { View, Text, ScrollView, Button, Image, Input } from '@tarojs/components'
 import Taro, { useDidShow, eventCenter } from '@tarojs/taro'
 import { useState, useEffect } from 'react'
 import DuxGrid from '../../components/DuxGrid'
@@ -14,7 +14,15 @@ export default function Store() {
   const [isAdmin, setIsAdmin] = useState(false)
   const [hasPartner, setHasPartner] = useState(false)
   const [showManageMenu, setShowManageMenu] = useState(false)
+  const [showEditSheet, setShowEditSheet] = useState(false)
   const [selectedGift, setSelectedGift] = useState<any>(null)
+  const [editData, setEditData] = useState({
+    name: '',
+    points: '',
+    coverImg: '',
+    desc: ''
+  })
+  const [saving, setSaving] = useState(false)
 
   useDidShow(() => {
     fetchData()
@@ -59,35 +67,95 @@ export default function Store() {
   const handleAction = (type: 'edit' | 'delete') => {
     setShowManageMenu(false)
     if (type === 'edit') {
-      Taro.navigateTo({
-        url: `/pages/gift-edit/index?id=${selectedGift._id}&data=${encodeURIComponent(JSON.stringify(selectedGift))}`
+      setEditData({
+        name: selectedGift.name || '',
+        points: String(selectedGift.points || ''),
+        coverImg: selectedGift.coverImg || '',
+        desc: selectedGift.desc || ''
       })
+      setShowEditSheet(true)
     } else {
-      handleDelete(selectedGift)
+      handleDeleteConfirm(selectedGift)
     }
   }
 
-  const handleDelete = (item) => {
+  const handleDeleteConfirm = (item) => {
     Taro.showModal({
       title: '确认删除',
-      content: `确定要删除礼品“${item.name}”吗？`,
+      content: `确定要将“${item.name}”从货架移除吗？此操作不可撤销。`,
+      confirmColor: '#FF4D4F',
       success: async (res) => {
         if (res.confirm) {
+          Taro.showLoading({ title: '正在移除...' })
           try {
             const result: any = await Taro.cloud.callFunction({
               name: 'manageGift',
               data: { action: 'delete', giftId: item._id }
             })
             if (result.result.success) {
-              Taro.showToast({ title: '已删除' })
+              Taro.showToast({ title: '已成功移除', icon: 'success' })
               fetchData()
             }
           } catch (e) {
             Taro.showToast({ title: '删除失败', icon: 'none' })
+          } finally {
+            Taro.hideLoading()
           }
         }
       }
     })
+  }
+
+  const handleUploadImg = async () => {
+    try {
+      const res = await Taro.chooseImage({ count: 1, sizeType: ['compressed'] })
+      let tempFilePath = res.tempFilePaths[0]
+      Taro.showLoading({ title: '处理图片...' })
+
+      const compressRes = await Taro.compressImage({ src: tempFilePath, quality: 80 })
+      tempFilePath = compressRes.tempFilePath
+
+      const uploadRes = await Taro.cloud.uploadFile({
+        cloudPath: `gifts/${Date.now()}-${Math.random().toString(36).slice(-6)}.png`,
+        filePath: tempFilePath
+      })
+
+      setEditData({ ...editData, coverImg: uploadRes.fileID })
+      Taro.showToast({ title: '图片已上传' })
+    } catch (e) {
+      console.error('上传失败', e)
+    } finally {
+      Taro.hideLoading()
+    }
+  }
+
+  const handleUpdateGift = async () => {
+    if (!editData.name || !editData.points) {
+      Taro.showToast({ title: '信息不全', icon: 'none' })
+      return
+    }
+
+    setSaving(true)
+    try {
+      const res: any = await Taro.cloud.callFunction({
+        name: 'manageGift',
+        data: {
+          action: 'update',
+          giftId: selectedGift._id,
+          giftData: { ...editData, points: Number(editData.points) }
+        }
+      })
+
+      if (res.result.success) {
+        Taro.showToast({ title: '更新成功' })
+        setShowEditSheet(false)
+        fetchData()
+      }
+    } catch (e) {
+      Taro.showToast({ title: '保存失败', icon: 'none' })
+    } finally {
+      setSaving(false)
+    }
   }
 
   const handleBuy = async (item) => {
@@ -229,6 +297,72 @@ export default function Store() {
               <View className='manage-cancel' onClick={() => setShowManageMenu(false)}>
                 <Text className='cancel-text'>取消</Text>
               </View>
+            </View>
+          </View>
+        </View>
+      )}
+      {/* 礼品编辑底部抽屉 */}
+      {showEditSheet && (
+        <View className='edit-sheet-root' onClick={() => !saving && setShowEditSheet(false)}>
+          <View className='sheet-content' onClick={e => e.stopPropagation()}>
+            <View className='sheet-header'>
+              <Text className='title'>编辑礼品</Text>
+              <View className='close' onClick={() => !saving && setShowEditSheet(false)}>×</View>
+            </View>
+
+            <ScrollView scrollY className='sheet-body'>
+              <View className='form-group'>
+                <View className='image-upload-box' onClick={handleUploadImg}>
+                  {editData.coverImg ? (
+                    <Image src={editData.coverImg} mode='aspectFill' className='preview' />
+                  ) : (
+                    <View className='placeholder'>
+                      <Image src={getIconifyUrl('tabler:camera', '#D4B185')} className='icon' />
+                      <Text className='txt'>更换图片</Text>
+                    </View>
+                  )}
+                </View>
+
+                <View className='inputs-area'>
+                  <View className='input-item'>
+                    <Text className='label'>物品名称</Text>
+                    <Input
+                      className='input'
+                      value={editData.name}
+                      onInput={e => setEditData({ ...editData, name: e.detail.value })}
+                    />
+                  </View>
+                  <View className='input-item'>
+                    <Text className='label'>所需积分</Text>
+                    <Input
+                      className='input'
+                      type='number'
+                      value={editData.points}
+                      onInput={e => setEditData({ ...editData, points: e.detail.value })}
+                    />
+                  </View>
+                </View>
+              </View>
+
+              <View className='input-item full'>
+                <Text className='label'>详细描述</Text>
+                <Input
+                  className='input'
+                  value={editData.desc}
+                  placeholder='简单描述一下礼品...'
+                  onInput={e => setEditData({ ...editData, desc: e.detail.value })}
+                />
+              </View>
+            </ScrollView>
+
+            <View className='sheet-footer'>
+              <Button
+                className='save-btn'
+                loading={saving}
+                onClick={handleUpdateGift}
+              >
+                保存修改
+              </Button>
             </View>
           </View>
         </View>
