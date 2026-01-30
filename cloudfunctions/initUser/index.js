@@ -7,32 +7,30 @@ exports.main = async (event, context) => {
   const { OPENID } = cloud.getWXContext()
 
   try {
-    // 1. 检查用户是否已存在
-    const userRes = await db.collection('Users').doc(OPENID).get().catch(() => null)
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
 
-    if (userRes) {
-      const userData = userRes.data
-
-      // 聚合当日积分变动
-      const today = new Date()
-      today.setHours(0, 0, 0, 0)
-
-      const recordsRes = await db.collection('Records').where({
+    // 性能优化点：通过 Promise.all 并行执行“用户信息查询”与“今日流水聚合”
+    // 耗时从 T1 + T2 降至 Max(T1, T2)
+    const [userRes, recordsRes] = await Promise.all([
+      db.collection('Users').doc(OPENID).get().catch(() => null),
+      db.collection('Records').where({
         userId: OPENID,
         createTime: _.gte(today)
-      }).get()
+      }).get().catch(() => ({ data: [] }))
+    ])
 
+    if (userRes) {
       const todayChange = recordsRes.data.reduce((sum, record) => sum + (record.amount || 0), 0)
 
       return {
         success: true,
-        user: userData,
+        user: userRes.data,
         todayChange
       }
     }
 
-    // 2. 如果不存在，则创建新用户
-    // 使用 .add({ data: { _id: ... } }) 是创建指定 ID 文档的最稳妥方式
+    // 如果不存在，则创建新用户
     const newUser = {
       _id: OPENID,
       totalPoints: 0,
@@ -41,9 +39,9 @@ exports.main = async (event, context) => {
     }
 
     await db.collection('Users').add({ data: newUser })
-
-    return { success: true, user: newUser }
+    return { success: true, user: newUser, todayChange: 0 }
   } catch (e) {
+    console.error('初始化用户失败', e)
     return { success: false, error: e.message }
   }
 }
