@@ -292,12 +292,6 @@ export default function Store() {
                 <Text className='item-text'>从货架删除</Text>
               </View>
             </View>
-
-            <View className='card-footer'>
-              <View className='manage-cancel' onClick={() => setShowManageMenu(false)}>
-                <Text className='cancel-text'>取消</Text>
-              </View>
-            </View>
           </View>
         </View>
       )}

@@ -77,15 +77,18 @@ export default function History() {
             const isIncome = !isOutcome
 
             const displayAmount = Math.abs(amount)
+            const rawTitle = record.reason || record.title || ''
+            // 净化标题：移除 [惩罚]、[奖赏] 等前缀
+            const cleanTitle = rawTitle.replace(/^\[.*?\]\s*/, '')
 
             return (
               <View
                 key={record._id}
                 className='record-item'
-                onClick={() => handleShowDetail(record)}
+                onClick={() => handleShowDetail({ ...record, cleanTitle })}
               >
                 <View className='left'>
-                  <Text className='record-title'>{record.reason || record.title}</Text>
+                  <Text className='record-title'>{cleanTitle}</Text>
                 </View>
                 <View className={`right ${isIncome ? 'income' : 'outcome'}`}>
                   <Text className='points-val'>
@@ -110,7 +113,7 @@ export default function History() {
             </View>
 
             <View className='card-body'>
-              <Text className='record-detail-title'>{selectedRecord.reason || selectedRecord.title}</Text>
+              <Text className='record-detail-title'>{selectedRecord.cleanTitle}</Text>
 
               <View className='info-list'>
                 <View className='info-item'>

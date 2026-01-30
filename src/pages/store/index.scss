@@ -329,22 +329,6 @@
           }
         }
       }
-
-      .card-footer {
-        padding: 0 48rpx 48rpx;
-        .manage-cancel {
-          width: 100%;
-          height: 90rpx;
-          background: #F5F5F5;
-          border-radius: 45rpx;
-          @include flex-center;
-          .cancel-text {
-            font-size: 26rpx;
-            color: #999;
-            font-weight: 500;
-          }
-        }
-      }
     }
   }
 
