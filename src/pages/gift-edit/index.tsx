@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import Taro, { useRouter } from '@tarojs/taro'
-import { View, Text, Input, Button, Image, ScrollView } from '@tarojs/components'
+import { View, Text, Image, ScrollView } from '@tarojs/components'
+import { Button, Input } from '@taroify/core'
 import { getIconifyUrl } from '../../utils/assets'
 import './index.scss'
 
@@ -121,20 +122,20 @@ export default function GiftEdit() {
               <View className='form-item'>
                 <Text className='label'>物品名称 *</Text>
                 <Input
-                  className='input'
+                  className='custom-input'
                   placeholder='例如：洗碗券'
                   value={giftData.name}
-                  onInput={e => setGiftData({ ...giftData, name: e.detail.value })}
+                  onChange={e => setGiftData({ ...giftData, name: e.detail.value })}
                 />
               </View>
               <View className='form-item'>
                 <Text className='label'>所需积分 *</Text>
                 <Input
-                  className='input'
+                  className='custom-input'
                   type='number'
                   placeholder='0'
                   value={giftData.points}
-                  onInput={e => setGiftData({ ...giftData, points: e.detail.value })}
+                  onChange={e => setGiftData({ ...giftData, points: e.detail.value })}
                 />
               </View>
             </View>
@@ -147,10 +148,10 @@ export default function GiftEdit() {
             </View>
             <View className='form-item'>
               <Input
-                className='input'
+                className='custom-input'
                 placeholder='简单描述一下礼品吧'
                 value={giftData.desc}
-                onInput={e => setGiftData({ ...giftData, desc: e.detail.value })}
+                onChange={e => setGiftData({ ...giftData, desc: e.detail.value })}
               />
             </View>
           </View>
