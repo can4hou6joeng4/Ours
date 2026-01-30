@@ -7,25 +7,39 @@ exports.main = async (event, context) => {
   const { itemId } = event
 
   try {
-    const itemRes = await db.collection('Items').doc(itemId).get()
+    return await db.runTransaction(async transaction => {
+      const itemRes = await transaction.collection('Items').doc(itemId).get()
 
-    if (!itemRes.data || itemRes.data.userId !== OPENID) {
-      throw new Error('物品不存在或无权操作')
-    }
-
-    if (itemRes.data.status === 'used') {
-      throw new Error('该物品已在使用过了')
-    }
-
-    // 更新状态为已使用
-    await db.collection('Items').doc(itemId).update({
-      data: {
-        status: 'used',
-        useTime: db.serverDate()
+      if (!itemRes.data || itemRes.data.userId !== OPENID) {
+        throw new Error('物品不存在或无权操作')
       }
-    })
 
-    return { success: true }
+      if (itemRes.data.status === 'used') {
+        throw new Error('该物品已在使用过了')
+      }
+
+      // 1. 更新状态为已使用
+      await transaction.collection('Items').doc(itemId).update({
+        data: {
+          status: 'used',
+          useTime: db.serverDate()
+        }
+      })
+
+      // 2. 写入一条交互流水，用于触发对方的 Notify 提醒
+      await transaction.collection('Records').add({
+        data: {
+          userId: OPENID,
+          type: 'gift_use',
+          amount: 0,
+          reason: `[使用礼品] ${itemRes.data.name}`,
+          giftId: itemId,
+          createTime: db.serverDate()
+        }
+      })
+
+      return { success: true }
+    })
   } catch (e) {
     return { success: false, error: e.message }
   }
