@@ -452,7 +452,8 @@
       }
 
       .sheet-footer {
-        padding: 20rpx 48rpx calc(60rpx + env(safe-area-inset-bottom));
+        // 关键修复：大幅增加底部间距 (TabBar 高度 100rpx + 间距 40rpx + 安全区)
+        padding: 20rpx 48rpx calc(150rpx + env(safe-area-inset-bottom));
         .save-btn {
           width: 100%;
           height: 100rpx;
