@@ -8,11 +8,18 @@ export default function History() {
   const [records, setRecords] = useState<any[]>([])
   const [totalPoints, setTotalPoints] = useState(0)
   const [loading, setLoading] = useState(false)
+  const [showDetailModal, setShowDetailModal] = useState(false)
+  const [selectedRecord, setSelectedRecord] = useState<any>(null)
 
   useDidShow(() => {
     fetchRecords()
     fetchUserInfo()
   })
+
+  const handleShowDetail = (record: any) => {
+    setSelectedRecord(record)
+    setShowDetailModal(true)
+  }
 
   const fetchUserInfo = async () => {
     try {
@@ -72,7 +79,11 @@ export default function History() {
             const displayAmount = Math.abs(amount)
 
             return (
-              <View key={record._id} className='record-item'>
+              <View
+                key={record._id}
+                className='record-item'
+                onClick={() => handleShowDetail(record)}
+              >
                 <View className='left'>
                   <Text className='record-title'>{record.reason || record.title}</Text>
                   <Text className='record-time'>
@@ -89,6 +100,47 @@ export default function History() {
           })
         )}
       </ScrollView>
+
+      {/* 积分详情弹窗 (与任务详情风格一致) */}
+      {showDetailModal && selectedRecord && (
+        <View
+          className='modal-overlay detail-modal-root'
+          onClick={() => setShowDetailModal(false)}
+        >
+          <View className='modal-card' onClick={e => e.stopPropagation()}>
+            <View className='card-header'>
+              <View className='close-btn' style={{ marginLeft: 'auto' }} onClick={() => setShowDetailModal(false)}>×</View>
+            </View>
+
+            <View className='card-body'>
+              <Text className='record-detail-title'>{selectedRecord.reason || selectedRecord.title}</Text>
+
+              <View className='info-list'>
+                <View className='info-item'>
+                  <Text className='label'>积分变动</Text>
+                  <Text className={`value points ${(selectedRecord.amount || selectedRecord.points || 0) >= 0 ? 'income' : 'outcome'}`}>
+                    {(selectedRecord.amount || selectedRecord.points || 0) >= 0 ? '+' : '-'}{Math.abs(selectedRecord.amount || selectedRecord.points || 0)}
+                  </Text>
+                </View>
+                <View className='info-item'>
+                  <Text className='label'>记录时间</Text>
+                  <Text className='value'>
+                    {dayjs(selectedRecord.createTime || selectedRecord.timestamp).format('YYYY年MM月DD日 HH:mm:ss')}
+                  </Text>
+                </View>
+                <View className='info-item'>
+                  <Text className='label'>流水单号</Text>
+                  <Text className='value mono'>{selectedRecord._id}</Text>
+                </View>
+              </View>
+            </View>
+
+            <View className='card-footer'>
+              <Button className='btn-primary' onClick={() => setShowDetailModal(false)}>确定</Button>
+            </View>
+          </View>
+        </View>
+      )}
     </View>
   )
 }
