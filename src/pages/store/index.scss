@@ -348,6 +348,132 @@
     }
   }
 
+  // 礼品编辑底部抽屉 (重塑为高级侧滑感)
+  .edit-sheet-root {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(10rpx);
+    z-index: 2100; // 高于管理菜单
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end; // 底部对齐
+
+    .sheet-content {
+      width: 100%;
+      max-height: 85vh;
+      background: #FFFFFF;
+      border-top-left-radius: 60rpx;
+      border-top-right-radius: 60rpx;
+      display: flex;
+      flex-direction: column;
+      animation: sheet-slide-up 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+      box-shadow: 0 -20rpx 60rpx rgba(0, 0, 0, 0.1);
+
+      .sheet-header {
+        padding: 48rpx 48rpx 20rpx;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        .title {
+          font-size: 36rpx;
+          font-weight: 900;
+          color: $text-main;
+          letter-spacing: 2rpx;
+        }
+        .close {
+          font-size: 50rpx;
+          color: #DDD;
+          padding: 10rpx;
+        }
+      }
+
+      .sheet-body {
+        flex: 1;
+        padding: 20rpx 48rpx 40rpx;
+
+        .form-group {
+          display: flex;
+          gap: 32rpx;
+          margin-bottom: 40rpx;
+
+          .image-upload-box {
+            width: 200rpx;
+            height: 240rpx;
+            background: #F8F8F8;
+            border-radius: 32rpx;
+            overflow: hidden;
+            @include flex-center;
+            border: 2rpx dashed #EEE;
+
+            .preview { width: 100%; height: 100%; }
+            .placeholder {
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              .icon { width: 48rpx; height: 48rpx; margin-bottom: 12rpx; }
+              .txt { font-size: 20rpx; color: $primary-color; font-weight: 600; }
+            }
+          }
+
+          .inputs-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 24rpx;
+          }
+        }
+
+        .input-item {
+          .label {
+            font-size: 22rpx;
+            color: #BBB;
+            font-weight: 800;
+            margin-bottom: 12rpx;
+            display: block;
+            text-transform: uppercase;
+          }
+          .input {
+            width: 100%;
+            height: 90rpx;
+            background: #FAFAFA;
+            border-radius: 24rpx;
+            padding: 0 32rpx;
+            box-sizing: border-box;
+            font-size: 28rpx;
+            color: $text-main;
+            font-weight: 600;
+          }
+          &.full { margin-top: 20rpx; }
+        }
+      }
+
+      .sheet-footer {
+        padding: 20rpx 48rpx calc(60rpx + env(safe-area-inset-bottom));
+        .save-btn {
+          width: 100%;
+          height: 100rpx;
+          line-height: 100rpx;
+          background: linear-gradient(135deg, $secondary-color, #333);
+          color: #fff;
+          border-radius: 50rpx;
+          font-size: 30rpx;
+          font-weight: bold;
+          box-shadow: 0 20rpx 40rpx rgba(0,0,0,0.15);
+          &::after { border: none; }
+        }
+      }
+    }
+  }
+
+  @keyframes sheet-slide-up {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+
   @keyframes modal-pop {
     0% { transform: scale(0.9); opacity: 0; }
     100% { transform: scale(1); opacity: 1; }
