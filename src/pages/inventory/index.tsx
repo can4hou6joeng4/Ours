@@ -104,7 +104,18 @@ export default function Inventory() {
               {filteredItems.map(item => (
                 <View key={item._id} className={`item-card-v4 ${currentTab}`}>
                   <View className='item-icon-box'>
-                    <Image src={getIconifyUrl(getItemIcon(item.name), currentTab === 'unused' ? '#D4B185' : '#BBB')} className='inner-icon' />
+                    {item.image || item.cover ? (
+                      <Image
+                        src={item.image || item.cover}
+                        className='inner-icon thumb-img'
+                        mode='aspectFill'
+                      />
+                    ) : (
+                      <Image
+                        src={getIconifyUrl(getItemIcon(item.name), currentTab === 'unused' ? '#D4B185' : '#BBB')}
+                        className='inner-icon'
+                      />
+                    )}
                   </View>
                   <View className='item-info'>
                     <Text className='item-name'>{item.name}</Text>
