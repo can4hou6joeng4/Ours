@@ -57,6 +57,39 @@
       align-items: center;
       box-shadow: $card-shadow;
       border: 1rpx solid #f0f0f0;
+      position: relative;
+      z-index: 1;
+
+      // 堆叠效果：使用伪元素模拟底层卡片
+      &.is-stacked {
+        &::before {
+          content: '';
+          position: absolute;
+          top: 8rpx;
+          left: 12rpx;
+          right: 12rpx;
+          bottom: -8rpx;
+          background: #fff;
+          border-radius: 24rpx;
+          z-index: -1;
+          border: 1rpx solid #f0f0f0;
+          box-shadow: 0 4rpx 10rpx rgba(0,0,0,0.05);
+        }
+        &::after {
+          content: '';
+          position: absolute;
+          top: 16rpx;
+          left: 24rpx;
+          right: 24rpx;
+          bottom: -16rpx;
+          background: #fff;
+          border-radius: 24rpx;
+          z-index: -2;
+          border: 1rpx solid #f2f2f2;
+          opacity: 0.6;
+        }
+        margin-bottom: 40rpx; // 增加间距以容纳堆叠层
+      }
 
       &.used {
         opacity: 0.5;
@@ -70,6 +103,8 @@
         border-radius: 16rpx;
         @include flex-center;
         margin-right: 24rpx;
+        position: relative;
+
         .inner-icon {
           width: 56rpx;
           height: 56rpx;
@@ -79,6 +114,20 @@
             height: 100%;
             border-radius: 12rpx;
           }
+        }
+
+        .item-count-badge {
+          position: absolute;
+          top: -12rpx;
+          right: -12rpx;
+          background: $primary-color;
+          color: #fff;
+          font-size: 18rpx;
+          font-weight: 900;
+          padding: 4rpx 12rpx;
+          border-radius: 20rpx;
+          border: 2rpx solid #fff;
+          box-shadow: 0 4rpx 8rpx rgba($primary-color, 0.3);
         }
       }
 

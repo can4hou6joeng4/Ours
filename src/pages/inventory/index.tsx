@@ -63,6 +63,18 @@ export default function Inventory() {
 
   const filteredItems = items.filter(i => i.status === currentTab)
 
+  // 礼品堆叠逻辑：按名称分组
+  const stackedItems = filteredItems.reduce((acc: any[], item) => {
+    const existing = acc.find(i => i.name === item.name)
+    if (existing) {
+      existing.count = (existing.count || 1) + 1
+      // 保持最早的获得时间展示，或者更新为最新，这里选择保持
+    } else {
+      acc.push({ ...item, count: 1 })
+    }
+    return acc
+  }, [])
+
   // 根据类型获取图标
   const getItemIcon = (name: string) => {
     if (name.includes('电影')) return 'tabler:movie'
@@ -101,8 +113,8 @@ export default function Inventory() {
             </View>
           ) : (
             <View className='items-grid'>
-              {filteredItems.map(item => (
-                <View key={item._id} className={`item-card-v4 ${currentTab}`}>
+              {stackedItems.map(item => (
+                <View key={item._id} className={`item-card-v4 ${currentTab} ${item.count > 1 ? 'is-stacked' : ''}`}>
                   <View className='item-icon-box'>
                     {item.image || item.cover ? (
                       <Image
@@ -115,6 +127,9 @@ export default function Inventory() {
                         src={getIconifyUrl(getItemIcon(item.name), currentTab === 'unused' ? '#D4B185' : '#BBB')}
                         className='inner-icon'
                       />
+                    )}
+                    {item.count > 1 && (
+                      <View className='item-count-badge'>x{item.count}</View>
                     )}
                   </View>
                   <View className='item-info'>
