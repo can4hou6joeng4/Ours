@@ -40,6 +40,23 @@ exports.main = async (event, context) => {
             createTime: db.serverDate()
           }
         })
+
+        // 写入通知：提醒任务发布者（creatorId），对方已经完成了任务
+        // 这里的逻辑是：如果完成者是 targetId，通知 creatorId
+        if (OPENID === targetId && task.creatorId !== OPENID) {
+          await transaction.collection('Notices').add({
+            data: {
+              type: 'TASK_DONE',
+              title: '🎉 任务已完成',
+              message: `对方完成了任务：${task.title}`,
+              points: task.points,
+              senderId: OPENID,
+              receiverId: task.creatorId,
+              read: false,
+              createTime: db.serverDate()
+            }
+          })
+        }
       }
 
       return { success: true, points: task.points }

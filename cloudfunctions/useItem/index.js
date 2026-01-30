@@ -38,6 +38,23 @@ exports.main = async (event, context) => {
         }
       })
 
+      // 3. 写入正式通知，用于首页仪式感弹窗
+      const userRes = await transaction.collection('Users').doc(OPENID).get()
+      if (userRes.data && userRes.data.partnerId) {
+        await transaction.collection('Notices').add({
+          data: {
+            type: 'GIFT_USED',
+            title: '💝 收到兑换请求',
+            message: `对方请求兑换：${itemRes.data.name}`,
+            points: 0,
+            senderId: OPENID,
+            receiverId: userRes.data.partnerId,
+            read: false,
+            createTime: db.serverDate()
+          }
+        })
+      }
+
       return { success: true }
     })
   } catch (e) {

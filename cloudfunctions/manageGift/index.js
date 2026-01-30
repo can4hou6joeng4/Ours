@@ -23,6 +23,23 @@ exports.main = async (event, context) => {
           updateTime: db.serverDate()
         }
       })
+
+      // 性能优化：获取伙伴 ID 并在 add 时通知
+      const userRes = await db.collection('Users').doc(OPENID).get()
+      if (userRes.data && userRes.data.partnerId) {
+        await db.collection('Notices').add({
+          data: {
+            type: 'NEW_GIFT',
+            title: '🎁 商店上新啦',
+            message: `新增了礼品：${giftData.name}`,
+            points: Number(giftData.points),
+            senderId: OPENID,
+            receiverId: userRes.data.partnerId,
+            read: false,
+            createTime: db.serverDate()
+          }
+        })
+      }
       return { success: true, id: res._id }
     }
 

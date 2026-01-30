@@ -34,6 +34,19 @@ exports.main = async (event, context) => {
     // 性能分流：如果是奖赏任务，无需昂贵的事务处理
     if (type === 'reward') {
       const res = await db.collection('Tasks').add({ data: newTask })
+      // 写入通知记录
+      await db.collection('Notices').add({
+        data: {
+          type: 'NEW_TASK',
+          title: '✨ 收到新任务',
+          message: title,
+          points: pointsNum,
+          senderId: OPENID,
+          receiverId: targetId,
+          read: false,
+          createTime: db.serverDate()
+        }
+      })
       return { success: true, id: res._id }
     }
 
@@ -57,6 +70,20 @@ exports.main = async (event, context) => {
 
       // 3. 创建任务
       const addRes = await transaction.collection('Tasks').add({ data: newTask })
+
+      // 4. 写入通知记录
+      await transaction.collection('Notices').add({
+        data: {
+          type: 'NEW_TASK',
+          title: '💢 收到惩罚任务',
+          message: title,
+          points: -pointsNum,
+          senderId: OPENID,
+          receiverId: targetId,
+          read: false,
+          createTime: db.serverDate()
+        }
+      })
       return { success: true, id: addRes._id }
     })
   } catch (e) {
