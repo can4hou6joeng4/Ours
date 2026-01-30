@@ -65,10 +65,38 @@
     .section-title {
       font-size: 24rpx;
       color: $text-sub;
-      margin: 16rpx 0 40rpx 8rpx; // 增加上下间距，增强呼吸感
+      margin: 16rpx 0 32rpx 8rpx;
       font-weight: bold;
       letter-spacing: 2rpx;
       display: block;
+    }
+
+    .filter-bar {
+      display: flex;
+      gap: 16rpx;
+      margin-bottom: 32rpx;
+      padding-left: 8rpx;
+
+      .filter-item {
+        padding: 12rpx 28rpx;
+        font-size: 24rpx;
+        color: $text-sub;
+        background: #F0F0F0;
+        border-radius: 30rpx; // 胶囊规范
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        font-weight: 500;
+
+        &.active {
+          background: $primary-color; // 香槟金
+          color: #fff;
+          box-shadow: 0 8rpx 16rpx rgba($primary-color, 0.2);
+          font-weight: bold;
+        }
+
+        &:active {
+          transform: scale(0.95);
+        }
+      }
     }
 
     .record-item {

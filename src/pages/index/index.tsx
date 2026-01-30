@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import Taro, { useDidShow } from '@tarojs/taro'
 import { View, Text, ScrollView } from '@tarojs/components'
-import { Notify, Tabs, Button, Input } from '@taroify/core'
+import { Notify, Tabs, Button, Input, Popup } from '@taroify/core'
 import dayjs from 'dayjs'
 import EmptyState from '../../components/EmptyState'
 import './index.scss'
@@ -10,16 +10,20 @@ export default function Index() {
   const [tasks, setTasks] = useState<any[]>([])
   const [points, setPoints] = useState(0)
   const [todayChange, setTodayChange] = useState(0)
-  const [currentUserId, setCurrentUserId] = useState('')
-  const [partnerId, setPartnerId] = useState('')
+  const [currentUserId, setCurrentUserId] = useState(Taro.getStorageSync('userId') || '')
+  const [partnerId, setPartnerId] = useState(Taro.getStorageSync('partnerId') || '')
   const [currentTab, setCurrentTab] = useState<'pending' | 'done' | 'all'>('pending')
   const [showAddModal, setShowAddModal] = useState(false)
   const [newTaskTitle, setNewTaskTitle] = useState('')
   const [newTaskPoints, setNewTaskPoints] = useState('')
   const [newTaskType, setNewTaskType] = useState<'reward' | 'penalty'>('reward')
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(!Taro.getStorageSync('partnerId'))
   const [showDetailModal, setShowDetailModal] = useState(false)
   const [selectedTask, setSelectedTask] = useState<any>(null)
+
+  // 自定义通知状态
+  const [notifyVisible, setNotifyVisible] = useState(false)
+  const [notifyData, setNotifyData] = useState<any>(null)
 
   const watcher = useRef<any>(null)
   const userWatcher = useRef<any>(null)
@@ -30,171 +34,139 @@ export default function Index() {
   const lastRecordIds = useRef<Set<string>>(new Set())
   const isFirstLoad = useRef(true)
 
-  // 实时任务指标计算
-  const taskStats = {
+  // 1. 实时任务指标计算 (性能优化：使用 useMemo)
+  const taskStats = useMemo(() => ({
     pending: tasks.filter(t => t.status === 'pending').length,
     todayAdded: tasks.filter(t => {
       if (!t.createTime) return false
-      const d = new Date(t.createTime)
-      const today = new Date()
-      return d.getFullYear() === today.getFullYear() &&
-             d.getMonth() === today.getMonth() &&
-             d.getDate() === today.getDate()
+      return dayjs(t.createTime).isSame(dayjs(), 'day')
     }).length,
     completed: tasks.filter(t => t.status === 'done').length
-  }
+  }), [tasks])
+
+  // 2. 综合过滤逻辑 (性能优化：使用 useMemo)
+  const filteredTasks = useMemo(() => {
+    return tasks.filter(t => {
+      const isMyTask = t.targetId === currentUserId || t.type === 'reward'
+      if (!isMyTask) return false
+
+      if (currentTab === 'pending') return t.status === 'pending'
+      if (currentTab === 'done') return t.status === 'done'
+      return t.status !== 'revoked'
+    })
+  }, [tasks, currentTab, currentUserId])
 
   useDidShow(() => {
-    initDataAndWatch()
+    // 启动监听 (优先使用缓存 ID 启动，消除等待感)
+    if (currentUserId) {
+      startWatchers(currentUserId, partnerId)
+    }
+    // 同步刷新用户信息
+    refreshUserInfo()
   })
 
-  // 页面卸载或隐藏时，关闭监听器防止内存泄漏
+  // 自动触发通知关闭
   useEffect(() => {
-    return () => {
-      if (watcher.current) {
-        watcher.current.close()
-      }
-      if (userWatcher.current) {
-        userWatcher.current.close()
-      }
+    if (notifyVisible) {
+      const timer = setTimeout(() => setNotifyVisible(false), 4000)
+      return () => clearTimeout(timer)
     }
-  }, [])
+  }, [notifyVisible])
 
-  const initDataAndWatch = async () => {
+  const refreshUserInfo = async () => {
     try {
-      const userRes = await Taro.cloud.callFunction({ name: 'initUser' })
-      const userData = userRes.result as any
+      const { result }: any = await Taro.cloud.callFunction({ name: 'initUser' })
+      if (result?.success) {
+        const myId = result.user?._id
+        const pId = result.user?.partnerId || ''
 
-      if (userData?.success) {
-        const myId = userData.user?._id
-        const pId = userData.user?.partnerId
-        setPoints(userData.user?.totalPoints || 0)
-        setTodayChange(userData.todayChange || 0)
-        setCurrentUserId(myId)
-        setPartnerId(pId || '')
+        setPoints(result.user?.totalPoints || 0)
+        setTodayChange(result.todayChange || 0)
 
-        const db = Taro.cloud.database()
-        const _ = db.command
-
-        // 1. 任务监听器：实时列表 + 动态提醒
-        if (watcher.current) watcher.current.close()
-        watcher.current = db.collection('Tasks')
-          .where(_.or([{ creatorId: myId }, { targetId: myId }]))
-          .watch({
-            onChange: (snapshot) => {
-              const currentIds = new Set(snapshot.docs.map(d => d._id))
-
-              // 提醒逻辑：非首次加载 且 是对方新增的任务
-              if (!isFirstLoad.current && pId) {
-                snapshot.docChanges.forEach(change => {
-                  if (change.dataType === 'add' && !lastTaskIds.current.has(change.doc._id)) {
-                    if (change.doc.creatorId === pId) {
-                      Notify.open({
-                        color: change.doc.type === 'reward' ? 'primary' : 'warning',
-                        message: `对方发布了新任务：${change.doc.title}`,
-                        duration: 3000
-                      })
-                    }
-                  }
-                })
-              }
-
-              lastTaskIds.current = currentIds
-              setTasks(snapshot.docs.sort((a, b) => (b.createTime as any) - (a.createTime as any)))
-              setLoading(false)
-            },
-            onError: (err) => console.error('任务监听失败', err)
-          })
-
-        // 2. 礼品监听器：实时感知商店动态
-        if (giftWatcher.current) giftWatcher.current.close()
-        giftWatcher.current = db.collection('Gifts')
-          .watch({
-            onChange: (snapshot) => {
-              const currentIds = new Set(snapshot.docs.map(d => d._id))
-
-              if (!isFirstLoad.current && pId) {
-                snapshot.docChanges.forEach(change => {
-                  if (change.dataType === 'add' && !lastGiftIds.current.has(change.doc._id)) {
-                    if (change.doc.creatorId === pId) {
-                      Notify.open({
-                        color: 'primary',
-                        message: `对方上架了新礼品：${change.doc.name}`,
-                        background: '#E5C59F', // 香槟金风格
-                        duration: 3000
-                      })
-                    }
-                  }
-                })
-              }
-              lastGiftIds.current = currentIds
-              isFirstLoad.current = false // 关键：在最后一次基础监听初始化后关闭首次加载判定
-            },
-            onError: (err) => console.error('礼品监听失败', err)
-          })
-
-        // 3. 用户监听器：实时同步积分
-        if (userWatcher.current) userWatcher.current.close()
-        userWatcher.current = db.collection('Users').doc(myId).watch({
-          onChange: (snapshot) => {
-            if (snapshot.docs.length > 0) setPoints(snapshot.docs[0].totalPoints || 0)
-          },
-          onError: (err) => console.error('用户信息监听失败', err)
-        })
-
-        // 4. 记录监听器：实时感知惊喜被拆开
-        if (recordWatcher.current) recordWatcher.current.close()
-        recordWatcher.current = db.collection('Records')
-          .where({ userId: pId, type: 'gift_use' })
-          .watch({
-            onChange: (snapshot) => {
-              if (!isFirstLoad.current && pId) {
-                snapshot.docChanges.forEach(change => {
-                  if (change.dataType === 'add' && !lastRecordIds.current.has(change.doc._id)) {
-                    Notify.open({
-                      color: 'success',
-                      message: `💌 收到兑换申请：${change.doc.reason.replace('[兑换请求] ', '')}`,
-                      background: '#E5C59F',
-                      duration: 4000
-                    })
-                  }
-                })
-              }
-              lastRecordIds.current = new Set(snapshot.docs.map(d => d._id))
-            },
-            onError: (err) => console.error('流水监听失败', err)
-          })
+        // 如果身份或关系发生变更，重新启动监听
+        if (myId !== currentUserId || pId !== partnerId) {
+          setCurrentUserId(myId)
+          setPartnerId(pId)
+          Taro.setStorageSync('userId', myId)
+          Taro.setStorageSync('partnerId', pId)
+          startWatchers(myId, pId)
+        }
       }
     } catch (e) {
-      console.error('初始化监听失败', e)
-    }
-  }
-
-  const fetchData = async () => {
-    try {
-      const [tasksRes, userRes] = await Promise.all([
-        Taro.cloud.callFunction({ name: 'getTasks' }),
-        Taro.cloud.callFunction({ name: 'initUser' })
-      ])
-
-      const tasksData = tasksRes.result as any
-      const userData = userRes.result as any
-
-      if (userData?.success) {
-        // 安全读取：使用 totalPoints 字段名并配合可选链
-        setPoints(userData.user?.totalPoints || 0)
-        setTodayChange(userData.todayChange || 0)
-        setCurrentUserId(userData.user?._id || '')
-        setPartnerId(userData.user?.partnerId || '')
-      }
-      if (tasksData?.success) {
-        setTasks(tasksData.tasks || [])
-      }
-    } catch (e) {
-      console.error('获取数据失败', e)
+      console.error('刷新信息失败', e)
     } finally {
       setLoading(false)
     }
+  }
+
+  const startWatchers = (myId: string, pId: string) => {
+    const db = Taro.cloud.database()
+    const _ = db.command
+
+    // 1. 任务监听器
+    if (watcher.current) watcher.current.close()
+    watcher.current = db.collection('Tasks')
+      .where(_.or([{ creatorId: myId }, { targetId: myId }]))
+      .watch({
+        onChange: (snapshot) => {
+          const currentIds = new Set(snapshot.docs.map(d => d._id))
+          if (!isFirstLoad.current && pId) {
+            snapshot.docChanges.forEach(change => {
+              if (change.dataType === 'add' && !lastTaskIds.current.has(change.doc._id)) {
+                if (change.doc.creatorId === pId) {
+                  showNotification({
+                    title: '新任务提醒',
+                    message: change.doc.title,
+                    type: change.doc.type
+                  })
+                }
+              }
+            })
+          }
+          lastTaskIds.current = currentIds
+          setTasks(snapshot.docs.sort((a, b) => (b.createTime as any) - (a.createTime as any)))
+        },
+        onError: (err) => console.error('任务监听失败', err)
+      })
+
+    // 2. 礼品监听器
+    if (giftWatcher.current) giftWatcher.current.close()
+    giftWatcher.current = db.collection('Gifts').watch({
+      onChange: (snapshot) => {
+        const currentIds = new Set(snapshot.docs.map(d => d._id))
+        if (!isFirstLoad.current && pId) {
+          snapshot.docChanges.forEach(change => {
+            if (change.dataType === 'add' && !lastGiftIds.current.has(change.doc._id)) {
+              if (change.doc.creatorId === pId) {
+                showNotification({
+                  title: '商店上新',
+                  message: change.doc.name,
+                  type: 'reward'
+                })
+              }
+            }
+          })
+        }
+        lastGiftIds.current = currentIds
+        isFirstLoad.current = false
+      },
+      onError: (err) => console.error('礼品监听失败', err)
+    })
+
+    // 3. 用户监听器
+    if (userWatcher.current) userWatcher.current.close()
+    userWatcher.current = db.collection('Users').doc(myId).watch({
+      onChange: (snapshot) => {
+        if (snapshot.docs.length > 0) setPoints(snapshot.docs[0].totalPoints || 0)
+      },
+      onError: (err) => console.error('用户信息监听失败', err)
+    })
+  }
+
+  const showNotification = (data: any) => {
+    setNotifyData(data)
+    setNotifyVisible(true)
+    Taro.vibrateShort() // 震动反馈，增强感知
   }
 
   const handleRevoke = async (taskId: string) => {
@@ -211,7 +183,6 @@ export default function Index() {
             })
             if ((result.result as any).success) {
               Taro.showToast({ title: '已撤销' })
-              // watch 会自动更新列表，无需 fetchData
             }
           } catch (e) {
             Taro.showToast({ title: '撤销失败', icon: 'none' })
@@ -225,8 +196,6 @@ export default function Index() {
 
   const handleAddTask = async () => {
     if (!newTaskTitle || !newTaskPoints) return
-
-    // 防御性校验：确保已获取到绑定伙伴的 ID
     if (!partnerId) {
       Taro.showToast({ title: '请先完成账号绑定', icon: 'none' })
       return
@@ -234,8 +203,6 @@ export default function Index() {
 
     Taro.showLoading({ title: '发布中' })
     try {
-      console.log('正在发布任务，参数:', { title: newTaskTitle, points: newTaskPoints, type: newTaskType, targetId: partnerId })
-
       const res = await Taro.cloud.callFunction({
         name: 'addTask',
         data: {
@@ -251,7 +218,6 @@ export default function Index() {
         setShowAddModal(false)
         setNewTaskTitle('')
         setNewTaskPoints('')
-        // watch 会自动更新
       }
     } catch (e) {
       Taro.showToast({ title: '发布失败', icon: 'none' })
@@ -270,7 +236,7 @@ export default function Index() {
       const data = res.result as any
       if (data.success) {
         Taro.showToast({ title: `获得 ${data.points} 积分！`, icon: 'success' })
-        setShowDetailModal(false) // 如果在详情页完成，关闭弹窗
+        setShowDetailModal(false)
       }
     } catch (e) {
       Taro.showToast({ title: '操作失败', icon: 'none' })
@@ -280,25 +246,40 @@ export default function Index() {
   }
 
   const handleShowDetail = (task: any) => {
-    console.log('触发详情弹窗:', task.title)
     setSelectedTask(task)
     setShowDetailModal(true)
   }
-
-  // 综合过滤逻辑：共有奖赏 + 私有惩罚
-  const filteredTasks = tasks.filter(t => {
-    const isMyTask = t.targetId === currentUserId || t.type === 'reward' // 奖赏共有，惩罚私有
-    if (!isMyTask) return false
-
-    if (currentTab === 'pending') return t.status === 'pending'
-    if (currentTab === 'done') return t.status === 'done'
-    return t.status !== 'revoked' // 默认不显示已撤销
-  })
 
   if (loading) return <View className='container'><View className='empty-state'><Text>数据加载中...</Text></View></View>
 
   return (
     <View className='container'>
+      {/* 极简悬浮通知 (理物风重塑) */}
+      <Notify
+        visible={notifyVisible}
+        className='minimal-float-notify'
+        onClick={() => setNotifyVisible(false)}
+      >
+        {notifyData && (
+          <View className='notify-content'>
+            <View className='notify-icon'>✨</View>
+            <View className='notify-body'>
+              <Text className='notify-title'>{notifyData.title}</Text>
+              <Text className='notify-desc'>{notifyData.message}</Text>
+            </View>
+            <Button
+              className='notify-btn'
+              onClick={(e) => {
+                e.stopPropagation()
+                setNotifyVisible(false)
+              }}
+            >
+              知道了
+            </Button>
+          </View>
+        )}
+      </Notify>
+
       {/* 任务看板 */}
       <View className='score-board task-overview-card'>
         <View className='stat-item'>

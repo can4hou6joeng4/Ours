@@ -10,6 +10,14 @@ export default function History() {
   const [loading, setLoading] = useState(false)
   const [showDetailModal, setShowDetailModal] = useState(false)
   const [selectedRecord, setSelectedRecord] = useState<any>(null)
+  const [filterActive, setFilterActive] = useState('all')
+
+  const filterTabs = [
+    { label: '全部', value: 'all' },
+    { label: '奖赏', value: 'reward' },
+    { label: '兑换', value: 'exchange' },
+    { label: '扣除', value: 'penalty' }
+  ]
 
   useDidShow(() => {
     // 性能优化：通过 Promise.all 并发请求，消除串行 RTT 等待开销
@@ -63,25 +71,57 @@ export default function History() {
 
       <ScrollView scrollY className='records-list'>
         <Text className='section-title'>TRANSACTION RECORDS / 往期明细</Text>
+
+        <View className='filter-bar'>
+          {filterTabs.map(tab => (
+            <View
+              key={tab.value}
+              className={`filter-item ${filterActive === tab.value ? 'active' : ''}`}
+              onClick={() => setFilterActive(tab.value)}
+            >
+              {tab.label}
+            </View>
+          ))}
+        </View>
+
         {records.length === 0 && !loading ? (
           <View className='empty-state'>
             <View className='empty-icon'>📄</View>
             <Text>暂无积分记录</Text>
           </View>
         ) : (
-          records.map(record => {
-            const amount = record.amount || record.points || 0
+          records
+            .filter(record => {
+              const amount = record.amount || record.points || 0
+              const rawTitle = record.reason || record.title || ''
 
-            // 判定是否为支出：明确标记为 outcome 或者数值小于 0
-            const isOutcome = record.type === 'outcome' || amount < 0
-            const isIncome = !isOutcome
+              // 统一判定逻辑
+              const isExchange = rawTitle.includes('兑换') || record.type === 'exchange' || record.type === 'gift'
+              const isOutcome = record.type === 'outcome' || amount < 0 || isExchange
+              const isIncome = !isOutcome
 
-            const displayAmount = Math.abs(amount)
-            const rawTitle = record.reason || record.title || ''
-            // 净化标题：移除 [惩罚]、[奖赏] 等前缀
-            const cleanTitle = rawTitle.replace(/^\[.*?\]\s*/, '')
+              if (filterActive === 'all') return true
+              if (filterActive === 'reward') return isIncome && !isExchange
+              if (filterActive === 'exchange') return isExchange
+              if (filterActive === 'penalty') return isOutcome && !isExchange
+              return true
+            })
+            .map(record => {
+              const amount = record.amount || record.points || 0
+              const rawTitle = record.reason || record.title || ''
 
-            return (
+              // 判定逻辑与 filter 保持高度一致
+              const isExchange = rawTitle.includes('兑换') || record.type === 'exchange' || record.type === 'gift'
+              const isOutcome = record.type === 'outcome' || amount < 0 || isExchange
+              const isIncome = !isOutcome
+
+              const displayAmount = Math.abs(amount)
+              // 净化标题：移除 [惩罚]、[奖赏] 等前缀，以及 "兑换：" 前缀
+              const cleanTitle = rawTitle
+                .replace(/^\[.*?\]\s*/, '')
+                .replace(/^兑换[：:]\s*/, '')
+
+              return (
               <View
                 key={record._id}
                 className='record-item'
@@ -116,8 +156,14 @@ export default function History() {
               <Text className='record-detail-title'>{selectedRecord.cleanTitle}</Text>
 
               <View className='task-type-sub'>
-                <Text className={`category-label ${selectedRecord.type === 'reward' || (selectedRecord.amount || 0) > 0 ? 'reward' : 'penalty'}`}>
-                  {selectedRecord.type === 'reward' || (selectedRecord.amount || 0) > 0 ? '奖赏' : '惩罚'}
+                <Text className={`category-label ${
+                  (selectedRecord.reason || selectedRecord.title || '').includes('兑换') || selectedRecord.type === 'exchange' || selectedRecord.type === 'gift'
+                    ? 'penalty'
+                    : (selectedRecord.type === 'reward' || (selectedRecord.amount || 0) > 0 ? 'reward' : 'penalty')
+                }`}>
+                  {(selectedRecord.reason || selectedRecord.title || '').includes('兑换') || selectedRecord.type === 'exchange' || selectedRecord.type === 'gift'
+                    ? '兑换'
+                    : (selectedRecord.type === 'reward' || (selectedRecord.amount || 0) > 0 ? '奖赏' : '惩罚')}
                 </Text>
               </View>
 
