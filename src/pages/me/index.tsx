@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import Taro, { useDidShow } from '@tarojs/taro'
-import { View, Text, Button, Image, Input } from '@tarojs/components'
+import { View, Text, Image } from '@tarojs/components'
+import { Button, Input } from '@taroify/core'
 import { getIconifyUrl } from '../../utils/assets'
 import './index.scss'
 
@@ -165,11 +166,9 @@ export default function Me() {
                 <View className='nickname-edit-area'>
                   <Text className='label'>修改昵称</Text>
                   <Input
-                    type='nickname'
-                    className='input'
+                    className='custom-input'
                     value={tempNickname}
-                    onInput={e => setTempNickname(e.detail.value)}
-                    onBlur={e => setTempNickname(e.detail.value)}
+                    onChange={e => setTempNickname(e.detail.value)}
                     placeholder='输入你的专属昵称'
                   />
                 </View>
@@ -180,6 +179,7 @@ export default function Me() {
               <Button
                 className='save-btn'
                 loading={saving}
+                block
                 onClick={handleSaveProfile}
               >
                 保存资料
