@@ -7,10 +7,18 @@ import './index.scss'
 export default function Me() {
   const [userInfo, setUserInfo] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [showEditSheet, setShowEditSheet] = useState(false)
+  const [tempNickname, setTempNickname] = useState('')
+  const [saving, setSaving] = useState(false)
 
   useDidShow(() => {
     fetchUserInfo()
   })
+
+  const handleOpenEdit = () => {
+    setTempNickname(userInfo?.nickName || '')
+    setShowEditSheet(true)
+  }
 
   const fetchUserInfo = async () => {
     setLoading(true)
@@ -71,37 +79,51 @@ export default function Me() {
     }
   }
 
+  const handleSaveProfile = async () => {
+    if (!tempNickname) {
+      Taro.showToast({ title: '昵称不能为空', icon: 'none' })
+      return
+    }
+
+    setSaving(true)
+    try {
+      await Taro.cloud.callFunction({
+        name: 'updateUserProfile',
+        data: { nickName: tempNickname }
+      })
+      setUserInfo({ ...userInfo, nickName: tempNickname })
+      setShowEditSheet(false)
+      Taro.showToast({ title: '资料已更新' })
+    } catch (err) {
+      Taro.showToast({ title: '保存失败', icon: 'none' })
+    } finally {
+      setSaving(false)
+    }
+  }
+
   if (loading) return <View className='container'><Text>加载中...</Text></View>
 
   return (
     <View className='container'>
       {/* 个人资料卡片 (黑金风格) */}
-      <View className='user-card'>
-        <Button
-          className='avatar-wrapper'
-          openType='chooseAvatar'
-          onChooseAvatar={onChooseAvatar}
-        >
-          <View className='avatar-placeholder'>
-            {userInfo?.avatarUrl ? (
-              <Image src={userInfo.avatarUrl} className='avatar-image' mode='aspectFill' />
-            ) : (
-              <Image src={getIconifyUrl('tabler:user-circle', '#D4B185')} className='avatar-icon' />
-            )}
-          </View>
-        </Button>
+      <View className='user-card' onClick={handleOpenEdit}>
+        <View className='avatar-placeholder'>
+          {userInfo?.avatarUrl ? (
+            <Image src={userInfo.avatarUrl} className='avatar-image' mode='aspectFill' />
+          ) : (
+            <Image src={getIconifyUrl('tabler:user-circle', '#D4B185')} className='avatar-icon' />
+          )}
+        </View>
         <View className='info'>
-          <Input
-            type='nickname'
-            className='nickname-input'
-            value={userInfo?.nickName || (userInfo?.partnerId ? 'PREMIUM USER' : 'GUEST')}
-            onBlur={onNicknameBlur}
-            onConfirm={onNicknameBlur}
-            placeholder='点击设置昵称'
-          />
+          <Text className='nickname-display'>
+            {userInfo?.nickName || (userInfo?.partnerId ? 'PREMIUM USER' : 'GUEST')}
+          </Text>
           <Text className={`points ${(userInfo?.totalPoints || 0) < 0 ? 'negative' : ''}`}>
             积分资产：{userInfo?.totalPoints || 0}
           </Text>
+        </View>
+        <View className='edit-indicator'>
+          <Image src={getIconifyUrl('tabler:edit-circle', '#D4B185')} className='edit-icon' />
         </View>
       </View>
 
@@ -112,7 +134,10 @@ export default function Me() {
           {!userInfo?.partnerId ? (
             <View className='binding-guide'>
               <Text className='guide-text'>绑定另一半，开启双人互动空间</Text>
-              <Button className='action-btn' onClick={() => Taro.navigateTo({ url: '/pages/binding/index' })}>
+              <Button className='action-btn' onClick={(e) => {
+                e.stopPropagation()
+                Taro.navigateTo({ url: '/pages/binding/index' })
+              }}>
                 去绑定
               </Button>
             </View>
@@ -126,6 +151,59 @@ export default function Me() {
           )}
         </View>
       </View>
+
+      {/* 个人资料编辑抽屉 (对齐礼品编辑风格) */}
+      {showEditSheet && (
+        <View className='edit-sheet-root' onClick={() => !saving && setShowEditSheet(false)}>
+          <View className='sheet-content' onClick={e => e.stopPropagation()}>
+            <View className='sheet-header'>
+              <Text className='title'>个人资料设置</Text>
+              <View className='close' onClick={() => !saving && setShowEditSheet(false)}>×</View>
+            </View>
+
+            <View className='sheet-body'>
+              <View className='profile-edit-box'>
+                <Button
+                  className='avatar-edit-btn'
+                  openType='chooseAvatar'
+                  onChooseAvatar={onChooseAvatar}
+                >
+                  <View className='avatar-preview'>
+                    {userInfo?.avatarUrl ? (
+                      <Image src={userInfo.avatarUrl} className='img' mode='aspectFill' />
+                    ) : (
+                      <Image src={getIconifyUrl('tabler:camera', '#D4B185')} className='icon' />
+                    )}
+                    <View className='upload-badge'>更换头像</View>
+                  </View>
+                </Button>
+
+                <View className='nickname-edit-area'>
+                  <Text className='label'>修改昵称</Text>
+                  <Input
+                    type='nickname'
+                    className='input'
+                    value={tempNickname}
+                    onInput={e => setTempNickname(e.detail.value)}
+                    onBlur={e => setTempNickname(e.detail.value)}
+                    placeholder='输入你的专属昵称'
+                  />
+                </View>
+              </View>
+            </View>
+
+            <View className='sheet-footer'>
+              <Button
+                className='save-btn'
+                loading={saving}
+                onClick={handleSaveProfile}
+              >
+                保存资料
+              </Button>
+            </View>
+          </View>
+        </View>
+      )}
     </View>
   )
 }
