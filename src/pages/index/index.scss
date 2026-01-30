@@ -141,41 +141,40 @@
     .taroify-button__content { padding: 0; } // 清除组件内部边距
   }
 
-  // Taroify Tabs 深度样式定制
-  .main-tabs-wrapper {
+  // 任务筛选标签栏 (重塑为自定义胶囊样式)
+  .filter-bar-wrapper {
     margin-bottom: 32rpx;
-    position: relative;
-    z-index: 10;
     padding: 0 8rpx;
-    height: 88rpx; // 强制锁定高度，防止塌陷
-    display: flex;
-    align-items: center;
 
-    .custom-main-tabs {
-      width: 100%;
-      background: transparent;
+    .filter-bar {
+      display: flex;
+      gap: 16rpx;
 
-      .taroify-tabs__wrap {
-        background: transparent;
-        height: 88rpx;
-      }
-      .taroify-tab {
-        font-size: 28rpx;
+      .filter-item {
+        padding: 12rpx 32rpx;
+        font-size: 24rpx;
         color: $text-sub;
+        background: #F0F0F0;
+        border-radius: 30rpx; // 胶囊规范
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         font-weight: 500;
-        &--active {
-          color: $primary-color;
+
+        &.active {
+          background: $primary-color; // 香槟金
+          color: #fff;
+          box-shadow: 0 8rpx 16rpx rgba($primary-color, 0.2);
           font-weight: bold;
         }
-      }
-      .taroify-tabs__line {
-        background: $primary-color;
-        width: 40rpx !important;
-        height: 6rpx;
-        border-radius: 3rpx;
+
+        &:active {
+          transform: scale(0.95);
+        }
       }
     }
   }
+
+  // 移除旧的 Tabs 样式
+  .main-tabs-wrapper { display: none; }
 
   @keyframes fab-float {
     0% { transform: translateY(0); }

@@ -21,6 +21,12 @@ export default function Index() {
   const [showDetailModal, setShowDetailModal] = useState(false)
   const [selectedTask, setSelectedTask] = useState<any>(null)
 
+  const filterTabs = [
+    { label: '待完成', value: 'pending' },
+    { label: '已完成', value: 'done' },
+    { label: '全部', value: 'all' }
+  ]
+
   // 自定义通知状态
   const [notifyVisible, setNotifyVisible] = useState(false)
   const [notifyData, setNotifyData] = useState<any>(null)
@@ -298,26 +304,22 @@ export default function Index() {
         </View>
       </View>
 
-      {/* 悬浮发布按钮 (v2) */}
-      <Button
-        className='fab-btn-v2'
-        onClick={() => setShowAddModal(true)}
-      >
-        +
-      </Button>
-
-      {/* Taroify Tabs 切换 (v2) */}
-      <View className='main-tabs-wrapper'>
-        <Tabs
-          active={currentTab}
-          className='custom-main-tabs'
-          onChange={(v: any) => setCurrentTab(v)}
-        >
-          <Tabs.Tab title='待完成' value='pending' />
-          <Tabs.Tab title='已完成' value='done' />
-          <Tabs.Tab title='全部' value='all' />
-        </Tabs>
+      {/* 任务筛选标签栏 (自定义胶囊样式，解决组件渲染问题) */}
+      <View className='filter-bar-wrapper'>
+        <View className='filter-bar'>
+          {filterTabs.map(tab => (
+            <View
+              key={tab.value}
+              className={`filter-item ${currentTab === tab.value ? 'active' : ''}`}
+              onClick={() => setCurrentTab(tab.value as any)}
+            >
+              {tab.label}
+            </View>
+          ))}
+        </View>
       </View>
+
+      {/* 悬浮发布按钮 (v2) */}
 
       {/* 任务列表 */}
       <ScrollView
