@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import Taro from '@tarojs/taro'
-import { View, Text, Button, Input } from '@tarojs/components'
+import { View, Text } from '@tarojs/components'
+import { Button, Input } from '@taroify/core'
 import './index.scss'
 
 export default function Binding() {
@@ -59,15 +60,17 @@ export default function Binding() {
         <View className='section'>
           <Text className='label'>输入对方邀请码</Text>
           <Input
-            className='input'
+            className='custom-input'
             placeholder='输入 6 位邀请码'
-            onInput={(e) => setInputCode(e.detail.value)}
+            value={inputCode}
+            onChange={(e) => setInputCode(e.detail.value)}
           />
         </View>
 
         <Button
           className='bind-btn'
           loading={isBinding}
+          block
           onClick={handleBind}
         >
           立即绑定
