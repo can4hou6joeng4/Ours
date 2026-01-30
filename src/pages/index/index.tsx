@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import Taro, { useDidShow } from '@tarojs/taro'
 import { View, Text, ScrollView, Button, Input } from '@tarojs/components'
+import dayjs from 'dayjs'
 import EmptyState from '../../components/EmptyState'
 import './index.scss'
 
@@ -363,7 +364,7 @@ export default function Index() {
                 <View className='info-item'>
                   <Text className='label'>发布时间</Text>
                   <Text className='value'>
-                    {selectedTask.createTime ? new Date(selectedTask.createTime).toLocaleString([], { year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '刚刚'}
+                    {selectedTask.createTime ? dayjs(selectedTask.createTime).format('YYYY/MM/DD hh:mm A') : '刚刚'}
                   </Text>
                 </View>
                 <View className='info-item'>

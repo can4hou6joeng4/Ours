@@ -115,6 +115,12 @@ export default function History() {
             <View className='card-body'>
               <Text className='record-detail-title'>{selectedRecord.cleanTitle}</Text>
 
+              <View className='task-type-sub'>
+                <Text className={`category-label ${selectedRecord.type === 'reward' || (selectedRecord.amount || 0) > 0 ? 'reward' : 'penalty'}`}>
+                  {selectedRecord.type === 'reward' || (selectedRecord.amount || 0) > 0 ? '奖赏' : '惩罚'}
+                </Text>
+              </View>
+
               <View className='info-list'>
                 <View className='info-item'>
                   <Text className='label'>积分变动</Text>
