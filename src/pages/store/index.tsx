@@ -208,8 +208,8 @@ export default function Store() {
         onLongPress={() => handleLongPress(item)}
       >
         <View className='card-top'>
-          {item.coverImg && item.coverImg.startsWith('cloud://') ? (
-            <Image src={item.coverImg} mode='widthFix' className='product-image' />
+          {item.coverImg && item.coverImg.trim().startsWith('cloud://') ? (
+            <Image src={item.coverImg.trim()} mode='widthFix' className='product-image' />
           ) : (
             <View className='icon-circle'>
               <Image src={getIconifyUrl('tabler:gift', '#D4B185')} className='iconify-inner' />

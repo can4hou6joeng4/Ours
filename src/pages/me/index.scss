@@ -339,12 +339,35 @@
           margin-bottom: 32rpx;
         }
 
-        .unbind-btn {
-          background: none;
-          color: #BBB;
-          font-size: 24rpx;
-          &::after { border: none; }
+        .unbind-wrapper {
+          @include flex-center;
+          width: 100%;
         }
+
+        .unbind-btn-v2 {
+          border: none !important;
+          font-size: 24rpx !important;
+          color: #BBB !important;
+          background: transparent !important;
+          &::after { border: none !important; }
+        }
+      }
+    }
+  }
+
+  // 修复个人资料编辑弹窗中的头像按钮方框
+  .profile-edit-box {
+    .avatar-edit-btn {
+      background: transparent !important;
+      border: none !important;
+      padding: 0 !important;
+      overflow: visible !important;
+      box-shadow: none !important;
+
+      &::after { border: none !important; }
+
+      .taroify-button__content {
+        padding: 0;
       }
     }
   }
