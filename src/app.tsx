@@ -1,5 +1,6 @@
 import { PropsWithChildren } from 'react'
 import Taro, { useLaunch } from '@tarojs/taro'
+import { Notify } from '@taroify/core'
 import './app.scss'
 
 function App({ children }: PropsWithChildren<any>) {
@@ -13,7 +14,12 @@ function App({ children }: PropsWithChildren<any>) {
     }
   })
 
-  return children
+  return (
+    <>
+      {children}
+      <Notify id="notify" />
+    </>
+  )
 }
 
 export default App
