@@ -9,6 +9,7 @@ export default function Me() {
   const [loading, setLoading] = useState(true)
   const [showEditSheet, setShowEditSheet] = useState(false)
   const [tempNickname, setTempNickname] = useState('')
+  const [tempAvatar, setTempAvatar] = useState('')
   const [saving, setSaving] = useState(false)
 
   useDidShow(() => {
@@ -17,6 +18,7 @@ export default function Me() {
 
   const handleOpenEdit = () => {
     setTempNickname(userInfo?.nickName || '')
+    setTempAvatar(userInfo?.avatarUrl || '')
     setShowEditSheet(true)
   }
 
@@ -169,8 +171,8 @@ export default function Me() {
                   onChooseAvatar={onChooseAvatar}
                 >
                   <View className='avatar-preview'>
-                    {userInfo?.avatarUrl ? (
-                      <Image src={userInfo.avatarUrl} className='img' mode='aspectFill' />
+                    {tempAvatar ? (
+                      <Image src={tempAvatar} className='img' mode='aspectFill' />
                     ) : (
                       <Image src={getIconifyUrl('tabler:camera', '#D4B185')} className='icon' />
                     )}
