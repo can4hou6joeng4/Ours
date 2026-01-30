@@ -141,37 +141,43 @@
     .taroify-button__content { padding: 0; } // 清除组件内部边距
   }
 
-  // 任务筛选标签栏 (重塑为自定义胶囊样式)
-  .filter-bar-wrapper {
-    margin-bottom: 32rpx;
-    padding: 0 8rpx;
+  // 任务筛选标签栏 (重塑为与背包一致的胶囊样式)
+  .tabs-header {
+    background: transparent;
+    display: flex;
+    justify-content: center;
+    padding: 32rpx 0;
+    margin-bottom: 8rpx;
 
-    .filter-bar {
+    .tabs-capsule {
+      background: #F0F0F0;
       display: flex;
-      gap: 16rpx;
+      padding: 8rpx;
+      border-radius: 40rpx;
+      width: 85%;
 
-      .filter-item {
-        padding: 12rpx 32rpx;
-        font-size: 24rpx;
-        color: $text-sub;
-        background: #F0F0F0;
-        border-radius: 30rpx; // 胶囊规范
+      .tab-item {
+        flex: 1;
+        text-align: center;
+        font-size: 26rpx;
+        color: #999;
+        padding: 16rpx 0;
+        border-radius: 32rpx;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         font-weight: 500;
 
         &.active {
-          background: $primary-color; // 香槟金
+          background: $secondary-color; // 碳黑
           color: #fff;
-          box-shadow: 0 8rpx 16rpx rgba($primary-color, 0.2);
           font-weight: bold;
-        }
-
-        &:active {
-          transform: scale(0.95);
+          box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.2);
         }
       }
     }
   }
+
+  // 移除旧的标签样式
+  .filter-bar-wrapper { display: none; }
 
   // 移除旧的 Tabs 样式
   .main-tabs-wrapper { display: none; }

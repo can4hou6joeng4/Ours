@@ -304,13 +304,13 @@ export default function Index() {
         </View>
       </View>
 
-      {/* 任务筛选标签栏 (自定义胶囊样式，解决组件渲染问题) */}
-      <View className='filter-bar-wrapper'>
-        <View className='filter-bar'>
+      {/* 任务筛选标签栏 (重塑为与背包一致的胶囊样式) */}
+      <View className='tabs-header'>
+        <View className='tabs-capsule'>
           {filterTabs.map(tab => (
             <View
               key={tab.value}
-              className={`filter-item ${currentTab === tab.value ? 'active' : ''}`}
+              className={`tab-item ${currentTab === tab.value ? 'active' : ''}`}
               onClick={() => setCurrentTab(tab.value as any)}
             >
               {tab.label}
