@@ -81,7 +81,7 @@
     flex-direction: row; // 横向排列
     justify-content: space-around;
     padding: 40rpx 0; // 收紧内边距，消除空洞感
-    margin-bottom: 40rpx;
+    margin-bottom: 24rpx; // 缩小间距，使布局更紧凑
     position: relative;
     border-radius: 24rpx;
 
@@ -146,7 +146,7 @@
     background: transparent;
     display: flex;
     justify-content: center;
-    padding: 32rpx 0;
+    padding: 16rpx 0 32rpx; // 收紧顶部间距，保持底部间距
     margin-bottom: 8rpx;
     width: 100%; // 占满容器，由 capsule 控制内部宽度
 
