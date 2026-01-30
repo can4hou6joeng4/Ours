@@ -14,7 +14,7 @@
     bottom: 0;
     left: 0;
     right: 0;
-    height: calc(130rpx + env(safe-area-inset-bottom));
+    height: calc(110rpx + env(safe-area-inset-bottom));
     background: $bg-color; // 关键：使用全局背景色遮挡滚动内容
     z-index: 998;
     // 使用渐变使遮挡更自然
@@ -23,7 +23,7 @@
 
   .tab-bar-wrapper {
     position: relative;
-    padding-bottom: calc(12rpx + env(safe-area-inset-bottom));
+    padding-bottom: env(safe-area-inset-bottom);
     display: flex;
     justify-content: center;
     z-index: 999;
