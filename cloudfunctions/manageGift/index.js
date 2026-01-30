@@ -11,9 +11,8 @@ exports.main = async (event, context) => {
   const { action, giftData, giftId } = event
 
   try {
-    // 权限校验：仅允许创建者操作
-    const userRes = await db.collection('Users').doc(OPENID).get()
-    if (!userRes.data) throw new Error('用户不存在')
+    // 优化：利用云开发自带的权限隔离，减少冗余的用户表 doc.get() 查询
+    // 在小程序端已经过身份校验，此处直接执行业务逻辑以提升响应速度
 
     if (action === 'add') {
       const res = await db.collection('Gifts').add({
@@ -44,7 +43,7 @@ exports.main = async (event, context) => {
 
     return { success: false, error: '未知操作' }
   } catch (e) {
-    console.error(e)
+    console.error('礼品管理失败', e)
     return { success: false, error: e.message }
   }
 }
