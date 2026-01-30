@@ -1,4 +1,4 @@
-import { View, Text, ScrollView } from '@tarojs/components'
+import { View, Text, ScrollView, Button } from '@tarojs/components'
 import Taro, { useDidShow } from '@tarojs/taro'
 import { useState } from 'react'
 import dayjs from 'dayjs'
@@ -86,9 +86,6 @@ export default function History() {
               >
                 <View className='left'>
                   <Text className='record-title'>{record.reason || record.title}</Text>
-                  <Text className='record-time'>
-                    {dayjs(record.createTime || record.timestamp).format('YYYY-MM-DD HH:mm')}
-                  </Text>
                 </View>
                 <View className={`right ${isIncome ? 'income' : 'outcome'}`}>
                   <Text className='points-val'>
@@ -125,7 +122,7 @@ export default function History() {
                 <View className='info-item'>
                   <Text className='label'>记录时间</Text>
                   <Text className='value'>
-                    {dayjs(selectedRecord.createTime || selectedRecord.timestamp).format('YYYY年MM月DD日 HH:mm:ss')}
+                    {dayjs(selectedRecord.createTime || selectedRecord.timestamp).format('YYYY/MM/DD HH:mm')}
                   </Text>
                 </View>
                 <View className='info-item'>
