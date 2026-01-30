@@ -12,8 +12,8 @@ export default function History() {
   const [selectedRecord, setSelectedRecord] = useState<any>(null)
 
   useDidShow(() => {
-    fetchRecords()
-    fetchUserInfo()
+    // 性能优化：通过 Promise.all 并发请求，消除串行 RTT 等待开销
+    Promise.all([fetchRecords(), fetchUserInfo()])
   })
 
   const handleShowDetail = (record: any) => {
