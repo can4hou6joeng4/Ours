@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import Taro, { useDidShow } from '@tarojs/taro'
 import { View, Text, ScrollView, Button, Input } from '@tarojs/components'
+import { Notify } from '@taroify/core'
 import dayjs from 'dayjs'
 import EmptyState from '../../components/EmptyState'
 import './index.scss'
@@ -19,8 +20,15 @@ export default function Index() {
   const [loading, setLoading] = useState(true)
   const [showDetailModal, setShowDetailModal] = useState(false)
   const [selectedTask, setSelectedTask] = useState<any>(null)
+
   const watcher = useRef<any>(null)
   const userWatcher = useRef<any>(null)
+  const giftWatcher = useRef<any>(null)
+  const recordWatcher = useRef<any>(null)
+  const lastTaskIds = useRef<Set<string>>(new Set())
+  const lastGiftIds = useRef<Set<string>>(new Set())
+  const lastRecordIds = useRef<Set<string>>(new Set())
+  const isFirstLoad = useRef(true)
 
   // 实时任务指标计算
   const taskStats = {
@@ -54,7 +62,6 @@ export default function Index() {
 
   const initDataAndWatch = async () => {
     try {
-      // 1. 获取用户信息，确定身份和绑定关系
       const userRes = await Taro.cloud.callFunction({ name: 'initUser' })
       const userData = userRes.result as any
 
@@ -66,45 +73,96 @@ export default function Index() {
         setCurrentUserId(myId)
         setPartnerId(pId || '')
 
-        // 2. 开启实时监听 (监听属于这两人的所有任务)
         const db = Taro.cloud.database()
         const _ = db.command
 
+        // 1. 任务监听器：实时列表 + 动态提醒
         if (watcher.current) watcher.current.close()
-
         watcher.current = db.collection('Tasks')
-          .where(_.or([
-            { creatorId: myId },
-            { targetId: myId }
-          ]))
+          .where(_.or([{ creatorId: myId }, { targetId: myId }]))
           .watch({
             onChange: (snapshot) => {
-              // 关键：监听到变化立即更新 UI，无需重新调用 fetchData
-              setTasks(snapshot.docs.sort((a, b) =>
-                (b.createTime as any) - (a.createTime as any)
-              ))
+              const currentIds = new Set(snapshot.docs.map(d => d._id))
+
+              // 提醒逻辑：非首次加载 且 是对方新增的任务
+              if (!isFirstLoad.current && pId) {
+                snapshot.docChanges.forEach(change => {
+                  if (change.dataType === 'add' && !lastTaskIds.current.has(change.doc._id)) {
+                    if (change.doc.creatorId === pId) {
+                      Notify.open({
+                        color: change.doc.type === 'reward' ? 'primary' : 'warning',
+                        message: `对方发布了新任务：${change.doc.title}`,
+                        duration: 3000
+                      })
+                    }
+                  }
+                })
+              }
+
+              lastTaskIds.current = currentIds
+              setTasks(snapshot.docs.sort((a, b) => (b.createTime as any) - (a.createTime as any)))
               setLoading(false)
             },
-            onError: (err) => {
-              console.error('监听失败', err)
-              fetchData() // 降级处理
-            }
+            onError: (err) => console.error('任务监听失败', err)
           })
 
-        // 3. 开启用户信息的实时监听 (为了实时更新积分)
-        if (userWatcher.current) userWatcher.current.close()
-        userWatcher.current = db.collection('Users')
-          .doc(myId)
+        // 2. 礼品监听器：实时感知商店动态
+        if (giftWatcher.current) giftWatcher.current.close()
+        giftWatcher.current = db.collection('Gifts')
           .watch({
             onChange: (snapshot) => {
-              if (snapshot.docs.length > 0) {
-                const updatedUser = snapshot.docs[0]
-                setPoints(updatedUser.totalPoints || 0)
+              const currentIds = new Set(snapshot.docs.map(d => d._id))
+
+              if (!isFirstLoad.current && pId) {
+                snapshot.docChanges.forEach(change => {
+                  if (change.dataType === 'add' && !lastGiftIds.current.has(change.doc._id)) {
+                    if (change.doc.creatorId === pId) {
+                      Notify.open({
+                        color: 'primary',
+                        message: `对方上架了新礼品：${change.doc.name}`,
+                        background: '#E5C59F', // 香槟金风格
+                        duration: 3000
+                      })
+                    }
+                  }
+                })
               }
+              lastGiftIds.current = currentIds
+              isFirstLoad.current = false // 关键：在最后一次基础监听初始化后关闭首次加载判定
             },
-            onError: (err) => {
-              console.error('用户信息监听失败', err)
-            }
+            onError: (err) => console.error('礼品监听失败', err)
+          })
+
+        // 3. 用户监听器：实时同步积分
+        if (userWatcher.current) userWatcher.current.close()
+        userWatcher.current = db.collection('Users').doc(myId).watch({
+          onChange: (snapshot) => {
+            if (snapshot.docs.length > 0) setPoints(snapshot.docs[0].totalPoints || 0)
+          },
+          onError: (err) => console.error('用户信息监听失败', err)
+        })
+
+        // 4. 记录监听器：实时感知惊喜被拆开
+        if (recordWatcher.current) recordWatcher.current.close()
+        recordWatcher.current = db.collection('Records')
+          .where({ userId: pId, type: 'gift_use' })
+          .watch({
+            onChange: (snapshot) => {
+              if (!isFirstLoad.current && pId) {
+                snapshot.docChanges.forEach(change => {
+                  if (change.dataType === 'add' && !lastRecordIds.current.has(change.doc._id)) {
+                    Notify.open({
+                      color: 'success',
+                      message: `🎉 惊喜已被拆开！对方使用了：${change.doc.reason.replace('[使用礼品] ', '')}`,
+                      background: '#E5C59F',
+                      duration: 4000
+                    })
+                  }
+                })
+              }
+              lastRecordIds.current = new Set(snapshot.docs.map(d => d._id))
+            },
+            onError: (err) => console.error('流水监听失败', err)
           })
       }
     } catch (e) {

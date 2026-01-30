@@ -36,6 +36,31 @@ exports.main = async (event, context) => {
       return { success: true }
     }
 
+    if (action === 'use') {
+      const { giftName } = event
+      // 使用事务确保：标记礼品已使用 + 记录交互流水
+      return await db.runTransaction(async transaction => {
+        await transaction.collection('Gifts').doc(giftId).update({
+          data: {
+            status: 'used',
+            useTime: db.serverDate()
+          }
+        })
+
+        await transaction.collection('Records').add({
+          data: {
+            userId: OPENID,
+            amount: 0,
+            reason: `[使用礼品] ${giftName}`,
+            type: 'gift_use',
+            giftId: giftId,
+            createTime: db.serverDate()
+          }
+        })
+        return { success: true }
+      })
+    }
+
     if (action === 'delete') {
       await db.collection('Gifts').doc(giftId).remove()
       return { success: true }

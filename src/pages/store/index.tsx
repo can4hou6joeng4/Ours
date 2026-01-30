@@ -1,6 +1,7 @@
 import { View, Text, ScrollView, Button, Image, Input } from '@tarojs/components'
 import Taro, { useDidShow, eventCenter } from '@tarojs/taro'
 import { useState, useEffect } from 'react'
+import { Dialog, Toast } from '@taroify/core'
 import DuxGrid from '../../components/DuxGrid'
 import DuxCard from '../../components/DuxCard'
 import EmptyState from '../../components/EmptyState'
