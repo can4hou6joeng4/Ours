@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import Taro, { useDidShow } from '@tarojs/taro'
-import { View, Text, ScrollView, Button, Input } from '@tarojs/components'
-import { Notify } from '@taroify/core'
+import { View, Text, ScrollView } from '@tarojs/components'
+import { Notify, Tabs, Button, Input } from '@taroify/core'
 import dayjs from 'dayjs'
 import EmptyState from '../../components/EmptyState'
 import './index.scss'
@@ -377,7 +377,7 @@ export default function Index() {
                 <View className='actions'>
                   {task.status === 'pending' && (
                     <Button
-                      className='done-btn'
+                      className='done-btn-v2'
                       onClick={(e) => {
                         e.stopPropagation()
                         handleDone(task._id)
@@ -436,10 +436,10 @@ export default function Index() {
 
             <View className='card-footer'>
               {selectedTask.status === 'pending' && (
-                <Button className='btn-primary' onClick={() => handleDone(selectedTask._id)}>确认完成</Button>
+                <Button className='btn-primary' block onClick={() => handleDone(selectedTask._id)}>确认完成</Button>
               )}
               {selectedTask.creatorId === currentUserId && (
-                <Button className='btn-secondary' onClick={() => {
+                <Button className='btn-secondary' block onClick={() => {
                   setShowDetailModal(false)
                   handleRevoke(selectedTask._id)
                 }}>撤销此任务</Button>
@@ -478,27 +478,27 @@ export default function Index() {
                 <View className='input-item'>
                   <Text className='label'>任务描述</Text>
                   <Input
-                    className='input'
+                    className='custom-input'
                     placeholder={newTaskType === 'reward' ? '例如：洗碗一次' : '例如：熬夜/乱花钱'}
                     value={newTaskTitle}
-                    onInput={(e) => setNewTaskTitle(e.detail.value)}
+                    onChange={(e) => setNewTaskTitle(e.detail.value)}
                   />
                 </View>
                 <View className='input-item'>
                   <Text className='label'>{newTaskType === 'reward' ? '奖励积分' : '扣除积分'}</Text>
                   <Input
-                    className='input'
+                    className='custom-input'
                     type='number'
                     placeholder='0'
                     value={newTaskPoints}
-                    onInput={(e) => setNewTaskPoints(e.detail.value)}
+                    onChange={(e) => setNewTaskPoints(e.detail.value)}
                   />
                 </View>
               </View>
             </View>
 
             <View className='sheet-footer'>
-              <Button className='confirm-btn' onClick={handleAddTask}>确认发布</Button>
+              <Button className='confirm-btn' block onClick={handleAddTask}>确认发布</Button>
             </View>
           </View>
         </View>
