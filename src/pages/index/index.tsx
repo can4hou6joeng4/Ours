@@ -153,7 +153,7 @@ export default function Index() {
                   if (change.dataType === 'add' && !lastRecordIds.current.has(change.doc._id)) {
                     Notify.open({
                       color: 'success',
-                      message: `🎉 惊喜已被拆开！对方使用了：${change.doc.reason.replace('[使用礼品] ', '')}`,
+                      message: `💌 收到兑换申请：${change.doc.reason.replace('[兑换请求] ', '')}`,
                       background: '#E5C59F',
                       duration: 4000
                     })

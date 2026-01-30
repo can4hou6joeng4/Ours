@@ -48,7 +48,7 @@ export default function Inventory() {
       })
 
       if (result.success) {
-        Taro.showToast({ title: '使用成功', icon: 'success' })
+        Taro.showToast({ title: '兑换申请已发出', icon: 'success' })
         setShowConfirm(false)
         fetchItems()
       } else {
@@ -81,13 +81,13 @@ export default function Inventory() {
             className={`tab-item ${currentTab === 'unused' ? 'active' : ''}`}
             onClick={() => setCurrentTab('unused')}
           >
-            待使用
+            待兑换
           </View>
           <View
             className={`tab-item ${currentTab === 'used' ? 'active' : ''}`}
             onClick={() => setCurrentTab('used')}
           >
-            已使用
+            已兑换
           </View>
         </View>
       </View>
@@ -111,12 +111,12 @@ export default function Inventory() {
                     <Text className='item-time'>
                       {currentTab === 'unused'
                         ? `${dayjs(item.createTime).format('YYYY.MM.DD HH:mm')} 获得`
-                        : `${dayjs(item.useTime).format('YYYY.MM.DD HH:mm')} 已使用`
+                        : `${dayjs(item.useTime).format('YYYY.MM.DD HH:mm')} 已兑换`
                       }
                     </Text>
                   </View>
                   {currentTab === 'unused' && (
-                    <View className='use-btn-pill' onClick={() => openUseConfirm(item)}>使用</View>
+                    <View className='use-btn-pill' onClick={() => openUseConfirm(item)}>去兑换</View>
                   )}
                 </View>
               ))}
@@ -127,14 +127,14 @@ export default function Inventory() {
 
       {/* 使用确认弹窗 */}
       <Dialog open={showConfirm} onClose={() => !using && setShowConfirm(false)}>
-        <Dialog.Header>确认使用</Dialog.Header>
+        <Dialog.Header>发起兑换</Dialog.Header>
         <Dialog.Content>
-          确定要现在使用“{selectedItem?.name}”吗？
+          确定要向对方发起“{selectedItem?.name}”的兑换申请吗？
           对方将立即收到通知。
         </Dialog.Content>
         <Dialog.Actions>
           <Button onClick={() => !using && setShowConfirm(false)}>取消</Button>
-          <Button loading={using} onClick={handleConfirmUse}>确定使用</Button>
+          <Button loading={using} onClick={handleConfirmUse}>确认兑换</Button>
         </Dialog.Actions>
       </Dialog>
     </View>

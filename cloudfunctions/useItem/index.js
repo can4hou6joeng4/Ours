@@ -32,7 +32,7 @@ exports.main = async (event, context) => {
           userId: OPENID,
           type: 'gift_use',
           amount: 0,
-          reason: `[使用礼品] ${itemRes.data.name}`,
+          reason: `[兑换请求] ${itemRes.data.name}`,
           giftId: itemId,
           createTime: db.serverDate()
         }
