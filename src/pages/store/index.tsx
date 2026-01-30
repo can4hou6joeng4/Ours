@@ -208,7 +208,7 @@ export default function Store() {
         onLongPress={() => handleLongPress(item)}
       >
         <View className='card-top'>
-          {item.coverImg ? (
+          {item.coverImg && item.coverImg.startsWith('cloud://') ? (
             <Image src={item.coverImg} mode='widthFix' className='product-image' />
           ) : (
             <View className='icon-circle'>

@@ -51,27 +51,31 @@
 
   // 悬浮操作按钮 (FAB v2 - 接入 Taroify Button)
   .fab-btn-v2 {
-    position: fixed;
-    right: 48rpx;
-    bottom: calc(200rpx + env(safe-area-inset-bottom));
-    width: 110rpx;
-    height: 110rpx;
+    position: fixed !important; // 强制覆盖组件自带定位
+    right: 48rpx !important;
+    bottom: calc(200rpx + env(safe-area-inset-bottom)) !important;
+    left: auto !important; // 确保不会被拉伸到左侧
+    top: auto !important;
+    width: 110rpx !important;
+    height: 110rpx !important;
     padding: 0;
     min-width: 110rpx;
-    background: linear-gradient(135deg, $primary-color, #E5C59F);
-    border-radius: 55rpx;
-    @include flex-center;
+    background: linear-gradient(135deg, $primary-color, #E5C59F) !important;
+    border-radius: 55rpx !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
     box-shadow:
       0 30rpx 60rpx rgba($primary-color, 0.35),
       0 10rpx 30rpx rgba(0, 0, 0, 0.1);
-    color: #fff;
-    font-size: 64rpx;
+    color: #fff !important;
+    font-size: 64rpx !important;
     z-index: 999;
     font-weight: 300;
-    border: 4rpx solid rgba(255, 255, 255, 0.5);
+    border: 4rpx solid rgba(255, 255, 255, 0.5) !important;
     animation: fab-float 3s ease-in-out infinite;
 
-    &::after { border: none; }
+    &::after { border: none !important; }
   }
 
   // Taroify Tabs 深度样式定制

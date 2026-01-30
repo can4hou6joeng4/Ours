@@ -2,7 +2,7 @@ import { View, Text, ScrollView, Image } from '@tarojs/components'
 import Taro, { useDidShow } from '@tarojs/taro'
 import { useState } from 'react'
 import dayjs from 'dayjs'
-import { Dialog } from '@taroify/core'
+import { Dialog, Button } from '@taroify/core'
 import { getIconifyUrl } from '../../utils/assets'
 import './index.scss'
 
