@@ -390,20 +390,56 @@ export default function Index() {
         </View>
       )}
 
-      {/* 发布弹窗 */}
+      {/* 发布任务底部抽屉 (重塑为高级侧滑交互) */}
       {showAddModal && (
-        <View className='modal-overlay'>
-          <View className='modal-content'>
-            <Text className='modal-title'>发布新任务</Text>
-            <View className='type-selector'>
-              <View className={`type-item ${newTaskType === 'reward' ? 'active reward' : ''}`} onClick={() => setNewTaskType('reward')}>奖赏</View>
-              <View className={`type-item ${newTaskType === 'penalty' ? 'active penalty' : ''}`} onClick={() => setNewTaskType('penalty')}>惩罚</View>
+        <View className='add-sheet-root' onClick={() => setShowAddModal(false)}>
+          <View className='sheet-content' onClick={e => e.stopPropagation()}>
+            <View className='sheet-header'>
+              <Text className='title'>发布新任务</Text>
+              <View className='close' onClick={() => setShowAddModal(false)}>×</View>
             </View>
-            <Input className='input' placeholder={newTaskType === 'reward' ? '任务描述 (例如：洗碗一次)' : '惩罚原因 (例如：熬夜/乱花钱)'} value={newTaskTitle} onInput={(e) => setNewTaskTitle(e.detail.value)} />
-            <Input className='input' type='number' placeholder={newTaskType === 'reward' ? '奖励积分' : '扣除积分'} value={newTaskPoints} onInput={(e) => setNewTaskPoints(e.detail.value)} />
-            <View className='btns'>
-              <Button className='cancel' onClick={() => setShowAddModal(false)}>取消</Button>
-              <Button className='confirm' onClick={handleAddTask}>确认发布</Button>
+
+            <View className='sheet-body'>
+              <View className='type-selector-v2'>
+                <View
+                  className={`type-item ${newTaskType === 'reward' ? 'active reward' : ''}`}
+                  onClick={() => setNewTaskType('reward')}
+                >
+                  奖赏
+                </View>
+                <View
+                  className={`type-item ${newTaskType === 'penalty' ? 'active penalty' : ''}`}
+                  onClick={() => setNewTaskType('penalty')}
+                >
+                  惩罚
+                </View>
+              </View>
+
+              <View className='form-group'>
+                <View className='input-item'>
+                  <Text className='label'>任务描述</Text>
+                  <Input
+                    className='input'
+                    placeholder={newTaskType === 'reward' ? '例如：洗碗一次' : '例如：熬夜/乱花钱'}
+                    value={newTaskTitle}
+                    onInput={(e) => setNewTaskTitle(e.detail.value)}
+                  />
+                </View>
+                <View className='input-item'>
+                  <Text className='label'>{newTaskType === 'reward' ? '奖励积分' : '扣除积分'}</Text>
+                  <Input
+                    className='input'
+                    type='number'
+                    placeholder='0'
+                    value={newTaskPoints}
+                    onInput={(e) => setNewTaskPoints(e.detail.value)}
+                  />
+                </View>
+              </View>
+            </View>
+
+            <View className='sheet-footer'>
+              <Button className='confirm-btn' onClick={handleAddTask}>确认发布</Button>
             </View>
           </View>
         </View>

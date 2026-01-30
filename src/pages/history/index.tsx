@@ -125,10 +125,6 @@ export default function History() {
                     {dayjs(selectedRecord.createTime || selectedRecord.timestamp).format('YYYY/MM/DD HH:mm')}
                   </Text>
                 </View>
-                <View className='info-item'>
-                  <Text className='label'>流水单号</Text>
-                  <Text className='value mono'>{selectedRecord._id}</Text>
-                </View>
               </View>
             </View>
 

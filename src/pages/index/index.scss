@@ -256,20 +256,14 @@
       position: relative;
 
       .card-header {
-        padding: 32rpx 40rpx;
-        background: #FAFAFA;
+        padding: 24rpx 40rpx 0; // 极大收紧，移除底部留白
+        background: transparent; // 移除背景色，使视觉更统一
         display: flex;
-        justify-content: space-between;
+        justify-content: flex-end; // 按钮靠右
         align-items: center;
 
         .category-label {
-          font-size: 22rpx;
-          font-weight: 800;
-          padding: 6rpx 20rpx;
-          border-radius: 30rpx;
-          letter-spacing: 2rpx;
-          &.reward { background: rgba($primary-color, 0.15); color: $primary-color; }
-          &.penalty { background: rgba(255, 77, 79, 0.1); color: #FF4D4F; }
+          display: none; // 标签移动到 Body 内
         }
 
         .close-btn {
@@ -281,7 +275,7 @@
       }
 
       .card-body {
-        padding: 40rpx 48rpx 60rpx;
+        padding: 0 48rpx 60rpx; // 顶部间距由 header 承担，此处设为 0
 
         .task-title {
           font-size: 40rpx;
@@ -358,6 +352,129 @@
         }
       }
     }
+  }
+
+  // 发布任务底部抽屉 (重塑为高级侧滑交互)
+  .add-sheet-root {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(10rpx);
+    z-index: 2100;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+
+    .sheet-content {
+      width: 100%;
+      background: #FFFFFF;
+      border-top-left-radius: 60rpx;
+      border-top-right-radius: 60rpx;
+      display: flex;
+      flex-direction: column;
+      animation: sheet-slide-up 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+      box-shadow: 0 -20rpx 60rpx rgba(0, 0, 0, 0.1);
+
+      .sheet-header {
+        padding: 48rpx 48rpx 20rpx;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        .title {
+          font-size: 36rpx;
+          font-weight: 900;
+          color: $text-main;
+          letter-spacing: 2rpx;
+        }
+        .close {
+          font-size: 50rpx;
+          color: #DDD;
+          padding: 10rpx;
+        }
+      }
+
+      .sheet-body {
+        padding: 20rpx 48rpx 40rpx;
+
+        .type-selector-v2 {
+          display: flex;
+          background: #F5F5F5;
+          padding: 10rpx;
+          border-radius: 30rpx;
+          margin-bottom: 40rpx;
+
+          .type-item {
+            flex: 1;
+            height: 80rpx;
+            @include flex-center;
+            font-size: 28rpx;
+            font-weight: bold;
+            color: #999;
+            border-radius: 24rpx;
+            transition: all 0.3s;
+
+            &.active {
+              background: #FFF;
+              box-shadow: 0 4rpx 12rpx rgba(0,0,0,0.05);
+              &.reward { color: $primary-color; }
+              &.penalty { color: #FF4D4F; }
+            }
+          }
+        }
+
+        .form-group {
+          display: flex;
+          flex-direction: column;
+          gap: 32rpx;
+        }
+
+        .input-item {
+          .label {
+            font-size: 22rpx;
+            color: #BBB;
+            font-weight: 800;
+            margin-bottom: 12rpx;
+            display: block;
+            text-transform: uppercase;
+          }
+          .input {
+            width: 100%;
+            height: 90rpx;
+            background: #FAFAFA;
+            border-radius: 24rpx;
+            padding: 0 32rpx;
+            box-sizing: border-box;
+            font-size: 30rpx;
+            color: $text-main;
+            font-weight: 600;
+          }
+        }
+      }
+
+      .sheet-footer {
+        padding: 20rpx 48rpx calc(150rpx + env(safe-area-inset-bottom));
+        .confirm-btn {
+          width: 100%;
+          height: 100rpx;
+          line-height: 100rpx;
+          background: linear-gradient(135deg, $primary-color, #E5C59F);
+          color: #fff;
+          border-radius: 50rpx;
+          font-size: 32rpx;
+          font-weight: bold;
+          box-shadow: 0 20rpx 40rpx rgba($primary-color, 0.2);
+          &::after { border: none; }
+        }
+      }
+    }
+  }
+
+  @keyframes sheet-slide-up {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
   }
 
   @keyframes modal-pop {
