@@ -208,8 +208,14 @@ export default function Store() {
         onLongPress={() => handleLongPress(item)}
       >
         <View className='card-top'>
-          {item.coverImg && item.coverImg.trim().startsWith('cloud://') ? (
-            <Image src={item.coverImg.trim()} mode='widthFix' className='product-image' />
+          {/* 极致加固：显式正则判定云路径，确保绝对不会被误判为本地路径 */}
+          {item.coverImg && /^cloud:\/\//.test(item.coverImg.trim()) ? (
+            <Image
+              src={item.coverImg.trim()}
+              mode='widthFix'
+              className='product-image'
+              onError={(e) => console.error('图片加载失败:', item.name, e)}
+            />
           ) : (
             <View className='icon-circle'>
               <Image src={getIconifyUrl('tabler:gift', '#D4B185')} className='iconify-inner' />
