@@ -34,11 +34,14 @@ export default function Index() {
   const watcher = useRef<any>(null)
   const userWatcher = useRef<any>(null)
   const giftWatcher = useRef<any>(null)
-  const recordWatcher = useRef<any>(null)
+  const noticeWatcher = useRef<any>(null) // 新增消息监听器
   const lastTaskIds = useRef<Set<string>>(new Set())
   const lastGiftIds = useRef<Set<string>>(new Set())
-  const lastRecordIds = useRef<Set<string>>(new Set())
   const isFirstLoad = useRef(true)
+
+  // 新增：仪式感消息状态
+  const [showNoticeModal, setShowNoticeModal] = useState(false)
+  const [currentNotice, setCurrentNotice] = useState<any>(null)
 
   // 1. 实时任务指标计算 (性能优化：使用 useMemo)
   const taskStats = useMemo(() => ({
@@ -167,6 +170,43 @@ export default function Index() {
       },
       onError: (err) => console.error('用户信息监听失败', err)
     })
+
+    // 4. 新增：仪式感通知监听器 (核心逻辑)
+    if (noticeWatcher.current) noticeWatcher.current.close()
+    noticeWatcher.current = db.collection('Notices')
+      .where({
+        receiverId: myId,
+        read: false
+      })
+      .watch({
+        onChange: (snapshot) => {
+          // 只处理新增的消息，避免重复弹出
+          const newNotices = snapshot.docChanges
+            .filter(change => change.dataType === 'add')
+            .map(change => change.doc)
+
+          if (newNotices.length > 0) {
+            const latest = newNotices[newNotices.length - 1]
+            setCurrentNotice(latest)
+            setShowNoticeModal(true)
+            Taro.vibrateShort() // 震动反馈
+          }
+        },
+        onError: (err) => console.error('通知监听失败', err)
+      })
+  }
+
+  // 关闭通知并标记为已读
+  const handleCloseNotice = async () => {
+    if (!currentNotice) return
+    setShowNoticeModal(false)
+    try {
+      await Taro.cloud.database().collection('Notices').doc(currentNotice._id).update({
+        data: { read: true }
+      })
+    } catch (e) {
+      console.error('标记已读失败', e)
+    }
   }
 
   const showNotification = (data: any) => {
@@ -260,7 +300,48 @@ export default function Index() {
 
   return (
     <View className='container'>
-      {/* 极简悬浮通知 (理物风重塑) */}
+      {/* 全场景仪式感弹窗 (名片式设计) */}
+      {showNoticeModal && currentNotice && (
+        <View className='modal-overlay notice-modal-root' onClick={handleCloseNotice}>
+          <View className='modal-card notice-card' onClick={e => e.stopPropagation()}>
+            <View className='card-header'>
+              <View className='notice-tag'>{currentNotice.type}</View>
+              <View className='close-btn' onClick={handleCloseNotice}>×</View>
+            </View>
+
+            <View className='card-body'>
+              <View className='notice-icon-box'>
+                {currentNotice.type === 'NEW_TASK' && <Text className='emoji'>✨</Text>}
+                {currentNotice.type === 'TASK_DONE' && <Text className='emoji'>🎉</Text>}
+                {currentNotice.type === 'NEW_GIFT' && <Text className='emoji'>🎁</Text>}
+                {currentNotice.type === 'GIFT_USED' && <Text className='emoji'>💝</Text>}
+              </View>
+
+              <Text className='notice-title'>{currentNotice.title}</Text>
+              <View className='notice-message-box'>
+                <Text className='notice-message'>{currentNotice.message}</Text>
+              </View>
+
+              {currentNotice.points !== 0 && (
+                <View className='notice-points'>
+                  <Text className='label'>积分变动</Text>
+                  <Text className={`value ${currentNotice.points > 0 ? 'plus' : 'minus'}`}>
+                    {currentNotice.points > 0 ? '+' : ''}{currentNotice.points}
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            <View className='card-footer'>
+              <Button className='btn-confirm' block onClick={handleCloseNotice}>
+                我已收到 ⟩
+              </Button>
+            </View>
+          </View>
+        </View>
+      )}
+
+      {/* 极简悬浮通知 (保留作为次级反馈，或可根据需求移除) */}
       <Notify
         visible={notifyVisible}
         className='minimal-float-notify'
