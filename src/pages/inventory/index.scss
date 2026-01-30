@@ -125,4 +125,40 @@
       }
     }
   }
+
+  // 适配 Taroify Dialog 样式
+  :global(.taroify-dialog) {
+    border-radius: 40rpx;
+    .taroify-dialog__header {
+      font-weight: 800;
+      padding-top: 48rpx;
+    }
+    .taroify-dialog__content {
+      padding: 40rpx 48rpx;
+      color: $text-sub;
+      font-size: 28rpx;
+      line-height: 1.6;
+      text-align: center;
+    }
+    .taroify-dialog__footer {
+      padding: 0 32rpx 32rpx;
+      gap: 20rpx;
+      .taroify-button {
+        flex: 1;
+        border-radius: 30rpx;
+        font-weight: bold;
+        height: 80rpx;
+        &--default {
+          background: #F5F5F5;
+          color: $text-sub;
+          border: none;
+        }
+        &--primary {
+          background: linear-gradient(135deg, $primary-color, #E5C59F);
+          color: #fff;
+          border: none;
+        }
+      }
+    }
+  }
 }

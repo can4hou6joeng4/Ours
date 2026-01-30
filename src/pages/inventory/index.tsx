@@ -2,6 +2,7 @@ import { View, Text, ScrollView, Image } from '@tarojs/components'
 import Taro, { useDidShow } from '@tarojs/taro'
 import { useState } from 'react'
 import dayjs from 'dayjs'
+import { Dialog } from '@taroify/core'
 import { getIconifyUrl } from '../../utils/assets'
 import './index.scss'
 
@@ -9,6 +10,9 @@ export default function Inventory() {
   const [items, setItems] = useState<any[]>([])
   const [currentTab, setCurrentTab] = useState<'unused' | 'used'>('unused')
   const [loading, setLoading] = useState(false)
+  const [showConfirm, setShowConfirm] = useState(false)
+  const [selectedItem, setSelectedItem] = useState<any>(null)
+  const [using, setUsing] = useState(false)
 
   useDidShow(() => {
     fetchItems()
@@ -28,23 +32,24 @@ export default function Inventory() {
     }
   }
 
-  const handleUse = async (item) => {
-    const confirm = await Taro.showModal({
-      title: '确认使用',
-      content: `确定要现在使用“${item.name}”吗？`
-    })
+  const openUseConfirm = (item) => {
+    setSelectedItem(item)
+    setShowConfirm(true)
+  }
 
-    if (!confirm.confirm) return
+  const handleConfirmUse = async () => {
+    if (!selectedItem) return
 
-    Taro.showLoading({ title: '核销中...' })
+    setUsing(true)
     try {
       const { result }: any = await Taro.cloud.callFunction({
         name: 'useItem',
-        data: { itemId: item._id }
+        data: { itemId: selectedItem._id }
       })
 
       if (result.success) {
         Taro.showToast({ title: '使用成功', icon: 'success' })
+        setShowConfirm(false)
         fetchItems()
       } else {
         Taro.showToast({ title: result.error || '操作失败', icon: 'none' })
@@ -52,7 +57,7 @@ export default function Inventory() {
     } catch (e) {
       Taro.showToast({ title: '网络错误', icon: 'none' })
     } finally {
-      Taro.hideLoading()
+      setUsing(false)
     }
   }
 
@@ -111,7 +116,7 @@ export default function Inventory() {
                     </Text>
                   </View>
                   {currentTab === 'unused' && (
-                    <View className='use-btn-pill' onClick={() => handleUse(item)}>使用</View>
+                    <View className='use-btn-pill' onClick={() => openUseConfirm(item)}>使用</View>
                   )}
                 </View>
               ))}
@@ -119,6 +124,19 @@ export default function Inventory() {
           )}
         </View>
       </ScrollView>
+
+      {/* 使用确认弹窗 */}
+      <Dialog open={showConfirm} onClose={() => !using && setShowConfirm(false)}>
+        <Dialog.Header>确认使用</Dialog.Header>
+        <Dialog.Content>
+          确定要现在使用“{selectedItem?.name}”吗？
+          对方将立即收到通知。
+        </Dialog.Content>
+        <Dialog.Actions>
+          <Button onClick={() => !using && setShowConfirm(false)}>取消</Button>
+          <Button loading={using} onClick={handleConfirmUse}>确定使用</Button>
+        </Dialog.Actions>
+      </Dialog>
     </View>
   )
 }
