@@ -117,7 +117,7 @@ export default function History() {
 
               <View className='task-type-sub'>
                 <Text className={`category-label ${selectedRecord.type === 'reward' || (selectedRecord.amount || 0) > 0 ? 'reward' : 'penalty'}`}>
-                  {selectedRecord.type === 'reward' || (selectedRecord.amount || 0) > 0 ? '奖赏任务' : '惩罚任务'}
+                  {selectedRecord.type === 'reward' || (selectedRecord.amount || 0) > 0 ? '奖赏' : '惩罚'}
                 </Text>
               </View>
 
