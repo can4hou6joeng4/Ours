@@ -387,6 +387,14 @@ export default function Index() {
         )}
       </ScrollView>
 
+      {/* 悬浮发布按钮 (v2) - 移动至末尾确保层级 */}
+      <Button
+        className='fab-btn-v2'
+        onClick={() => setShowAddModal(true)}
+      >
+        +
+      </Button>
+
       {/* 任务详情弹窗 (圆角居中/点击外部关闭) */}
       {showDetailModal && selectedTask && (
         <View
