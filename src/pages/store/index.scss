@@ -249,4 +249,107 @@
       }
     }
   }
+
+  // 礼品管理弹窗 (对齐任务详情页风格：圆角居中/毛玻璃)
+  .masonry-manage-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(20rpx);
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 60rpx;
+    box-sizing: border-box;
+
+    .manage-card {
+      width: 100%;
+      background: #FFFFFF;
+      border-radius: 48rpx;
+      overflow: hidden;
+      box-shadow: 0 40rpx 100rpx rgba(0, 0, 0, 0.4);
+      animation: modal-pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      position: relative;
+
+      .card-header {
+        padding: 40rpx 48rpx 20rpx;
+        .manage-title {
+          font-size: 32rpx;
+          font-weight: bold;
+          color: $text-main;
+          display: block;
+        }
+        .gift-name-sub {
+          font-size: 24rpx;
+          color: #999;
+          margin-top: 8rpx;
+          display: block;
+        }
+      }
+
+      .card-body {
+        padding: 20rpx 48rpx 60rpx;
+        display: flex;
+        flex-direction: column;
+        gap: 24rpx;
+
+        .manage-item {
+          width: 100%;
+          height: 110rpx;
+          border-radius: 30rpx;
+          display: flex;
+          align-items: center;
+          padding: 0 40rpx;
+          box-sizing: border-box;
+          transition: all 0.2s;
+
+          &.edit {
+            background: rgba($primary-color, 0.08);
+            border: 1rpx solid rgba($primary-color, 0.1);
+            .item-text { color: $primary-color; font-weight: 600; }
+          }
+
+          &.delete {
+            background: rgba(255, 77, 79, 0.05);
+            border: 1rpx solid rgba(255, 77, 79, 0.1);
+            .item-text { color: #FF4D4F; font-weight: 600; }
+          }
+
+          &:active {
+            transform: scale(0.98);
+            opacity: 0.8;
+          }
+
+          .item-text {
+            font-size: 28rpx;
+          }
+        }
+      }
+
+      .card-footer {
+        padding: 0 48rpx 48rpx;
+        .manage-cancel {
+          width: 100%;
+          height: 90rpx;
+          background: #F5F5F5;
+          border-radius: 45rpx;
+          @include flex-center;
+          .cancel-text {
+            font-size: 26rpx;
+            color: #999;
+            font-weight: 500;
+          }
+        }
+      }
+    }
+  }
+
+  @keyframes modal-pop {
+    0% { transform: scale(0.9); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
 }

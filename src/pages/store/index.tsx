@@ -207,18 +207,28 @@ export default function Store() {
         </View>
       </ScrollView>
 
-      {/* 礼品管理毛玻璃菜单 */}
+      {/* 礼品管理毛玻璃菜单 (已重塑为名片式风格) */}
       {showManageMenu && (
-        <View className='modal-overlay masonry-manage-modal' onClick={() => setShowManageMenu(false)}>
+        <View className='masonry-manage-modal' onClick={() => setShowManageMenu(false)}>
           <View className='manage-card' onClick={e => e.stopPropagation()}>
-            <View className='manage-item edit' onClick={() => handleAction('edit')}>
-              <Text className='item-text'>编辑此礼品</Text>
+            <View className='card-header'>
+              <Text className='manage-title'>礼品管理</Text>
+              <Text className='gift-name-sub'>{selectedGift?.name}</Text>
             </View>
-            <View className='manage-item delete' onClick={() => handleAction('delete')}>
-              <Text className='item-text'>删除此礼品</Text>
+
+            <View className='card-body'>
+              <View className='manage-item edit' onClick={() => handleAction('edit')}>
+                <Text className='item-text'>编辑礼品信息</Text>
+              </View>
+              <View className='manage-item delete' onClick={() => handleAction('delete')}>
+                <Text className='item-text'>从货架删除</Text>
+              </View>
             </View>
-            <View className='manage-cancel' onClick={() => setShowManageMenu(false)}>
-              <Text className='cancel-text'>取消</Text>
+
+            <View className='card-footer'>
+              <View className='manage-cancel' onClick={() => setShowManageMenu(false)}>
+                <Text className='cancel-text'>取消</Text>
+              </View>
             </View>
           </View>
         </View>
