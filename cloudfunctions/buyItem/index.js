@@ -38,6 +38,7 @@ exports.main = async (event, context) => {
         data: {
           userId: OPENID,
           name: item.name,
+          image: item.image || item.cover || '', // 同步存入图片字段
           type: item.type || 'unknown',
           status: 'unused', // unused: 待使用, used: 已使用
           createTime: db.serverDate()
