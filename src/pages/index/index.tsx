@@ -43,6 +43,7 @@ export default function Index() {
   // 新增：仪式感消息状态
   const [showNoticeModal, setShowNoticeModal] = useState(false)
   const [currentNotice, setCurrentNotice] = useState<any>(null)
+  const [isNoticeClosing, setIsNoticeClosing] = useState(false) // 新增：退出动画锁
 
   // 1. 实时任务指标计算 (性能优化：使用 useMemo)
   const taskStats = useMemo(() => ({
@@ -203,8 +204,19 @@ export default function Index() {
 
   // 关闭通知并标记为已读
   const handleCloseNotice = async () => {
-    if (!currentNotice) return
-    setShowNoticeModal(false)
+    if (!currentNotice || isNoticeClosing) return
+
+    // 1. 触发退出动效
+    setIsNoticeClosing(true)
+    Taro.vibrateShort() // 轻微震动，提示“已阅”
+
+    // 2. 延迟执行状态清理，等待动画结束 (400ms 与 SCSS transition 对齐)
+    setTimeout(() => {
+      setShowNoticeModal(false)
+      setIsNoticeClosing(false)
+    }, 400)
+
+    // 3. 异步更新数据库 (不阻塞 UI)
     try {
       await Taro.cloud.database().collection('Notices').doc(currentNotice._id).update({
         data: { read: true }
@@ -485,7 +497,7 @@ export default function Index() {
       {/* 全场景仪式感弹窗 (名片式设计) - 移至末尾确保物理最高层级 */}
       {showNoticeModal && currentNotice && (
         <View className='notice-modal-root' onClick={handleCloseNotice}>
-          <View className='notice-card' onClick={e => e.stopPropagation()}>
+          <View className={`notice-card ${isNoticeClosing ? 'closing' : ''}`} onClick={e => e.stopPropagation()}>
             <View className='card-header'>
               <View className='notice-tag'>{currentNotice.type}</View>
               <View className='close-btn' onClick={handleCloseNotice}>×</View>
