@@ -13,8 +13,8 @@ exports.main = async (event, context) => {
 
   try {
     // 性能优化：并行获取发布者资料
-    const userRes = await db.collection('Users').doc(OPENID).get()
-    const { partnerId } = userRes.data
+    const userRes = await db.collection('Users').doc(OPENID).get().catch(() => ({ data: {} }))
+    const { partnerId } = userRes.data || {}
 
     if (!partnerId) return { success: false, message: '请先绑定伙伴' }
 

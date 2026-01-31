@@ -20,6 +20,7 @@ export default function Index() {
   const [loading, setLoading] = useState(!Taro.getStorageSync('partnerId'))
   const [showDetailModal, setShowDetailModal] = useState(false)
   const [selectedTask, setSelectedTask] = useState<any>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false) // 新增：提交锁
 
   const filterTabs = [
     { label: '待完成', value: 'pending' },
@@ -185,13 +186,17 @@ export default function Index() {
             .filter(change => change.dataType === 'add')
             .map(change => change.doc)
 
-          if (newNotices.length > 0) {
-            const latest = newNotices[newNotices.length - 1]
-            setCurrentNotice(latest)
-            setShowNoticeModal(true)
-            Taro.vibrateShort() // 震动反馈
-          }
-        },
+            if (newNotices.length > 0) {
+              const latest = newNotices[newNotices.length - 1]
+              // 额外校验：确保 receiverId 匹配当前用户且类型匹配
+              if (latest.receiverId === myId) {
+                console.log('收到符合条件的通知:', latest)
+                setCurrentNotice(latest)
+                setShowNoticeModal(true)
+                Taro.vibrateShort()
+              }
+            }
+          },
         onError: (err) => console.error('通知监听失败', err)
       })
   }
@@ -241,12 +246,13 @@ export default function Index() {
   }
 
   const handleAddTask = async () => {
-    if (!newTaskTitle || !newTaskPoints) return
+    if (isSubmitting || !newTaskTitle || !newTaskPoints) return
     if (!partnerId) {
       Taro.showToast({ title: '请先完成账号绑定', icon: 'none' })
       return
     }
 
+    setIsSubmitting(true)
     Taro.showLoading({ title: '发布中' })
     try {
       const res = await Taro.cloud.callFunction({
@@ -264,10 +270,13 @@ export default function Index() {
         setShowAddModal(false)
         setNewTaskTitle('')
         setNewTaskPoints('')
+      } else {
+        Taro.showToast({ title: data.message || '发布失败', icon: 'none' })
       }
     } catch (e) {
-      Taro.showToast({ title: '发布失败', icon: 'none' })
+      Taro.showToast({ title: '网络繁忙，请重试', icon: 'none' })
     } finally {
+      setIsSubmitting(false)
       Taro.hideLoading()
     }
   }
@@ -296,19 +305,17 @@ export default function Index() {
     setShowDetailModal(true)
   }
 
-  if (loading) return <View className='container'><View className='empty-state'><Text>数据加载中...</Text></View></View>
-
-  return (
+  if (loading) return (
     <View className='container'>
-      {/* 全场景仪式感弹窗 (名片式设计) */}
+      <View className='empty-state'><Text>数据加载中...</Text></View>
+      {/* 即使在加载中，如果收到仪式感通知也允许弹出，增强即时感 */}
       {showNoticeModal && currentNotice && (
-        <View className='modal-overlay notice-modal-root' onClick={handleCloseNotice}>
-          <View className='modal-card notice-card' onClick={e => e.stopPropagation()}>
+        <View className='notice-modal-root' onClick={handleCloseNotice}>
+          <View className='notice-card' onClick={e => e.stopPropagation()}>
             <View className='card-header'>
               <View className='notice-tag'>{currentNotice.type}</View>
               <View className='close-btn' onClick={handleCloseNotice}>×</View>
             </View>
-
             <View className='card-body'>
               <View className='notice-icon-box'>
                 {currentNotice.type === 'NEW_TASK' && <Text className='emoji'>✨</Text>}
@@ -316,12 +323,10 @@ export default function Index() {
                 {currentNotice.type === 'NEW_GIFT' && <Text className='emoji'>🎁</Text>}
                 {currentNotice.type === 'GIFT_USED' && <Text className='emoji'>💝</Text>}
               </View>
-
               <Text className='notice-title'>{currentNotice.title}</Text>
               <View className='notice-message-box'>
                 <Text className='notice-message'>{currentNotice.message}</Text>
               </View>
-
               {currentNotice.points !== 0 && (
                 <View className='notice-points'>
                   <Text className='label'>积分变动</Text>
@@ -331,17 +336,18 @@ export default function Index() {
                 </View>
               )}
             </View>
-
             <View className='card-footer'>
-              <Button className='btn-confirm' block onClick={handleCloseNotice}>
-                我已收到 ⟩
-              </Button>
+              <Button className='btn-confirm' block onClick={handleCloseNotice}>我已收到 ⟩</Button>
             </View>
           </View>
         </View>
       )}
+    </View>
+  )
 
-      {/* 极简悬浮通知 (保留作为次级反馈，或可根据需求移除) */}
+  return (
+    <View className='container'>
+      {/* 极简悬浮通知 (保留作为次级反馈) */}
       <Notify
         visible={notifyVisible}
         className='minimal-float-notify'
@@ -475,6 +481,47 @@ export default function Index() {
       >
         +
       </Button>
+
+      {/* 全场景仪式感弹窗 (名片式设计) - 移至末尾确保物理最高层级 */}
+      {showNoticeModal && currentNotice && (
+        <View className='notice-modal-root' onClick={handleCloseNotice}>
+          <View className='notice-card' onClick={e => e.stopPropagation()}>
+            <View className='card-header'>
+              <View className='notice-tag'>{currentNotice.type}</View>
+              <View className='close-btn' onClick={handleCloseNotice}>×</View>
+            </View>
+
+            <View className='card-body'>
+              <View className='notice-icon-box'>
+                {currentNotice.type === 'NEW_TASK' && <Text className='emoji'>✨</Text>}
+                {currentNotice.type === 'TASK_DONE' && <Text className='emoji'>🎉</Text>}
+                {currentNotice.type === 'NEW_GIFT' && <Text className='emoji'>🎁</Text>}
+                {currentNotice.type === 'GIFT_USED' && <Text className='emoji'>💝</Text>}
+              </View>
+
+              <Text className='notice-title'>{currentNotice.title}</Text>
+              <View className='notice-message-box'>
+                <Text className='notice-message'>{currentNotice.message}</Text>
+              </View>
+
+              {currentNotice.points !== 0 && (
+                <View className='notice-points'>
+                  <Text className='label'>积分变动</Text>
+                  <Text className={`value ${currentNotice.points > 0 ? 'plus' : 'minus'}`}>
+                    {currentNotice.points > 0 ? '+' : ''}{currentNotice.points}
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            <View className='card-footer'>
+              <Button className='btn-confirm' block onClick={handleCloseNotice}>
+                我已收到 ⟩
+              </Button>
+            </View>
+          </View>
+        </View>
+      )}
 
       {/* 任务详情弹窗 (圆角居中/点击外部关闭) */}
       {showDetailModal && selectedTask && (
