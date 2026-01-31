@@ -19,7 +19,7 @@ exports.main = async (event, context) => {
     if (!partnerId) return { success: false, message: '请先绑定伙伴' }
 
     const targetId = customTargetId || (type === 'reward' ? OPENID : partnerId)
-    const pointsNum = Number(points)
+    const pointsNum = Math.abs(parseInt(points)) || 0 // 确保为正整数
 
     const newTask = {
       title,
@@ -31,63 +31,47 @@ exports.main = async (event, context) => {
       createTime: db.serverDate()
     }
 
-    // 性能分流：如果是奖赏任务，无需昂贵的事务处理
-    if (type === 'reward') {
-      const res = await db.collection('Tasks').add({ data: newTask })
-      // 写入通知记录
-      await db.collection('Notices').add({
-        data: {
-          type: 'NEW_TASK',
-          title: '✨ 收到新任务',
-          message: title,
-          points: pointsNum,
-          senderId: OPENID,
-          receiverId: targetId,
-          read: false,
-          createTime: db.serverDate()
-        }
-      })
-      return { success: true, id: res._id }
-    }
-
-    // 如果是惩罚任务，使用事务处理积分扣除与流水记录
+    // 全量使用事务处理，确保任务与通知的原子性
     return await db.runTransaction(async transaction => {
-      // 1. 原子更新积分 (inc 命令能防止并发写冲突，且比手动计算更快)
-      await transaction.collection('Users').doc(targetId).update({
-        data: { totalPoints: _.inc(-pointsNum) }
-      })
+      // 1. 如果是惩罚任务，原子扣除积分并记录流水
+      if (type === 'penalty') {
+        await transaction.collection('Users').doc(targetId).update({
+          data: { totalPoints: _.inc(-pointsNum) }
+        })
 
-      // 2. 记录流水
-      await transaction.collection('Records').add({
-        data: {
-          userId: targetId,
-          amount: -pointsNum,
-          reason: `[惩罚] ${title}`,
-          type: 'penalty',
-          createTime: db.serverDate()
-        }
-      })
+        await transaction.collection('Records').add({
+          data: {
+            userId: targetId,
+            amount: -pointsNum,
+            reason: `[惩罚] ${title}`,
+            type: 'penalty',
+            createTime: db.serverDate()
+          }
+        })
+      }
 
-      // 3. 创建任务
+      // 2. 创建任务记录
       const addRes = await transaction.collection('Tasks').add({ data: newTask })
 
-      // 4. 写入通知记录
+      // 3. 写入通知记录 (确保 Notice 集合已创建)
       await transaction.collection('Notices').add({
         data: {
           type: 'NEW_TASK',
-          title: '💢 收到惩罚任务',
+          title: type === 'reward' ? '✨ 收到新任务' : '💢 收到惩罚任务',
           message: title,
-          points: -pointsNum,
+          points: type === 'reward' ? pointsNum : -pointsNum,
           senderId: OPENID,
           receiverId: targetId,
           read: false,
           createTime: db.serverDate()
         }
       })
+
       return { success: true, id: addRes._id }
     })
   } catch (e) {
     console.error('发布任务失败', e)
-    return { success: false, error: e.message }
+    // 统一返回 message 字段，方便前端展示
+    return { success: false, message: e.message || '系统繁忙，请稍后再试' }
   }
 }
