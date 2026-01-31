@@ -68,12 +68,12 @@ export default function Index() {
   }, [tasks, currentTab, currentUserId])
 
   useDidShow(() => {
-    // 启动监听 (优先使用缓存 ID 启动，消除等待感)
-    if (currentUserId) {
-      startWatchers(currentUserId, partnerId)
-    }
-    // 同步刷新用户信息
-    refreshUserInfo()
+    // 优先刷新用户信息，确保登录态正常后再启动监听
+    refreshUserInfo().then((res: any) => {
+      if (res?.success && res?.user?._id) {
+        startWatchers(res.user._id, res.user.partnerId || '')
+      }
+    })
   })
 
   // 自动触发通知关闭
@@ -94,17 +94,15 @@ export default function Index() {
         setPoints(result.user?.totalPoints || 0)
         setTodayChange(result.todayChange || 0)
 
-        // 如果身份或关系发生变更，重新启动监听
-        if (myId !== currentUserId || pId !== partnerId) {
-          setCurrentUserId(myId)
-          setPartnerId(pId)
-          Taro.setStorageSync('userId', myId)
-          Taro.setStorageSync('partnerId', pId)
-          startWatchers(myId, pId)
-        }
+        setCurrentUserId(myId)
+        setPartnerId(pId)
+        Taro.setStorageSync('userId', myId)
+        Taro.setStorageSync('partnerId', pId)
+        return result
       }
     } catch (e) {
       console.error('刷新信息失败', e)
+      return { success: false }
     } finally {
       setLoading(false)
     }
@@ -288,8 +286,11 @@ export default function Index() {
     } catch (e) {
       Taro.showToast({ title: '网络繁忙，请重试', icon: 'none' })
     } finally {
-      setIsSubmitting(false)
       Taro.hideLoading()
+      // 延迟一帧执行 Toast，防止被 hideLoading 误伤
+      setTimeout(() => {
+        setIsSubmitting(false)
+      }, 100)
     }
   }
 
