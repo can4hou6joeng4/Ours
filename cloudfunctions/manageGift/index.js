@@ -15,32 +15,38 @@ exports.main = async (event, context) => {
     // 在小程序端已经过身份校验，此处直接执行业务逻辑以提升响应速度
 
     if (action === 'add') {
-      const res = await db.collection('Gifts').add({
-        data: {
-          ...giftData,
-          creatorId: OPENID,
-          createTime: db.serverDate(),
-          updateTime: db.serverDate()
-        }
-      })
+      return await db.runTransaction(async transaction => {
+        const userRes = await transaction.collection('Users').doc(OPENID).get()
+        const { partnerId } = userRes.data || {}
 
-      // 性能优化：获取伙伴 ID 并在 add 时通知
-      const userRes = await db.collection('Users').doc(OPENID).get()
-      if (userRes.data && userRes.data.partnerId) {
-        await db.collection('Notices').add({
+        // 1. 创建礼品记录
+        const res = await transaction.collection('Gifts').add({
           data: {
-            type: 'NEW_GIFT',
-            title: '🎁 商店上新啦',
-            message: `新增了礼品：${giftData.name}`,
-            points: Number(giftData.points),
-            senderId: OPENID,
-            receiverId: userRes.data.partnerId,
-            read: false,
-            createTime: db.serverDate()
+            ...giftData,
+            creatorId: OPENID,
+            createTime: db.serverDate(),
+            updateTime: db.serverDate()
           }
         })
-      }
-      return { success: true, id: res._id }
+
+        // 2. 只有在有伙伴时才写入通知
+        if (partnerId) {
+          await transaction.collection('Notices').add({
+            data: {
+              type: 'NEW_GIFT',
+              title: '🎁 商店上新啦',
+              message: `新增了礼品：${giftData.name}`,
+              points: Number(giftData.points),
+              senderId: OPENID,
+              receiverId: partnerId,
+              read: false,
+              createTime: db.serverDate()
+            }
+          })
+        }
+
+        return { success: true, id: res._id }
+      })
     }
 
     if (action === 'update') {
@@ -86,6 +92,6 @@ exports.main = async (event, context) => {
     return { success: false, error: '未知操作' }
   } catch (e) {
     console.error('礼品管理失败', e)
-    return { success: false, error: e.message }
+    return { success: false, message: e.message || '操作失败' }
   }
 }
