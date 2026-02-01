@@ -4,6 +4,7 @@ import { View, Text, ScrollView } from '@tarojs/components'
 import { Notify, Tabs, Button, Input, Popup } from '@taroify/core'
 import dayjs from 'dayjs'
 import EmptyState from '../../components/EmptyState'
+import Confetti, { ConfettiRef } from '../../components/Confetti'
 import './index.scss'
 
 export default function Index() {
@@ -21,6 +22,8 @@ export default function Index() {
   const [showDetailModal, setShowDetailModal] = useState(false)
   const [selectedTask, setSelectedTask] = useState<any>(null)
   const [isSubmitting, setIsSubmitting] = useState(false) // 新增：提交锁
+
+  const confettiRef = useRef<ConfettiRef>(null)
 
   const filterTabs = [
     { label: '待完成', value: 'pending' },
@@ -204,6 +207,9 @@ export default function Index() {
   const handleCloseNotice = async () => {
     if (!currentNotice || isNoticeClosing) return
 
+    // 触发粒子动效
+    confettiRef.current?.fire()
+
     // 1. 触发退出动效
     setIsNoticeClosing(true)
     Taro.vibrateShort() // 轻微震动，提示“已阅”
@@ -360,6 +366,7 @@ export default function Index() {
 
   return (
     <View className='container'>
+      <Confetti ref={confettiRef} />
       {/* 极简悬浮通知 (保留作为次级反馈) */}
       <Notify
         visible={notifyVisible}
