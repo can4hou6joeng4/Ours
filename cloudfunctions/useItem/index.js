@@ -44,8 +44,8 @@ exports.main = async (event, context) => {
         await transaction.collection('Notices').add({
           data: {
             type: 'GIFT_USED',
-            title: '💝 收到兑换请求',
-            message: `对方请求兑换：${itemRes.data.name}`,
+            title: '💝 收到使用请求',
+            message: `对方想要使用：${itemRes.data.name}`,
             points: 0,
             senderId: OPENID,
             receiverId: userRes.data.partnerId,

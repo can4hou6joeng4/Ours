@@ -162,7 +162,7 @@ export default function Inventory() {
                     </Text>
                   </View>
                   {currentTab === 'unused' && (
-                    <View className='use-btn-pill' onClick={() => openUseConfirm(item)}>去兑换</View>
+                    <View className='use-btn-pill' onClick={() => openUseConfirm(item)}>去使用</View>
                   )}
                 </View>
               ))}
@@ -173,14 +173,14 @@ export default function Inventory() {
 
       {/* 使用确认弹窗 */}
       <Dialog open={showConfirm} onClose={() => !using && setShowConfirm(false)}>
-        <Dialog.Header>发起兑换</Dialog.Header>
+        <Dialog.Header>确认使用</Dialog.Header>
         <Dialog.Content>
-          确定要向对方发起“{selectedItem?.name}”的兑换申请吗？
+          确定要向对方发起“{selectedItem?.name}”的使用申请吗？
           对方将立即收到通知。
         </Dialog.Content>
         <Dialog.Actions>
           <Button onClick={() => !using && setShowConfirm(false)}>取消</Button>
-          <Button loading={using} onClick={handleConfirmUse}>确认兑换</Button>
+          <Button loading={using} onClick={handleConfirmUse}>确认使用</Button>
         </Dialog.Actions>
       </Dialog>
     </View>
