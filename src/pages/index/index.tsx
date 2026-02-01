@@ -210,15 +210,20 @@ export default function Index() {
     // 触发粒子动效
     confettiRef.current?.fire()
 
-    // 1. 触发退出动效
-    setIsNoticeClosing(true)
-    Taro.vibrateShort() // 轻微震动，提示“已阅”
+    // 强化触感反馈：双重微震动
+    Taro.vibrateShort()
+    setTimeout(() => Taro.vibrateShort(), 100)
 
-    // 2. 延迟执行状态清理，等待动画结束 (400ms 与 SCSS transition 对齐)
+    // 1. 延迟启动退出动效，让粒子动效先飞一会儿 (200ms)
+    setTimeout(() => {
+      setIsNoticeClosing(true)
+    }, 200)
+
+    // 2. 延迟执行状态清理 (200ms 停顿 + 600ms 动画 = 800ms)
     setTimeout(() => {
       setShowNoticeModal(false)
       setIsNoticeClosing(false)
-    }, 400)
+    }, 800)
 
     // 3. 异步更新数据库 (不阻塞 UI)
     try {
