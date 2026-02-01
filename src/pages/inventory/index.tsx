@@ -39,7 +39,7 @@ export default function Inventory() {
   }
 
   const handleConfirmUse = async () => {
-    if (!selectedItem) return
+    if (!selectedItem || using) return
 
     setUsing(true)
     try {

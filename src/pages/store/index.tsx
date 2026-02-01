@@ -24,6 +24,7 @@ export default function Store() {
     desc: ''
   })
   const [saving, setSaving] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   useDidShow(() => {
     fetchData()
@@ -131,8 +132,8 @@ export default function Store() {
   }
 
   const handleUpdateGift = async () => {
-    if (!editData.name || !editData.points) {
-      Taro.showToast({ title: '信息不全', icon: 'none' })
+    if (saving || !editData.name || !editData.points) {
+      if (!saving) Taro.showToast({ title: '信息不全', icon: 'none' })
       return
     }
 
@@ -161,8 +162,8 @@ export default function Store() {
   }
 
   const handleBuy = async (item) => {
-    if (totalPoints < item.points) {
-      Taro.showToast({ title: '积分不足', icon: 'error' })
+    if (isSubmitting || totalPoints < item.points) {
+      if (!isSubmitting) Taro.showToast({ title: '积分不足', icon: 'error' })
       return
     }
 
@@ -173,6 +174,7 @@ export default function Store() {
 
     if (!confirm.confirm) return
 
+    setIsSubmitting(true)
     Taro.showLoading({ title: '处理中...' })
     try {
       const { result }: any = await Taro.cloud.callFunction({
@@ -196,6 +198,7 @@ export default function Store() {
       Taro.showToast({ title: '网络错误', icon: 'none' })
     } finally {
       Taro.hideLoading()
+      setTimeout(() => setIsSubmitting(false), 200)
     }
   }
 
