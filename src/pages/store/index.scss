@@ -156,6 +156,73 @@
         }
       }
     }
+
+    // 骨架屏样式
+    .skeleton-grid {
+      display: flex;
+      gap: 32rpx;
+      .skeleton-column {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 32rpx;
+      }
+    }
+
+    .skeleton-card {
+      background: #FFFFFF;
+      border-radius: 28rpx;
+      overflow: hidden;
+      border: 1rpx solid #F0F0F0;
+
+      .skeleton-image {
+        width: 100%;
+        height: 240rpx;
+        background: #f2f2f2;
+      }
+
+      .skeleton-info {
+        padding: 24rpx;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 16rpx;
+
+        .skeleton-line {
+          height: 24rpx;
+          background: #f2f2f2;
+          border-radius: 4rpx;
+          &.name { width: 80%; }
+          &.desc { width: 60%; height: 18rpx; }
+          &.price { width: 40%; height: 32rpx; margin-top: 8rpx; }
+        }
+      }
+    }
+
+    .shimmer {
+      position: relative;
+      overflow: hidden;
+      &::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(
+          90deg,
+          rgba(255, 255, 255, 0) 0,
+          rgba(255, 255, 255, 0.5) 50%,
+          rgba(255, 255, 255, 0) 100%
+        );
+        animation: shimmer-ani 1.5s infinite;
+      }
+    }
+
+    @keyframes shimmer-ani {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
   }
 
   .product-card-local {

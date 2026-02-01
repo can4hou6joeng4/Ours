@@ -277,7 +277,34 @@ export default function Store() {
                 btnText='去绑定'
                 onAction={() => Taro.navigateTo({ url: '/pages/binding/index' })}
               />
-            ) : products.length === 0 && !loading ? (
+            ) : loading ? (
+              <View className='skeleton-grid'>
+                <View className='skeleton-column'>
+                  {[1, 2].map(i => (
+                    <View key={i} className='skeleton-card'>
+                      <View className='skeleton-image shimmer' />
+                      <View className='skeleton-info'>
+                        <View className='skeleton-line name shimmer' />
+                        <View className='skeleton-line desc shimmer' />
+                        <View className='skeleton-line price shimmer' />
+                      </View>
+                    </View>
+                  ))}
+                </View>
+                <View className='skeleton-column'>
+                  {[3, 4].map(i => (
+                    <View key={i} className='skeleton-card'>
+                      <View className='skeleton-image shimmer' />
+                      <View className='skeleton-info'>
+                        <View className='skeleton-line name shimmer' />
+                        <View className='skeleton-line desc shimmer' />
+                        <View className='skeleton-line price shimmer' />
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            ) : products.length === 0 ? (
               <EmptyState
                 icon='tabler:package-off'
                 title='货架空空如也'
