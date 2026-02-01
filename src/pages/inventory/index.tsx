@@ -1,6 +1,6 @@
-import { View, Text, ScrollView, Image } from '@tarojs/components'
+import { View, Text, ScrollView, Image, Input } from '@tarojs/components'
 import Taro, { useDidShow } from '@tarojs/taro'
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import dayjs from 'dayjs'
 import { Dialog, Button } from '@taroify/core'
 import { getIconifyUrl } from '../../utils/assets'
@@ -13,6 +13,7 @@ export default function Inventory() {
   const [showConfirm, setShowConfirm] = useState(false)
   const [selectedItem, setSelectedItem] = useState<any>(null)
   const [using, setUsing] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
 
   useDidShow(() => {
     fetchItems()
@@ -61,7 +62,14 @@ export default function Inventory() {
     }
   }
 
-  const filteredItems = items.filter(i => i.status === currentTab)
+  const filteredItems = useMemo(() => {
+    return items.filter(i => {
+      const isStatusMatch = i.status === currentTab
+      const isSearchMatch = i.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           (i.desc && i.desc.toLowerCase().includes(searchTerm.toLowerCase()))
+      return isStatusMatch && isSearchMatch
+    })
+  }, [items, currentTab, searchTerm])
 
   // 礼品堆叠逻辑：按名称分组
   const stackedItems = filteredItems.reduce((acc: any[], item) => {
@@ -87,6 +95,18 @@ export default function Inventory() {
 
   return (
     <View className='inventory-container'>
+      <View className='search-container'>
+        <View className='search-bar'>
+          <Image src={getIconifyUrl('tabler:search', '#999')} className='search-icon' />
+          <Input
+            className='search-input'
+            placeholder='搜索礼品名称...'
+            value={searchTerm}
+            onInput={e => setSearchTerm(e.detail.value)}
+          />
+        </View>
+      </View>
+
       <View className='tabs-header'>
         <View className='tabs-capsule'>
           <View

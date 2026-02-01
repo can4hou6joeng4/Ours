@@ -6,6 +6,31 @@
   display: flex;
   flex-direction: column;
 
+  .search-container {
+    padding: 32rpx 32rpx 0;
+    .search-bar {
+      background: #F0F0F0;
+      border-radius: 40rpx;
+      padding: 0 32rpx;
+      height: 80rpx;
+      display: flex;
+      align-items: center;
+      gap: 16rpx;
+
+      .search-icon {
+        width: 32rpx;
+        height: 32rpx;
+        opacity: 0.4;
+      }
+
+      .search-input {
+        flex: 1;
+        font-size: 26rpx;
+        color: $text-main;
+      }
+    }
+  }
+
   .tabs-header {
     background: transparent;
     display: flex;
