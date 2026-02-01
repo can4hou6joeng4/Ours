@@ -45,6 +45,22 @@ exports.main = async (event, context) => {
         }
       })
 
+      // 4. 写入通知：提醒对方，我兑换了一个新礼品
+      if (userRes.data.partnerId) {
+        await transaction.collection('Notices').add({
+          data: {
+            type: 'NEW_GIFT',
+            title: '🎁 礼品兑换通知',
+            message: `对方花费了 ${item.points} 积分兑换了：${item.name}`,
+            points: -item.points,
+            senderId: OPENID,
+            receiverId: userRes.data.partnerId,
+            read: false,
+            createTime: db.serverDate()
+          }
+        })
+      }
+
       return { success: true }
     })
 

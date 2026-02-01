@@ -113,13 +113,13 @@ export default function Inventory() {
             className={`tab-item ${currentTab === 'unused' ? 'active' : ''}`}
             onClick={() => setCurrentTab('unused')}
           >
-            待兑换
+            待使用
           </View>
           <View
             className={`tab-item ${currentTab === 'used' ? 'active' : ''}`}
             onClick={() => setCurrentTab('used')}
           >
-            已兑换
+            已使用
           </View>
         </View>
       </View>
