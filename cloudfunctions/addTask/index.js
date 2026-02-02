@@ -71,7 +71,7 @@ exports.main = async (event, context) => {
       try {
         await cloud.openapi.subscribeMessage.send({
           touser: targetId,
-          templateId: 'PLACEHOLDER_ID_FOR_NEW_TASK', // 请在后续替换为真实 ID
+          templateId: 'BDmFGTb7vGdwB_BX1k6DGrqfRt2yl_dReh_ar3g8CN0', // 备忘录任务提醒 (新任务)
           page: 'pages/index/index',
           data: {
             thing1: { value: title.substring(0, 20) },

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import Taro from '@tarojs/taro'
 import { View, Text } from '@tarojs/components'
 import { Button, Input } from '@taroify/core'
+import { requestSubscribe } from '../../utils/subscribe'
 import './index.scss'
 
 export default function Binding() {
@@ -21,6 +22,10 @@ export default function Binding() {
 
   const handleBind = async () => {
     if (!inputCode) return
+
+    // 引导订阅
+    await requestSubscribe(['BIND_SUCCESS'])
+
     setIsBinding(true)
     try {
       const res = await Taro.cloud.callFunction({

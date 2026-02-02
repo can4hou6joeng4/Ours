@@ -58,7 +58,7 @@ exports.main = async (event, context) => {
         try {
           await cloud.openapi.subscribeMessage.send({
             touser: userRes.data.partnerId,
-            templateId: 'PLACEHOLDER_ID_FOR_GIFT_USED', // 请在后续替换为真实 ID
+            templateId: 'bxIAEflde73fD0hcYRnE6LkOCtT6QlVJqb1Zr6AKcmM', // 日程提醒 (礼品使用)
             page: 'pages/inventory/index',
             data: {
               thing1: { value: itemRes.data.name.substring(0, 20) },

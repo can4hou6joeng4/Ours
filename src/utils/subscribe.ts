@@ -3,9 +3,10 @@ import Taro from '@tarojs/taro'
 // 订阅消息模板 ID 常量 (占位)
 // 请在微信小程序管理后台申请后替换以下 ID
 export const MSG_TEMPLATE_IDS = {
-  NEW_TASK: 'PLACEHOLDER_ID_FOR_NEW_TASK',     // 新任务提醒
-  TASK_DONE: 'PLACEHOLDER_ID_FOR_TASK_DONE',   // 任务完成提醒
-  GIFT_USED: 'PLACEHOLDER_ID_FOR_GIFT_USED',   // 礼品使用提醒
+  NEW_TASK: 'BDmFGTb7vGdwB_BX1k6DGrqfRt2yl_dReh_ar3g8CN0',     // 新任务提醒
+  TASK_DONE: 'BDmFGTb7vGdwB_BX1k6DGlsnq1YEpEDEy8n2y8g41_E',   // 任务完成提醒
+  GIFT_USED: 'bxIAEflde73fD0hcYRnE6LkOCtT6QlVJqb1Zr6AKcmM',   // 礼品使用提醒
+  BIND_SUCCESS: 'fnKrftUCVOwXvlo7exFmer78w_R0JfKR3evP5IxxjhE', // 绑定成功提醒
 }
 
 /**

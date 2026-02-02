@@ -49,6 +49,23 @@ exports.main = async (event, context) => {
       })
     })
 
+    // 4. 发送订阅消息通知对方 (被动方)
+    try {
+      const myInfoRes = await db.collection('Users').doc(OPENID).get()
+      await cloud.openapi.subscribeMessage.send({
+        touser: partnerOpenid,
+        templateId: 'fnKrftUCVOwXvlo7exFmer78w_R0JfKR3evP5IxxjhE', // 关系绑定状态更新提醒
+        page: 'pages/index/index',
+        data: {
+          thing1: { value: '已成功建立绑定关系' },
+          time3: { value: new Date().toLocaleString() },
+          name2: { value: myInfoRes.data.nickName || '对方' }
+        }
+      })
+    } catch (sendError) {
+      console.warn('绑定成功订阅消息发送失败', sendError)
+    }
+
     return { success: true, message: '绑定成功' }
 
   } catch (err) {

@@ -64,7 +64,7 @@ exports.main = async (event, context) => {
         if (task.creatorId !== OPENID) {
           await cloud.openapi.subscribeMessage.send({
             touser: task.creatorId,
-            templateId: 'PLACEHOLDER_ID_FOR_TASK_DONE', // 请在后续替换为真实 ID
+            templateId: 'BDmFGTb7vGdwB_BX1k6DGlsnq1YEpEDEy8n2y8g41_E', // 备忘录任务提醒 (任务完成)
             page: 'pages/index/index',
             data: {
               thing1: { value: task.title.substring(0, 20) },
