@@ -8,3 +8,8 @@ project.config.json.bak
 .swc/
 project.private.config.json
 node_modules
+
+# Documentation and progress tracking
+CLAUDE.md
+DEVELOPMENT_PROGRESS.md
+docs/
