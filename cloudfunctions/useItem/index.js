@@ -53,6 +53,22 @@ exports.main = async (event, context) => {
             createTime: db.serverDate()
           }
         })
+
+        // 4. 发送订阅消息给对方
+        try {
+          await cloud.openapi.subscribeMessage.send({
+            touser: userRes.data.partnerId,
+            templateId: 'PLACEHOLDER_ID_FOR_GIFT_USED', // 请在后续替换为真实 ID
+            page: 'pages/inventory/index',
+            data: {
+              thing1: { value: itemRes.data.name.substring(0, 20) },
+              name2: { value: userRes.data.nickName || '对方' },
+              time3: { value: new Date().toLocaleString() }
+            }
+          })
+        } catch (sendError) {
+          console.warn('礼品使用订阅消息发送失败', sendError)
+        }
       }
 
       return { success: true }

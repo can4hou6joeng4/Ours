@@ -59,6 +59,24 @@ exports.main = async (event, context) => {
         })
       }
 
+      // 发送订阅消息：通知任务发布者 (task.creatorId)
+      try {
+        if (task.creatorId !== OPENID) {
+          await cloud.openapi.subscribeMessage.send({
+            touser: task.creatorId,
+            templateId: 'PLACEHOLDER_ID_FOR_TASK_DONE', // 请在后续替换为真实 ID
+            page: 'pages/index/index',
+            data: {
+              thing1: { value: task.title.substring(0, 20) },
+              phrase2: { value: '已完成' },
+              time3: { value: new Date().toLocaleString() }
+            }
+          })
+        }
+      } catch (sendError) {
+        console.warn('任务完成订阅消息发送失败', sendError)
+      }
+
       return { success: true, points: task.points }
     })
   } catch (e) {

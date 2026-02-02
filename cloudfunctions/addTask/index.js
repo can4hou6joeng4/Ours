@@ -67,6 +67,22 @@ exports.main = async (event, context) => {
         }
       })
 
+      // 4. 发送微信订阅消息 (异步执行，不阻塞事务)
+      try {
+        await cloud.openapi.subscribeMessage.send({
+          touser: targetId,
+          templateId: 'PLACEHOLDER_ID_FOR_NEW_TASK', // 请在后续替换为真实 ID
+          page: 'pages/index/index',
+          data: {
+            thing1: { value: title.substring(0, 20) },
+            name2: { value: userRes.data.nickName || '对方' },
+            time3: { value: new Date().toLocaleString() }
+          }
+        })
+      } catch (sendError) {
+        console.warn('订阅消息发送失败', sendError)
+      }
+
       return { success: true, id: addRes._id }
     })
   } catch (e) {

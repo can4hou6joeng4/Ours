@@ -5,6 +5,7 @@ import { Notify, Tabs, Button, Input, Popup } from '@taroify/core'
 import dayjs from 'dayjs'
 import EmptyState from '../../components/EmptyState'
 import Confetti, { ConfettiRef } from '../../components/Confetti'
+import { requestSubscribe } from '../../utils/subscribe'
 import './index.scss'
 
 export default function Index() {
@@ -291,6 +292,8 @@ export default function Index() {
         setShowAddModal(false)
         setNewTaskTitle('')
         setNewTaskPoints('')
+        // 成功后引导订阅
+        requestSubscribe(['NEW_TASK'])
       } else {
         Taro.showToast({ title: data.message || '发布失败', icon: 'none' })
       }
@@ -316,6 +319,8 @@ export default function Index() {
       if (data.success) {
         Taro.showToast({ title: `获得 ${data.points} 积分！`, icon: 'success' })
         setShowDetailModal(false)
+        // 成功后引导订阅对方后续的动作（如礼品使用或新任务）
+        requestSubscribe(['TASK_DONE'])
       }
     } catch (e) {
       Taro.showToast({ title: '操作失败', icon: 'none' })

@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react'
 import dayjs from 'dayjs'
 import { Dialog, Button } from '@taroify/core'
 import { getIconifyUrl } from '../../utils/assets'
+import { requestSubscribe } from '../../utils/subscribe'
 import './index.scss'
 
 export default function Inventory() {
@@ -52,6 +53,8 @@ export default function Inventory() {
         Taro.showToast({ title: '兑换申请已发出', icon: 'success' })
         setShowConfirm(false)
         fetchItems()
+        // 成功后引导订阅
+        requestSubscribe(['GIFT_USED'])
       } else {
         Taro.showToast({ title: result.error || '操作失败', icon: 'none' })
       }
