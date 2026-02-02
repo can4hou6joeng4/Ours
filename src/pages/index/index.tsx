@@ -502,7 +502,23 @@ export default function Index() {
       {/* 悬浮发布按钮 (v2) - 移动至末尾确保层级 */}
       <Button
         className='fab-btn-v2'
-        onClick={() => setShowAddModal(true)}
+        onClick={() => {
+          if (!partnerId) {
+            Taro.showModal({
+              title: '尚未绑定',
+              content: '发布任务需要先与另一半建立连接，是否前往绑定？',
+              confirmText: '去绑定',
+              confirmColor: '#D4B185',
+              success: (res) => {
+                if (res.confirm) {
+                  Taro.navigateTo({ url: '/pages/binding/index' })
+                }
+              }
+            })
+            return
+          }
+          setShowAddModal(true)
+        }}
       >
         +
       </Button>

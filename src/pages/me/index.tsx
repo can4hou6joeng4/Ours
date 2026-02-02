@@ -14,7 +14,7 @@ export default function Me() {
   const [saving, setSaving] = useState(false)
 
   useDidShow(() => {
-    fetchUserInfo()
+    fetchUserInfo(!!userInfo)
   })
 
   const handleOpenEdit = () => {
@@ -23,8 +23,8 @@ export default function Me() {
     setShowEditSheet(true)
   }
 
-  const fetchUserInfo = async () => {
-    setLoading(true)
+  const fetchUserInfo = async (silent = false) => {
+    if (!silent) setLoading(true)
     try {
       const res = await Taro.cloud.callFunction({ name: 'initUser' })
       const data = res.result as any
@@ -34,7 +34,7 @@ export default function Me() {
     } catch (e) {
       console.error('获取用户信息失败', e)
     } finally {
-      setLoading(false)
+      if (!silent) setLoading(false)
     }
   }
 
@@ -171,8 +171,10 @@ export default function Me() {
                   <Text className='label'>修改昵称</Text>
                   <Input
                     className='custom-input'
+                    type='nickname'
                     value={tempNickname}
                     onChange={e => setTempNickname(e.detail.value)}
+                    onBlur={e => setTempNickname(e.detail.value)}
                     placeholder='输入你的专属昵称'
                   />
                 </View>
