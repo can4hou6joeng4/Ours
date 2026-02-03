@@ -6,6 +6,8 @@ import dayjs from 'dayjs'
 import EmptyState from '../../components/EmptyState'
 import Confetti, { ConfettiRef } from '../../components/Confetti'
 import NoticeModal from '../../components/NoticeModal'
+import TaskDetailModal from '../../components/TaskDetailModal'
+import AddTaskSheet from '../../components/AddTaskSheet'
 import { requestSubscribe } from '../../utils/subscribe'
 import './index.scss'
 
@@ -511,116 +513,28 @@ export default function Index() {
         onClose={handleCloseNotice}
       />
 
-      {/* 任务详情弹窗 (圆角居中/点击外部关闭) */}
-      {showDetailModal && selectedTask && (
-        <View
-          className='modal-overlay detail-modal-root'
-          onClick={() => setShowDetailModal(false)}
-        >
-          <View className='modal-card' onClick={e => e.stopPropagation()}>
-            <View className='card-header'>
-              <View className='close-btn' style={{ marginLeft: 'auto' }} onClick={() => setShowDetailModal(false)}>×</View>
-            </View>
-
-            <View className='card-body'>
-              <Text className='task-title'>{selectedTask.title}</Text>
-              <View className='task-type-sub'>
-                <Text className={`category-label ${selectedTask.type}`}>
-                  {selectedTask.type === 'reward' ? '奖赏任务' : '惩罚任务'}
-                </Text>
-              </View>
-
-              <View className='info-list'>
-                <View className='info-item'>
-                  <Text className='label'>积分奖励</Text>
-                  <Text className={`value points ${selectedTask.type}`}>
-                    {selectedTask.type === 'reward' ? '+' : '-'}{selectedTask.points}
-                  </Text>
-                </View>
-                <View className='info-item'>
-                  <Text className='label'>发布时间</Text>
-                  <Text className='value'>
-                    {selectedTask.createTime ? dayjs(selectedTask.createTime).format('YYYY/MM/DD hh:mm A') : '刚刚'}
-                  </Text>
-                </View>
-                <View className='info-item'>
-                  <Text className='label'>关联身份</Text>
-                  <Text className='value'>
-                    {selectedTask.creatorId === currentUserId ? '我发布的' : '对方发布'}
-                  </Text>
-                </View>
-              </View>
-            </View>
-
-            <View className='card-footer'>
-              {selectedTask.status === 'pending' && (
-                <Button className='btn-primary' block onClick={() => handleDone(selectedTask._id)}>确认完成</Button>
-              )}
-              {selectedTask.creatorId === currentUserId && (
-                <Button className='btn-secondary' block onClick={() => {
-                  setShowDetailModal(false)
-                  handleRevoke(selectedTask._id)
-                }}>撤销此任务</Button>
-              )}
-            </View>
-          </View>
-        </View>
-      )}
+      {/* 任务详情弹窗 */}
+      <TaskDetailModal
+        visible={showDetailModal}
+        task={selectedTask}
+        currentUserId={currentUserId}
+        onClose={() => setShowDetailModal(false)}
+        onDone={handleDone}
+        onRevoke={handleRevoke}
+      />
 
       {/* 发布任务底部抽屉 (重塑为高级侧滑交互) */}
-      {showAddModal && (
-        <View className='add-sheet-root' onClick={() => setShowAddModal(false)}>
-          <View className='sheet-content' onClick={e => e.stopPropagation()}>
-            <View className='sheet-header'>
-              <Text className='title'>发布新任务</Text>
-              <View className='close' onClick={() => setShowAddModal(false)}>×</View>
-            </View>
-
-            <View className='sheet-body'>
-              <View className='type-selector-v2'>
-                <View
-                  className={`type-item ${newTaskType === 'reward' ? 'active reward' : ''}`}
-                  onClick={() => setNewTaskType('reward')}
-                >
-                  奖赏
-                </View>
-                <View
-                  className={`type-item ${newTaskType === 'penalty' ? 'active penalty' : ''}`}
-                  onClick={() => setNewTaskType('penalty')}
-                >
-                  惩罚
-                </View>
-              </View>
-
-              <View className='form-group'>
-                <View className='input-item'>
-                  <Text className='label'>任务描述</Text>
-                  <Input
-                    className='custom-input'
-                    placeholder={newTaskType === 'reward' ? '例如：洗碗一次' : '例如：熬夜/乱花钱'}
-                    value={newTaskTitle}
-                    onChange={(e) => setNewTaskTitle(e.detail.value)}
-                  />
-                </View>
-                <View className='input-item'>
-                  <Text className='label'>{newTaskType === 'reward' ? '奖励积分' : '扣除积分'}</Text>
-                  <Input
-                    className='custom-input'
-                    type='number'
-                    placeholder='0'
-                    value={newTaskPoints}
-                    onChange={(e) => setNewTaskPoints(e.detail.value)}
-                  />
-                </View>
-              </View>
-            </View>
-
-            <View className='sheet-footer'>
-              <Button className='confirm-btn' block onClick={handleAddTask}>确认发布</Button>
-            </View>
-          </View>
-        </View>
-      )}
+      <AddTaskSheet
+        visible={showAddModal}
+        title={newTaskTitle}
+        points={newTaskPoints}
+        type={newTaskType}
+        onClose={() => setShowAddModal(false)}
+        onChangeTitle={setNewTaskTitle}
+        onChangePoints={setNewTaskPoints}
+        onChangeType={setNewTaskType}
+        onConfirm={handleAddTask}
+      />
     </View>
   )
 }

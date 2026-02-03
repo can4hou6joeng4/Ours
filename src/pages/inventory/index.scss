@@ -223,7 +223,7 @@
 }
 
 .exchange-history-entry {
-  padding: 0 32rpx 16rpx;
+  padding: 32rpx 32rpx 24rpx; // 增加顶部间距 (32rpx)
 
   .history-btn {
     background: #ffffff; // 切换为纯白背景
