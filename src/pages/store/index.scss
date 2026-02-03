@@ -1,13 +1,15 @@
 @import "../../styles/theme.scss";
 
 .store-v2-container {
-  min-height: 100vh;
+  height: 100vh;
   background-color: #f7f8fa;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 
   .store-scroll-view {
     flex: 1;
+    height: 0; // 关键：强制 flex 容器内的 ScrollView 尊重剩余空间
     padding: 0;
     box-sizing: border-box;
 
