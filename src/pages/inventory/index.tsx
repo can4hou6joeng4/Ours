@@ -1,6 +1,6 @@
 import { View, Text, ScrollView, Image, Input } from '@tarojs/components'
 import Taro, { useDidShow } from '@tarojs/taro'
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import dayjs from 'dayjs'
 import { Dialog, Button } from '@taroify/core'
 import { getIconifyUrl } from '../../utils/assets'
@@ -9,7 +9,9 @@ import './index.scss'
 
 export default function Inventory() {
   const [items, setItems] = useState<any[]>([])
-  const [currentTab, setCurrentTab] = useState<'unused' | 'used'>('unused')
+  const [currentTab, setCurrentTab] = useState<'unused' | 'used' | 'records'>('unused')
+  const [usageRecords, setUsageRecords] = useState<any[]>([])
+  const [recordFilter, setRecordFilter] = useState<'all' | 'sent' | 'received'>('all')
   const [loading, setLoading] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
   const [selectedItem, setSelectedItem] = useState<any>(null)
@@ -17,8 +19,38 @@ export default function Inventory() {
   const [searchTerm, setSearchTerm] = useState('')
 
   useDidShow(() => {
-    fetchItems()
+    if (currentTab === 'records') {
+      fetchUsageRecords()
+    } else {
+      fetchItems()
+    }
   })
+
+  // 监听标签切换
+  useEffect(() => {
+    if (currentTab === 'records') {
+      fetchUsageRecords()
+    } else {
+      fetchItems()
+    }
+  }, [currentTab])
+
+  const fetchUsageRecords = async () => {
+    setLoading(true)
+    try {
+      const { result }: any = await Taro.cloud.callFunction({
+        name: 'getGiftUsageRecords',
+        data: { page: 1, pageSize: 50 }
+      })
+      if (result.success) {
+        setUsageRecords(result.data)
+      }
+    } catch (e) {
+      console.error('获取记录失败', e)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const fetchItems = async () => {
     setLoading(true)
@@ -53,6 +85,8 @@ export default function Inventory() {
         Taro.showToast({ title: '兑换申请已发出', icon: 'success' })
         setShowConfirm(false)
         fetchItems()
+        // 如果当前有记录tab，也同步刷新一下
+        if (currentTab === 'records') fetchUsageRecords()
         // 成功后引导订阅
         requestSubscribe(['GIFT_USED'])
       } else {
@@ -73,6 +107,11 @@ export default function Inventory() {
       return isStatusMatch && isSearchMatch
     })
   }, [items, currentTab, searchTerm])
+
+  const filteredRecords = useMemo(() => {
+    if (recordFilter === 'all') return usageRecords
+    return usageRecords.filter(r => r.direction === recordFilter)
+  }, [usageRecords, recordFilter])
 
   // 礼品堆叠逻辑：按名称分组
   const stackedItems = filteredItems.reduce((acc: any[], item) => {
@@ -124,13 +163,63 @@ export default function Inventory() {
           >
             已使用
           </View>
+          <View
+            className={`tab-item ${currentTab === 'records' ? 'active' : ''}`}
+            onClick={() => setCurrentTab('records')}
+          >
+            兑换记录
+          </View>
         </View>
       </View>
 
       <ScrollView scrollY className='items-scroll'>
         <View className='items-inner'>
-          {filteredItems.length === 0 && !loading ? (
-            <View className='empty-state'>
+          {currentTab === 'records' ? (
+            <View className='records-section'>
+              <View className='filter-bar'>
+                <View
+                  className={`filter-item ${recordFilter === 'all' ? 'active' : ''}`}
+                  onClick={() => setRecordFilter('all')}
+                >全部</View>
+                <View
+                  className={`filter-item ${recordFilter === 'sent' ? 'active' : ''}`}
+                  onClick={() => setRecordFilter('sent')}
+                >我的请求</View>
+                <View
+                  className={`filter-item ${recordFilter === 'received' ? 'active' : ''}`}
+                  onClick={() => setRecordFilter('received')}
+                >收到的请求</View>
+              </View>
+
+              {filteredRecords.length === 0 && !loading ? (
+                <View className='empty-state'>
+                  <Image src={getIconifyUrl('tabler:history-off', '#8E8E93')} className='empty-icon-img' />
+                  <Text className='empty-text'>暂无兑换记录</Text>
+                </View>
+              ) : (
+                <View className='records-list'>
+                  {filteredRecords.map(record => (
+                    <View key={record._id} className={`record-card ${record.direction}`}>
+                      <View className='record-left'>
+                        <View className='icon-box'>
+                          {record.direction === 'sent' ? '📤' : '📥'}
+                        </View>
+                        <View className='info'>
+                          <Text className='name'>{record.giftName}</Text>
+                          <Text className='time'>{dayjs(record.createTime).format('MM/DD HH:mm')}</Text>
+                        </View>
+                      </View>
+                      <View className={`status-badge ${record.direction}`}>
+                        {record.direction === 'sent' ? '我发起' : '待履行'}
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
+          ) : (
+            filteredItems.length === 0 && !loading ? (
+              <View className='empty-state'>
               <Image src={getIconifyUrl('tabler:package-off', '#8E8E93')} className='empty-icon-img' />
               <Text className='empty-text'>背包空空如也</Text>
             </View>
@@ -170,7 +259,7 @@ export default function Inventory() {
                 </View>
               ))}
             </View>
-          )}
+          ))}
         </View>
       </ScrollView>
 
