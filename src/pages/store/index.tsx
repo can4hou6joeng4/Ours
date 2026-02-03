@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { Dialog, Toast } from '@taroify/core'
 import DuxGrid from '../../components/DuxGrid'
 import DuxCard from '../../components/DuxCard'
+import ProductCard from '../../components/ProductCard'
 import EmptyState from '../../components/EmptyState'
 import GiftEditSheet from '../../components/GiftEditSheet'
 import ExchangeHistoryModal from '../../components/ExchangeHistoryModal'
@@ -247,39 +248,12 @@ export default function Store() {
   const rightCol = products.filter((_, i) => i % 2 !== 0)
 
   const renderProduct = (item) => (
-    <DuxCard
+    <ProductCard
       key={item._id}
-      className='product-card-v4 masonry-item'
-      shadow={false}
-    >
-      <View
-        className='card-inner-touch'
-        onClick={() => handleBuy(item)}
-        onLongPress={() => handleLongPress(item)}
-      >
-        <View className='card-top'>
-          {item.coverImg && /^cloud:\/\//.test(item.coverImg.trim()) ? (
-            <Image
-              src={item.coverImg.trim()}
-              mode='widthFix'
-              className='product-image'
-              onError={(e) => console.error('图片加载失败:', item.name, e)}
-            />
-          ) : (
-            <View className='icon-circle'>
-              <Image src={getIconifyUrl('tabler:gift', '#D4B185')} className='iconify-inner' />
-            </View>
-          )}
-        </View>
-        <View className='card-body'>
-          <Text className='p-name'>{item.name}</Text>
-          <Text className='p-desc'>{item.desc || '暂无描述'}</Text>
-          <View className='p-footer'>
-            <Text className='p-price'>{item.points} 积分</Text>
-          </View>
-        </View>
-      </View>
-    </DuxCard>
+      item={item}
+      onBuy={handleBuy}
+      onLongPress={handleLongPress}
+    />
   )
 
   return (

@@ -1,0 +1,81 @@
+@import "../../styles/theme.scss";
+
+// 混入
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@mixin active-press {
+  transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+  &:active {
+    transform: scale(0.96);
+    opacity: 0.9;
+  }
+}
+
+.product-card-v4 {
+  background: #ffffff;
+  padding: 0;
+  overflow: hidden;
+  border-radius: 28rpx;
+  border: 1rpx solid #F0F0F0;
+  box-shadow: $card-shadow;
+  width: 100%; // 确保占满列宽
+  @include active-press; // 统一点击反馈
+
+  .card-top {
+    width: 100%;
+    min-height: 160rpx; // 保持最小高度，防止空白
+    background: #ffffff;
+    @include flex-center;
+    position: relative;
+    padding: 4rpx;
+    box-sizing: border-box;
+
+    .product-image {
+      width: 100%;
+      height: auto; // 配合 widthFix
+      border-top-left-radius: 24rpx;
+      border-top-right-radius: 24rpx;
+      display: block; // 消除底部间隙
+    }
+
+    .icon-circle {
+      background: transparent !important;
+      .iconify-inner { width: 80rpx; height: 80rpx; opacity: 0.8; }
+    }
+  }
+
+  .card-body {
+    padding: 24rpx;
+    display: flex;
+    flex-direction: column;
+    align-items: center; // 标题居中
+    text-align: center;
+
+    .p-name {
+      font-size: 30rpx;
+      color: #B8860B; // 琥珀金：比香槟金更鲜艳，但保持高级感
+      font-weight: bold;
+      line-height: 1.4;
+      margin-bottom: 8rpx;
+      word-break: break-all;
+    }
+    .p-desc {
+      font-size: 22rpx;
+      color: $text-sub;
+      margin-bottom: 20rpx;
+      line-height: 1.5;
+      word-break: break-all;
+    }
+    .p-footer {
+      .p-price {
+        font-size: 32rpx; // 还原字号
+        color: $primary-color !important; // 还原为香槟金
+        font-weight: bold; // 还原字重
+      }
+    }
+  }
+}
