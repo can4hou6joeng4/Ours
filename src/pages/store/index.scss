@@ -11,6 +11,7 @@
     flex: 1;
     height: 0; // 关键：强制 flex 容器内的 ScrollView 尊重剩余空间
     padding: 0;
+    padding-bottom: calc(120rpx + env(safe-area-inset-bottom)); // 修复：为底部 TabBar 留出空间
     box-sizing: border-box;
 
     .store-inner-content {
