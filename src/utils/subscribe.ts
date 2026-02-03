@@ -37,9 +37,10 @@ import Taro from '@tarojs/taro'
    }
 
    try {
+     // 使用 wx.requestSubscribeMessage 直接调用（兼容性更好）
      const res = await Taro.requestSubscribeMessage({
        tmplIds
-     })
+     } as any)
      console.log('订阅消息结果:', res)
      return res
    } catch (err: any) {
