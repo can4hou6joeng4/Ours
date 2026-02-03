@@ -1,12 +1,6 @@
 @import "../../styles/theme.scss";
 
-// 混入
-@mixin flex-center {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
+// 强制触发重新编译
 // 兑换历史底部弹窗
 .history-sheet-root {
   position: fixed;
