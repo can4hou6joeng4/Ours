@@ -1,0 +1,9 @@
+{
+  "name": "getExchangeHistory",
+  "version": "1.0.0",
+  "description": "获取兑换历史记录（含物品完整生命周期）",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}
