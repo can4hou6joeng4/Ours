@@ -5,6 +5,7 @@ import { Dialog, Toast } from '@taroify/core'
 import DuxGrid from '../../components/DuxGrid'
 import DuxCard from '../../components/DuxCard'
 import EmptyState from '../../components/EmptyState'
+import GiftEditSheet from '../../components/GiftEditSheet'
 import { getIconifyUrl } from '../../utils/assets'
 import { requestSubscribe } from '../../utils/subscribe'
 import dayjs from 'dayjs'
@@ -164,29 +165,6 @@ export default function Store() {
         }
       }
     })
-  }
-
-  const handleUploadImg = async () => {
-    try {
-      const res = await Taro.chooseImage({ count: 1, sizeType: ['compressed'] })
-      let tempFilePath = res.tempFilePaths[0]
-      Taro.showLoading({ title: '处理图片...' })
-
-      const compressRes = await Taro.compressImage({ src: tempFilePath, quality: 80 })
-      tempFilePath = compressRes.tempFilePath
-
-      const uploadRes = await Taro.cloud.uploadFile({
-        cloudPath: `gifts/${Date.now()}-${Math.random().toString(36).slice(-6)}.png`,
-        filePath: tempFilePath
-      })
-
-      setEditData({ ...editData, coverImg: uploadRes.fileID })
-      Taro.showToast({ title: '图片已上传' })
-    } catch (e) {
-      console.error('上传失败', e)
-    } finally {
-      Taro.hideLoading()
-    }
   }
 
   const handleUpdateGift = async () => {
@@ -407,71 +385,15 @@ export default function Store() {
         </View>
       )}
       {/* 礼品编辑底部抽屉 */}
-      {showEditSheet && (
-        <View className='edit-sheet-root' onClick={() => !saving && setShowEditSheet(false)}>
-          <View className='sheet-content' onClick={e => e.stopPropagation()}>
-            <View className='sheet-header'>
-              <Text className='title'>{selectedGift ? '编辑礼品' : '新增礼品'}</Text>
-              <View className='close' onClick={() => !saving && setShowEditSheet(false)}>×</View>
-            </View>
-
-            <ScrollView scrollY className='sheet-body'>
-              <View className='form-group'>
-                <View className='image-upload-box' onClick={handleUploadImg}>
-                  {editData.coverImg ? (
-                    <Image src={editData.coverImg} mode='aspectFill' className='preview' />
-                  ) : (
-                    <View className='placeholder'>
-                      <Image src={getIconifyUrl('tabler:camera', '#D4B185')} className='icon' />
-                      <Text className='txt'>更换图片</Text>
-                    </View>
-                  )}
-                </View>
-
-                <View className='inputs-area'>
-                  <View className='input-item'>
-                    <Text className='label'>物品名称</Text>
-                    <Input
-                      className='input'
-                      value={editData.name}
-                      onInput={e => setEditData({ ...editData, name: e.detail.value })}
-                    />
-                  </View>
-                  <View className='input-item'>
-                    <Text className='label'>所需积分</Text>
-                    <Input
-                      className='input'
-                      type='number'
-                      value={editData.points}
-                      onInput={e => setEditData({ ...editData, points: e.detail.value })}
-                    />
-                  </View>
-                </View>
-              </View>
-
-              <View className='input-item full'>
-                <Text className='label'>详细描述</Text>
-                <Input
-                  className='input'
-                  value={editData.desc}
-                  placeholder='简单描述一下礼品...'
-                  onInput={e => setEditData({ ...editData, desc: e.detail.value })}
-                />
-              </View>
-            </ScrollView>
-
-            <View className='sheet-footer'>
-              <Button
-                className='save-btn'
-                loading={saving}
-                onClick={handleUpdateGift}
-              >
-                {selectedGift ? '保存修改' : '确认添加'}
-              </Button>
-            </View>
-          </View>
-        </View>
-      )}
+      <GiftEditSheet
+        visible={showEditSheet}
+        isEdit={!!selectedGift}
+        editData={editData}
+        saving={saving}
+        onClose={() => setShowEditSheet(false)}
+        onUpdate={setEditData}
+        onSave={handleUpdateGift}
+      />
 
       {/* 兑换历史底部弹窗 */}
       {showExchangeHistory && (
