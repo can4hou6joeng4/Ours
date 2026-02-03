@@ -277,6 +277,9 @@ export default function Index() {
     setIsSubmitting(true)
     Taro.showLoading({ title: '发布中' })
     try {
+      // 在异步调用前先尝试请求权限 (微信允许在点击回调中尽早调用)
+      await requestSubscribe(['NEW_TASK'])
+
       const res = await Taro.cloud.callFunction({
         name: 'addTask',
         data: {
@@ -292,8 +295,6 @@ export default function Index() {
         setShowAddModal(false)
         setNewTaskTitle('')
         setNewTaskPoints('')
-        // 成功后引导订阅
-        requestSubscribe(['NEW_TASK'])
       } else {
         Taro.showToast({ title: data.message || '发布失败', icon: 'none' })
       }

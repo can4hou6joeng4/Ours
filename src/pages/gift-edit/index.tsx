@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import Taro, { useRouter } from '@tarojs/taro'
 import { View, Text, Image, ScrollView } from '@tarojs/components'
 import { Button, Input } from '@taroify/core'
+import { requestSubscribe } from '../../utils/subscribe'
 import { getIconifyUrl } from '../../utils/assets'
 import './index.scss'
 
@@ -74,6 +75,9 @@ export default function GiftEdit() {
 
     setLoading(true)
     try {
+      // 引导订阅 (用于接收后续对方兑换礼品的通知)
+      await requestSubscribe(['GIFT_USED'])
+
       const res = await Taro.cloud.callFunction({
         name: 'manageGift',
         data: {

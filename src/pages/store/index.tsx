@@ -6,6 +6,7 @@ import DuxGrid from '../../components/DuxGrid'
 import DuxCard from '../../components/DuxCard'
 import EmptyState from '../../components/EmptyState'
 import { getIconifyUrl } from '../../utils/assets'
+import { requestSubscribe } from '../../utils/subscribe'
 import './index.scss'
 
 export default function Store() {
@@ -139,6 +140,9 @@ export default function Store() {
 
     setSaving(true)
     try {
+      // 引导订阅 (用于接收后续对方兑换礼品的通知)
+      await requestSubscribe(['GIFT_USED'])
+
       const isEdit = !!selectedGift
       const res: any = await Taro.cloud.callFunction({
         name: 'manageGift',
