@@ -1,0 +1,89 @@
+@import "../../styles/theme.scss";
+
+// 混入
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@mixin active-press {
+  transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+  &:active {
+    transform: scale(0.96);
+    opacity: 0.9;
+  }
+}
+
+// 沉浸式黑金用户卡片
+.user-card {
+  background: $secondary-color; // 碳黑
+  padding: 60rpx 40rpx;
+  border-radius: 24rpx;
+  display: flex;
+  align-items: center;
+  margin-bottom: 40rpx;
+  box-shadow: 0 12rpx 32rpx rgba(0, 0, 0, 0.1);
+  position: relative;
+  overflow: hidden;
+  @include active-press; // 添加统一点击反馈
+
+  // 装饰性微光
+  &::after {
+    content: "";
+    position: absolute;
+    top: -50rpx;
+    right: -50rpx;
+    width: 200rpx;
+    height: 200rpx;
+    background: radial-gradient(circle, rgba($primary-color, 0.1) 0%, transparent 70%);
+  }
+
+  .avatar-placeholder {
+    width: 120rpx;
+    height: 120rpx;
+    background: #2D2D2D;
+    border: 2rpx solid rgba($primary-color, 0.3);
+    border-radius: 50%;
+    margin-right: 32rpx;
+    @include flex-center;
+    overflow: hidden;
+
+    .avatar-icon {
+      width: 100%;
+      height: 100%;
+    }
+    .avatar-image {
+      width: 100%;
+      height: 100%;
+    }
+  }
+
+  .info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding-left: 8rpx;
+
+    .nickname-display {
+      font-size: 36rpx;
+      font-weight: bold;
+      color: $primary-color; // 香槟金
+      margin-bottom: 12rpx;
+      display: block;
+    }
+    .points {
+      font-size: 26rpx;
+      color: #fff;
+      opacity: 0.7;
+      font-weight: 400;
+      letter-spacing: 1rpx;
+
+      &.negative {
+        color: #FF4D4F;
+        opacity: 1;
+      }
+    }
+  }
+}
