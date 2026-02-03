@@ -1,11 +1,10 @@
 {
   "name": "syncBinding",
   "version": "1.0.0",
-  "description": "",
+  "description": "Sync binding between partners",
   "main": "index.js",
   "dependencies": {
     "wx-server-sdk": "~2.6.3",
     "dayjs": "^1.11.19"
   }
-}
 }
