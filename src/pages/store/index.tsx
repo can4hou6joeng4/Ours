@@ -307,15 +307,18 @@ export default function Store() {
     <View className='store-v2-container'>
       <ScrollView scrollY className='store-scroll-view'>
         <View className='store-inner-content'>
-          <View className='minimal-assets-bar' onClick={handleShowExchangeHistory}>
+          <View className='minimal-assets-bar'>
             <View className='asset-info'>
               <Text className='asset-label'>CURRENT ASSETS / 当前积分</Text>
               <View className='asset-value-row'>
                 <Text className='asset-num'>{totalPoints}</Text>
               </View>
             </View>
-            <View className='asset-btn'>
-              <Text>兑换历史 ⟩</Text>
+            <View
+              className='asset-btn'
+              onClick={() => Taro.navigateTo({ url: '/pages/history/index' })}
+            >
+              明细 ⟩
             </View>
           </View>
 

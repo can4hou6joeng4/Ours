@@ -149,6 +149,18 @@ export default function Inventory() {
         </View>
       </View>
 
+      {/* 兑换历史入口按钮 */}
+      <View className='history-entry'>
+        <View
+          className='history-btn'
+          onClick={() => Taro.navigateTo({ url: '/pages/exchange-history/index' })}
+        >
+          <Image src={getIconifyUrl('tabler:history', '#fff')} className='history-icon' />
+          <Text className='history-text'>兑换历史</Text>
+          <Text className='history-arrow'>⟩</Text>
+        </View>
+      </View>
+
       <View className='tabs-header'>
         <View className='tabs-capsule'>
           <View

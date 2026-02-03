@@ -334,3 +334,39 @@
     }
   }
 }
+
+.history-entry {
+  padding: 0 32rpx 16rpx;
+
+  .history-btn {
+    background: linear-gradient(135deg, $primary-color, #E5C59F);
+    border-radius: 16rpx;
+    padding: 24rpx 32rpx;
+    display: flex;
+    align-items: center;
+    gap: 16rpx;
+    box-shadow: 0 4rpx 12rpx rgba(212, 177, 133, 0.3);
+
+    .history-icon {
+      width: 32rpx;
+      height: 32rpx;
+    }
+
+    .history-text {
+      flex: 1;
+      font-size: 28rpx;
+      font-weight: bold;
+      color: #fff;
+    }
+
+    .history-arrow {
+      font-size: 24rpx;
+      color: rgba(255, 255, 255, 0.8);
+    }
+
+    &:active {
+      transform: scale(0.98);
+      opacity: 0.9;
+    }
+  }
+}
