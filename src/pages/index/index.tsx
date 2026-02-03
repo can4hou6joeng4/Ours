@@ -5,6 +5,7 @@ import { Notify, Tabs, Button, Input, Popup } from '@taroify/core'
 import dayjs from 'dayjs'
 import EmptyState from '../../components/EmptyState'
 import Confetti, { ConfettiRef } from '../../components/Confetti'
+import NoticeModal from '../../components/NoticeModal'
 import { requestSubscribe } from '../../utils/subscribe'
 import './index.scss'
 
@@ -339,39 +340,12 @@ export default function Index() {
     <View className='container'>
       <View className='empty-state'><Text>数据加载中...</Text></View>
       {/* 即使在加载中，如果收到仪式感通知也允许弹出，增强即时感 */}
-      {showNoticeModal && currentNotice && (
-        <View className='notice-modal-root' onClick={handleCloseNotice}>
-          <View className='notice-card' onClick={e => e.stopPropagation()}>
-            <View className='card-header'>
-              <View className='notice-tag'>{currentNotice.type}</View>
-              <View className='close-btn' onClick={handleCloseNotice}>×</View>
-            </View>
-            <View className='card-body'>
-              <View className='notice-icon-box'>
-                {currentNotice.type === 'NEW_TASK' && <Text className='emoji'>✨</Text>}
-                {currentNotice.type === 'TASK_DONE' && <Text className='emoji'>🎉</Text>}
-                {currentNotice.type === 'NEW_GIFT' && <Text className='emoji'>🎁</Text>}
-                {currentNotice.type === 'GIFT_USED' && <Text className='emoji'>💝</Text>}
-              </View>
-              <Text className='notice-title'>{currentNotice.title}</Text>
-              <View className='notice-message-box'>
-                <Text className='notice-message'>{currentNotice.message}</Text>
-              </View>
-              {currentNotice.points !== 0 && (
-                <View className='notice-points'>
-                  <Text className='label'>积分变动</Text>
-                  <Text className={`value ${currentNotice.points > 0 ? 'plus' : 'minus'}`}>
-                    {currentNotice.points > 0 ? '+' : ''}{currentNotice.points}
-                  </Text>
-                </View>
-              )}
-            </View>
-            <View className='card-footer'>
-              <Button className='btn-confirm' block onClick={handleCloseNotice}>我已收到 ⟩</Button>
-            </View>
-          </View>
-        </View>
-      )}
+      <NoticeModal
+        visible={showNoticeModal}
+        notice={currentNotice}
+        closing={isNoticeClosing}
+        onClose={handleCloseNotice}
+      />
     </View>
   )
 
@@ -530,45 +504,12 @@ export default function Index() {
       </Button>
 
       {/* 全场景仪式感弹窗 (名片式设计) - 移至末尾确保物理最高层级 */}
-      {showNoticeModal && currentNotice && (
-        <View className='notice-modal-root' onClick={handleCloseNotice}>
-          <View className={`notice-card ${isNoticeClosing ? 'closing' : ''}`} onClick={e => e.stopPropagation()}>
-            <View className='card-header'>
-              <View className='notice-tag'>{currentNotice.type}</View>
-              <View className='close-btn' onClick={handleCloseNotice}>×</View>
-            </View>
-
-            <View className='card-body'>
-              <View className='notice-icon-box'>
-                {currentNotice.type === 'NEW_TASK' && <Text className='emoji'>✨</Text>}
-                {currentNotice.type === 'TASK_DONE' && <Text className='emoji'>🎉</Text>}
-                {currentNotice.type === 'NEW_GIFT' && <Text className='emoji'>🎁</Text>}
-                {currentNotice.type === 'GIFT_USED' && <Text className='emoji'>💝</Text>}
-              </View>
-
-              <Text className='notice-title'>{currentNotice.title}</Text>
-              <View className='notice-message-box'>
-                <Text className='notice-message'>{currentNotice.message}</Text>
-              </View>
-
-              {currentNotice.points !== 0 && (
-                <View className='notice-points'>
-                  <Text className='label'>积分变动</Text>
-                  <Text className={`value ${currentNotice.points > 0 ? 'plus' : 'minus'}`}>
-                    {currentNotice.points > 0 ? '+' : ''}{currentNotice.points}
-                  </Text>
-                </View>
-              )}
-            </View>
-
-            <View className='card-footer'>
-              <Button className='btn-confirm' block onClick={handleCloseNotice}>
-                我已收到 ⟩
-              </Button>
-            </View>
-          </View>
-        </View>
-      )}
+      <NoticeModal
+        visible={showNoticeModal}
+        notice={currentNotice}
+        closing={isNoticeClosing}
+        onClose={handleCloseNotice}
+      />
 
       {/* 任务详情弹窗 (圆角居中/点击外部关闭) */}
       {showDetailModal && selectedTask && (
