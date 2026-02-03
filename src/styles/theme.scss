@@ -20,6 +20,14 @@ $card-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.04);
   justify-content: center;
 }
 
+@mixin active-press {
+  transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+  &:active {
+    transform: scale(0.96);
+    opacity: 0.9;
+  }
+}
+
 @mixin card-base {
   background: $text-white;
   border-radius: $border-radius-lg;
