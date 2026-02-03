@@ -549,7 +549,7 @@
       flex-direction: column;
       animation: sheet-slide-up 0.4s cubic-bezier(0.23, 1, 0.32, 1);
       box-shadow: 0 -20rpx 60rpx rgba(0, 0, 0, 0.1);
-      max-height: 85vh;
+      max-height: calc(90vh - env(safe-area-inset-top));
 
       .sheet-header {
         padding: 48rpx 48rpx 20rpx;
@@ -597,7 +597,7 @@
       .history-scroll {
         flex: 1;
         height: 0;
-        padding: 0 48rpx 40rpx;
+        padding: 0 48rpx calc(40rpx + env(safe-area-inset-bottom));
 
         .empty-history {
           display: flex;
