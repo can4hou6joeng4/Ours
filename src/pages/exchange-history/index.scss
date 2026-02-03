@@ -1,0 +1,202 @@
+@import "../../styles/theme.scss";
+
+.exchange-history-container {
+  min-height: 100vh;
+  background-color: $bg-color;
+  padding: 32rpx;
+  box-sizing: border-box;
+
+  .filter-bar {
+    display: flex;
+    gap: 16rpx;
+    margin-bottom: 32rpx;
+    padding-left: 8rpx;
+
+    .filter-item {
+      padding: 12rpx 28rpx;
+      font-size: 24rpx;
+      color: $text-sub;
+      background: #F0F0F0;
+      border-radius: 30rpx;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      font-weight: 500;
+
+      &.active {
+        background: $primary-color;
+        color: #fff;
+        box-shadow: 0 8rpx 16rpx rgba($primary-color, 0.2);
+        font-weight: bold;
+      }
+
+      &:active {
+        transform: scale(0.95);
+      }
+    }
+  }
+
+  .history-scroll {
+    height: calc(100vh - 200rpx);
+
+    .history-list {
+      .history-card {
+        background: #FFFFFF;
+        border-radius: 24rpx;
+        padding: 32rpx;
+        margin-bottom: 24rpx;
+        box-shadow: $card-shadow;
+
+        &.deleted {
+          opacity: 0.6;
+          filter: grayscale(0.8);
+        }
+
+        .item-header {
+          display: flex;
+          align-items: center;
+          gap: 20rpx;
+          margin-bottom: 32rpx;
+
+          .item-image {
+            width: 80rpx;
+            height: 80rpx;
+            border-radius: 16rpx;
+            background: #F8F8F8;
+          }
+
+          .item-placeholder {
+            width: 80rpx;
+            height: 80rpx;
+            border-radius: 16rpx;
+            background: #F8F8F8;
+            @include flex-center;
+
+            .placeholder-icon {
+              font-size: 40rpx;
+            }
+          }
+
+          .item-info {
+            flex: 1;
+
+            .item-name {
+              font-size: 30rpx;
+              font-weight: bold;
+              color: $text-main;
+              margin-bottom: 6rpx;
+            }
+
+            .item-points {
+              font-size: 24rpx;
+              color: $primary-color;
+            }
+          }
+
+          .status-badge {
+            padding: 6rpx 20rpx;
+            border-radius: 20rpx;
+            font-size: 22rpx;
+            font-weight: 600;
+
+            .status-text {
+              color: inherit;
+            }
+
+            &.unused {
+              background: rgba(82, 196, 26, 0.1);
+              color: #52C41A;
+            }
+
+            &.used {
+              background: rgba(153, 153, 153, 0.1);
+              color: #999999;
+            }
+
+            &.deleted {
+              background: rgba(255, 77, 79, 0.1);
+              color: #FF4D4F;
+            }
+          }
+        }
+
+        .timeline {
+          border-left: 2rpx solid #E0E0E0;
+          padding-left: 32rpx;
+
+          .timeline-item {
+            position: relative;
+            padding-bottom: 24rpx;
+
+            &:last-child {
+              padding-bottom: 0;
+            }
+
+            .timeline-dot {
+              position: absolute;
+              left: -37rpx;
+              top: 8rpx;
+              width: 12rpx;
+              height: 12rpx;
+              border-radius: 50%;
+              background: $primary-color;
+            }
+
+            .timeline-content {
+              .timeline-title {
+                font-size: 26rpx;
+                font-weight: bold;
+                color: #333;
+                margin-bottom: 4rpx;
+              }
+
+              .timeline-time {
+                font-size: 22rpx;
+                color: #999;
+                margin-bottom: 4rpx;
+                display: block;
+              }
+
+              .timeline-relative {
+                font-size: 20rpx;
+                color: #BBB;
+                margin-bottom: 4rpx;
+                display: block;
+              }
+
+              .timeline-operator {
+                font-size: 22rpx;
+                color: #666;
+              }
+            }
+          }
+        }
+      }
+
+      .loading-more,
+      .no-more {
+        text-align: center;
+        padding: 40rpx 0;
+        color: #999;
+        font-size: 24rpx;
+      }
+
+      .empty-state {
+        padding-top: 240rpx;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+
+        .empty-icon {
+          font-size: 100rpx;
+          margin-bottom: 24rpx;
+          opacity: 0.5;
+        }
+
+        .empty-text {
+          font-size: 26rpx;
+          color: #8E8E93;
+          font-weight: 500;
+        }
+      }
+    }
+  }
+}
