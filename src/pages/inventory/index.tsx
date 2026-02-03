@@ -150,7 +150,7 @@ export default function Inventory() {
           className='history-btn'
           onClick={handleShowExchangeHistory}
         >
-          <Image src={getIconifyUrl('tabler:history', '#fff')} className='history-icon' />
+          <Image src={getIconifyUrl('tabler:history', '#D4B185')} className='history-icon' />
           <Text className='history-text'>兑换历史</Text>
           <Text className='history-arrow'>⟩</Text>
         </View>

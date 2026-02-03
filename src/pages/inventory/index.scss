@@ -226,37 +226,37 @@
   padding: 0 32rpx 16rpx;
 
   .history-btn {
-    background: linear-gradient(135deg, $secondary-color, #3A3A3A);
+    background: #ffffff; // 切换为纯白背景
     border-radius: 24rpx;
     padding: 28rpx 32rpx;
     display: flex;
     align-items: center;
     gap: 20rpx;
-    box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.15);
+    box-shadow: $card-shadow; // 使用统一的卡片阴影
+    border: 1rpx solid #f0f0f0; // 极细边框
 
     .history-icon {
       width: 40rpx;
       height: 40rpx;
+      // 注意：这里需要确保 Icon 组件传入的颜色也是适配的，或者使用 CSS 滤镜
+      // 如果是 Image 组件引入的 svg，建议在 index.tsx 中将颜色参数改为 #D4B185
     }
 
     .history-text {
       flex: 1;
       font-size: 30rpx;
       font-weight: bold;
-      color: #fff;
+      color: $text-main; // 深色文字
       letter-spacing: 2rpx;
     }
 
     .history-arrow {
       font-size: 28rpx;
-      color: rgba(255, 255, 255, 0.7);
+      color: #ccc; // 浅灰箭头
       font-weight: 300;
     }
 
-    &:active {
-      transform: scale(0.98);
-      opacity: 0.9;
-    }
+    @include active-press; // 保持点击反馈
   }
 }
 
