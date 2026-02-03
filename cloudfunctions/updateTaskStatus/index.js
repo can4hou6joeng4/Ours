@@ -1,7 +1,15 @@
 const cloud = require('wx-server-sdk')
+const dayjs = require('dayjs')
+
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 const db = cloud.database()
 const _ = db.command
+
+function safeTruncate(text, maxLength) {
+  if (!text) return ''
+  const truncated = text.toString().substring(0, maxLength)
+  return truncated + (text.toString().length > maxLength ? '...' : '')
+}
 
 exports.main = async (event, context) => {
   const { OPENID } = cloud.getWXContext()
@@ -62,14 +70,16 @@ exports.main = async (event, context) => {
       // 发送订阅消息：通知任务发布者 (task.creatorId)
       try {
         if (task.creatorId !== OPENID) {
+          const taskTitle = safeTruncate(task.title, 20)
+          
           await cloud.openapi.subscribeMessage.send({
             touser: task.creatorId,
             templateId: 'BDmFGTb7vGdwB_BX1k6DGlsnq1YEpEDEy8n2y8g41_E', // 备忘录任务提醒 (任务完成)
             page: 'pages/index/index',
             data: {
-              thing1: { value: task.title.substring(0, 20) },
+              thing1: { value: taskTitle },
               phrase2: { value: '已完成' },
-              time3: { value: new Date().toLocaleString() }
+              time3: { value: dayjs().format('YYYY年MM月DD日 HH:mm') }
             }
           })
         }

@@ -1,10 +1,18 @@
 const cloud = require('wx-server-sdk')
+const dayjs = require('dayjs')
 
 cloud.init({
   env: cloud.DYNAMIC_CURRENT_ENV
 })
 
 const db = cloud.database()
+
+// 安全截断文本
+function safeTruncate(text, maxLength) {
+  if (!text) return ''
+  const truncated = text.toString().substring(0, maxLength)
+  return truncated + (text.toString().length > maxLength ? '...' : '')
+}
 
 /**
  * 核心绑定逻辑
@@ -52,14 +60,16 @@ exports.main = async (event, context) => {
     // 4. 发送订阅消息通知对方 (被动方)
     try {
       const myInfoRes = await db.collection('Users').doc(OPENID).get()
+      const nickName = safeTruncate(myInfoRes.data.nickName, 10)
+      
       await cloud.openapi.subscribeMessage.send({
         touser: partnerOpenid,
         templateId: 'fnKrftUCVOwXvlo7exFmer78w_R0JfKR3evP5IxxjhE', // 关系绑定状态更新提醒
         page: 'pages/index/index',
         data: {
-          thing1: { value: '已成功建立绑定关系' },
-          time3: { value: new Date().toLocaleString() },
-          name2: { value: myInfoRes.data.nickName || '对方' }
+          thing1: { value: '绑定成功' },
+          time3: { value: dayjs().format('YYYY年MM月DD日 HH:mm') },
+          name2: { value: nickName || '对方' }
         }
       })
     } catch (sendError) {

@@ -56,14 +56,17 @@ exports.main = async (event, context) => {
 
         // 4. 发送订阅消息给对方
         try {
+          const itemName = safeTruncate(itemRes.data.name, 20)
+          const nickName = safeTruncate(userRes.data.nickName, 10)
+          
           await cloud.openapi.subscribeMessage.send({
             touser: userRes.data.partnerId,
             templateId: 'bxIAEflde73fD0hcYRnE6LkOCtT6QlVJqb1Zr6AKcmM', // 日程提醒 (礼品使用)
             page: 'pages/inventory/index',
             data: {
-              thing1: { value: itemRes.data.name.substring(0, 20) },
-              name2: { value: userRes.data.nickName || '对方' },
-              time3: { value: new Date().toLocaleString() }
+              thing1: { value: itemName },
+              name2: { value: nickName || '对方' },
+              time3: { value: dayjs().format('YYYY年MM月DD日 HH:mm') }
             }
           })
         } catch (sendError) {

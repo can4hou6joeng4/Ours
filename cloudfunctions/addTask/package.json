@@ -1,5 +1,8 @@
 {
   "name": "addTask",
   "version": "1.0.0",
-  "dependencies": { "wx-server-sdk": "~2.6.3" }
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3",
+    "dayjs": "^1.11.19"
+  }
 }

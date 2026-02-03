@@ -1,7 +1,15 @@
 const cloud = require('wx-server-sdk')
+const dayjs = require('dayjs')
+
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 const db = cloud.database()
 const _ = db.command
+
+function safeTruncate(text, maxLength) {
+  if (!text) return ''
+  const truncated = text.toString().substring(0, maxLength)
+  return truncated + (text.toString().length > maxLength ? '...' : '')
+}
 
 /**
  * 任务发布与即时扣分逻辑
@@ -69,14 +77,17 @@ exports.main = async (event, context) => {
 
       // 4. 发送微信订阅消息 (异步执行，不阻塞事务)
       try {
+        const taskTitle = safeTruncate(title, 20)
+        const nickName = safeTruncate(userRes.data.nickName, 10)
+        
         await cloud.openapi.subscribeMessage.send({
           touser: targetId,
           templateId: 'BDmFGTb7vGdwB_BX1k6DGrqfRt2yl_dReh_ar3g8CN0', // 备忘录任务提醒 (新任务)
           page: 'pages/index/index',
           data: {
-            thing1: { value: title.substring(0, 20) },
-            name2: { value: userRes.data.nickName || '对方' },
-            time3: { value: new Date().toLocaleString() }
+            thing1: { value: taskTitle },
+            name2: { value: nickName || '对方' },
+            time3: { value: dayjs().format('YYYY年MM月DD日 HH:mm') }
           }
         })
       } catch (sendError) {
