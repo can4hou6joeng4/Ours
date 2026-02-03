@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import Taro, { useDidShow } from '@tarojs/taro'
 import { View, Text, Image } from '@tarojs/components'
-import { Button, Input } from '@taroify/core'
-import { getIconifyUrl } from '../../utils/assets'
+import { Button } from '@taroify/core'
+import UserHeaderCard from '../../components/UserHeaderCard'
+import ProfileEditSheet from '../../components/ProfileEditSheet'
 import './index.scss'
 
 export default function Me() {
@@ -93,24 +94,11 @@ export default function Me() {
 
   return (
     <View className='container'>
-      {/* 个人资料卡片 (去除多余图标) */}
-      <View className='user-card' onClick={handleOpenEdit}>
-        <View className='avatar-placeholder'>
-          {userInfo?.avatarUrl ? (
-            <Image src={userInfo.avatarUrl} className='avatar-image' mode='aspectFill' />
-          ) : (
-            <Image src={getIconifyUrl('tabler:user-circle', '#D4B185')} className='avatar-icon' />
-          )}
-        </View>
-        <View className='info'>
-          <Text className='nickname-display'>
-            {userInfo?.nickName || (userInfo?.partnerId ? 'PREMIUM USER' : 'GUEST')}
-          </Text>
-          <Text className={`points ${(userInfo?.totalPoints || 0) < 0 ? 'negative' : ''}`}>
-            积分资产：{userInfo?.totalPoints || 0}
-          </Text>
-        </View>
-      </View>
+      {/* 个人资料卡片 */}
+      <UserHeaderCard
+        userInfo={userInfo}
+        onEdit={handleOpenEdit}
+      />
 
       {/* 另一半/绑定状态区 */}
       <View className='binding-section'>
@@ -141,59 +129,17 @@ export default function Me() {
         </View>
       </View>
 
-      {/* 个人资料编辑抽屉 (对齐礼品编辑风格) */}
-      {showEditSheet && (
-        <View className='edit-sheet-root' onClick={() => !saving && setShowEditSheet(false)}>
-          <View className='sheet-content' onClick={e => e.stopPropagation()}>
-            <View className='sheet-header'>
-              <Text className='title'>个人资料设置</Text>
-              <View className='close' onClick={() => !saving && setShowEditSheet(false)}>×</View>
-            </View>
-
-            <View className='sheet-body'>
-              <View className='profile-edit-box'>
-                <Button
-                  className='avatar-edit-btn'
-                  openType='chooseAvatar'
-                  onChooseAvatar={onChooseAvatar}
-                >
-                  <View className='avatar-preview'>
-                    {tempAvatar ? (
-                      <Image src={tempAvatar} className='img' mode='aspectFill' />
-                    ) : (
-                      <Image src={getIconifyUrl('tabler:camera', '#D4B185')} className='icon' />
-                    )}
-                    <View className='upload-badge'>更换头像</View>
-                  </View>
-                </Button>
-
-                <View className='nickname-edit-area'>
-                  <Text className='label'>修改昵称</Text>
-                  <Input
-                    className='custom-input'
-                    type='nickname'
-                    value={tempNickname}
-                    onChange={e => setTempNickname(e.detail.value)}
-                    onBlur={e => setTempNickname(e.detail.value)}
-                    placeholder='输入你的专属昵称'
-                  />
-                </View>
-              </View>
-            </View>
-
-            <View className='sheet-footer'>
-              <Button
-                className='save-btn'
-                loading={saving}
-                block
-                onClick={handleSaveProfile}
-              >
-                保存资料
-              </Button>
-            </View>
-          </View>
-        </View>
-      )}
+      {/* 个人资料编辑抽屉 */}
+      <ProfileEditSheet
+        visible={showEditSheet}
+        nickname={tempNickname}
+        avatar={tempAvatar}
+        saving={saving}
+        onClose={() => setShowEditSheet(false)}
+        onChangeNickname={setTempNickname}
+        onChangeAvatar={setTempAvatar}
+        onSave={handleSaveProfile}
+      />
     </View>
   )
 }
