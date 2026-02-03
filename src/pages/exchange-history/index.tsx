@@ -2,10 +2,10 @@ import { View, Text, ScrollView, Image } from '@tarojs/components'
 import Taro, { useDidShow, useReachBottom } from '@tarojs/taro'
 import { useState, useEffect } from 'react'
 import dayjs from 'dayjs'
-import relativeTime from 'dayjs/plugin/relativeTime'
+import relativeTimePlugin from 'dayjs/plugin/relativeTime'
 import './index.scss'
 
-dayjs.extend(relativeTime)
+dayjs.extend(relativeTimePlugin)
 
 interface ExchangeHistoryItem {
   _id: string
@@ -99,8 +99,8 @@ export default function ExchangeHistory() {
   const formatTime = (time: string | Date) => {
     const date = dayjs(time)
     const fullTime = date.format('YYYY/MM/DD HH:mm')
-    const relativeTime = date.fromNow()
-    return { fullTime, relativeTime }
+    const timeAgo = date.fromNow()
+    return { fullTime, timeAgo }
   }
 
   const getStatusLabel = (item: ExchangeHistoryItem) => {
@@ -169,7 +169,7 @@ export default function ExchangeHistory() {
                     <View className='timeline-content'>
                       <Text className='timeline-title'>购买</Text>
                       <Text className='timeline-time'>{purchaseTime.fullTime}</Text>
-                      <Text className='timeline-relative'>{purchaseTime.relativeTime}</Text>
+                      <Text className='timeline-relative'>{purchaseTime.timeAgo}</Text>
                       <Text className='timeline-operator'>{item.purchaseRecord.operator}</Text>
                     </View>
                   </View>
@@ -181,7 +181,7 @@ export default function ExchangeHistory() {
                       <View className='timeline-content'>
                         <Text className='timeline-title'>使用</Text>
                         <Text className='timeline-time'>{useTime.fullTime}</Text>
-                        <Text className='timeline-relative'>{useTime.relativeTime}</Text>
+                        <Text className='timeline-relative'>{useTime.timeAgo}</Text>
                         <Text className='timeline-operator'>
                           {item.useRecord!.operator} → {item.useRecord!.receiver}
                         </Text>
