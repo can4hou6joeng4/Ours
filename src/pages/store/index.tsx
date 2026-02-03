@@ -1,5 +1,5 @@
 import { View, Text, ScrollView, Button, Image, Input } from '@tarojs/components'
-import Taro, { useDidShow, eventCenter } from '@tarojs/taro'
+import Taro, { useDidShow, useReachBottom, eventCenter } from '@tarojs/taro'
 import { useState, useEffect } from 'react'
 import { Dialog, Toast } from '@taroify/core'
 import DuxGrid from '../../components/DuxGrid'
@@ -7,6 +7,7 @@ import DuxCard from '../../components/DuxCard'
 import EmptyState from '../../components/EmptyState'
 import { getIconifyUrl } from '../../utils/assets'
 import { requestSubscribe } from '../../utils/subscribe'
+import dayjs from 'dayjs'
 import './index.scss'
 
 export default function Store() {
@@ -26,6 +27,12 @@ export default function Store() {
   })
   const [saving, setSaving] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [showExchangeHistory, setShowExchangeHistory] = useState(false)
+  const [historyList, setHistoryList] = useState<any[]>([])
+  const [historyLoading, setHistoryLoading] = useState(false)
+  const [historyPage, setHistoryPage] = useState(1)
+  const [hasMoreHistory, setHasMoreHistory] = useState(true)
+  const [historyFilter, setHistoryFilter] = useState<'all' | 'unused' | 'used'>('all')
 
   useDidShow(() => {
     fetchData()
@@ -33,8 +40,58 @@ export default function Store() {
 
   useEffect(() => {
     eventCenter.on('refreshStore', fetchData)
-    return () => eventCenter.off('refreshStore', fetchData)
+    return () => { eventCenter.off('refreshStore', fetchData) }
   }, [])
+
+  // 加载兑换历史数据
+  const loadExchangeHistory = async (reset = false) => {
+    if (!hasMoreHistory && !reset) return
+
+    setHistoryLoading(true)
+    try {
+      const page = reset ? 1 : historyPage
+      const { result }: any = await Taro.cloud.callFunction({
+        name: 'getExchangeHistory',
+        data: { page, pageSize: 20, filter: historyFilter }
+      })
+
+      if (result.success) {
+        if (reset) {
+          setHistoryList(result.data)
+          setHistoryPage(1)
+        } else {
+          setHistoryList(prev => [...prev, ...result.data])
+        }
+        setHasMoreHistory(result.data.length >= 20)
+        if (!reset) {
+          setHistoryPage(prev => prev + 1)
+        }
+      }
+    } catch (e) {
+      console.error('加载兑换历史失败', e)
+    } finally {
+      setHistoryLoading(false)
+    }
+  }
+
+  // 打开兑换历史弹窗
+  const handleShowExchangeHistory = () => {
+    setShowExchangeHistory(true)
+    loadExchangeHistory(true)
+  }
+
+  // 切换历史筛选
+  const handleHistoryFilterChange = (filter: 'all' | 'unused' | 'used') => {
+    setHistoryFilter(filter)
+    loadExchangeHistory(true)
+  }
+
+  // 触底加载更多历史
+  useReachBottom(() => {
+    if (showExchangeHistory && hasMoreHistory && !historyLoading) {
+      loadExchangeHistory(false)
+    }
+  })
 
   const fetchData = async () => {
     setLoading(true)
@@ -222,7 +279,6 @@ export default function Store() {
         onLongPress={() => handleLongPress(item)}
       >
         <View className='card-top'>
-          {/* 极致加固：显式正则判定云路径，确保绝对不会被误判为本地路径 */}
           {item.coverImg && /^cloud:\/\//.test(item.coverImg.trim()) ? (
             <Image
               src={item.coverImg.trim()}
@@ -240,7 +296,7 @@ export default function Store() {
           <Text className='p-name'>{item.name}</Text>
           <Text className='p-desc'>{item.desc || '暂无描述'}</Text>
           <View className='p-footer'>
-            <Text className='p-price'>{item.points}</Text>
+            <Text className='p-price'>{item.points} 积分</Text>
           </View>
         </View>
       </View>
@@ -251,7 +307,7 @@ export default function Store() {
     <View className='store-v2-container'>
       <ScrollView scrollY className='store-scroll-view'>
         <View className='store-inner-content'>
-          <View className='minimal-assets-bar' onClick={() => Taro.navigateTo({ url: '/pages/history/index' })}>
+          <View className='minimal-assets-bar' onClick={handleShowExchangeHistory}>
             <View className='asset-info'>
               <Text className='asset-label'>CURRENT ASSETS / 当前积分</Text>
               <View className='asset-value-row'>
@@ -259,7 +315,7 @@ export default function Store() {
               </View>
             </View>
             <View className='asset-btn'>
-              <Text>明细 ⟩</Text>
+              <Text>兑换历史 ⟩</Text>
             </View>
           </View>
 
@@ -410,6 +466,75 @@ export default function Store() {
                 {selectedGift ? '保存修改' : '确认添加'}
               </Button>
             </View>
+          </View>
+        </View>
+      )}
+
+      {/* 兑换历史底部弹窗 */}
+      {showExchangeHistory && (
+        <View className='history-sheet-root' onClick={() => setShowExchangeHistory(false)}>
+          <View className='history-sheet-content' onClick={e => e.stopPropagation()}>
+            <View className='sheet-header'>
+              <Text className='title'>兑换历史</Text>
+              <View className='close' onClick={() => setShowExchangeHistory(false)}>×</View>
+            </View>
+
+            <View className='sheet-tabs'>
+              <View
+                className={`tab ${historyFilter === 'all' ? 'active' : ''}`}
+                onClick={() => handleHistoryFilterChange('all')}
+              >
+                全部
+              </View>
+              <View
+                className={`tab ${historyFilter === 'unused' ? 'active' : ''}`}
+                onClick={() => handleHistoryFilterChange('unused')}
+              >
+                待使用
+              </View>
+              <View
+                className={`tab ${historyFilter === 'used' ? 'active' : ''}`}
+                onClick={() => handleHistoryFilterChange('used')}
+              >
+                已使用
+              </View>
+            </View>
+
+            <ScrollView scrollY className='history-scroll' lowerThreshold={100}>
+              {historyList.length === 0 && !historyLoading ? (
+                <View className='empty-history'>
+                  <Text className='empty-icon'>📦</Text>
+                  <Text className='empty-text'>暂无兑换记录</Text>
+                </View>
+              ) : (
+                <View className='history-list'>
+                  {historyList.map((item: any) => (
+                    <View key={item._id} className={`history-item ${item.isDeleted ? 'deleted' : ''} ${item.status}`}>
+                      <View className='item-left'>
+                        {item.image ? (
+                          <Image src={item.image} className='item-image' mode='aspectFill' />
+                        ) : (
+                          <View className='item-placeholder'>🎁</View>
+                        )}
+                      </View>
+                      <View className='item-center'>
+                        <Text className='item-name'>{item.name}</Text>
+                        <Text className='item-points'>-{item.points} 积分</Text>
+                      </View>
+                      <View className={`item-status ${item.status}`}>
+                        {item.isDeleted ? '已删除' : item.status === 'unused' ? '待使用' : '已使用'}
+                      </View>
+                    </View>
+                  ))}
+                  {historyLoading && (
+                    <View className='loading-more'>加载中...</View>
+                  )}
+                  {!hasMoreHistory && historyList.length > 0 && (
+                    <View className='no-more'>没有更多了</View>
+                  )}
+                </View>
+              )}
+            </ScrollView>
           </View>
         </View>
       )}
