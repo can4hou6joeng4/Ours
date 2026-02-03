@@ -6,6 +6,7 @@ import DuxGrid from '../../components/DuxGrid'
 import DuxCard from '../../components/DuxCard'
 import EmptyState from '../../components/EmptyState'
 import GiftEditSheet from '../../components/GiftEditSheet'
+import ExchangeHistoryModal from '../../components/ExchangeHistoryModal'
 import { getIconifyUrl } from '../../utils/assets'
 import { requestSubscribe } from '../../utils/subscribe'
 import dayjs from 'dayjs'
@@ -87,12 +88,12 @@ export default function Store() {
     loadExchangeHistory(true)
   }
 
-  // 触底加载更多历史
-  useReachBottom(() => {
-    if (showExchangeHistory && hasMoreHistory && !historyLoading) {
-      loadExchangeHistory(false)
-    }
-  })
+  // 触底加载更多历史 (由组件内部处理，不再依赖页面级 useReachBottom 触发弹窗内滚动)
+  // useReachBottom(() => {
+  //   if (showExchangeHistory && hasMoreHistory && !historyLoading) {
+  //     loadExchangeHistory(false)
+  //   }
+  // })
 
   const fetchData = async () => {
     setLoading(true)
@@ -396,73 +397,16 @@ export default function Store() {
       />
 
       {/* 兑换历史底部弹窗 */}
-      {showExchangeHistory && (
-        <View className='history-sheet-root' onClick={() => setShowExchangeHistory(false)}>
-          <View className='history-sheet-content' onClick={e => e.stopPropagation()}>
-            <View className='sheet-header'>
-              <Text className='title'>兑换历史</Text>
-              <View className='close' onClick={() => setShowExchangeHistory(false)}>×</View>
-            </View>
-
-            <View className='sheet-tabs'>
-              <View
-                className={`tab ${historyFilter === 'all' ? 'active' : ''}`}
-                onClick={() => handleHistoryFilterChange('all')}
-              >
-                全部
-              </View>
-              <View
-                className={`tab ${historyFilter === 'unused' ? 'active' : ''}`}
-                onClick={() => handleHistoryFilterChange('unused')}
-              >
-                待使用
-              </View>
-              <View
-                className={`tab ${historyFilter === 'used' ? 'active' : ''}`}
-                onClick={() => handleHistoryFilterChange('used')}
-              >
-                已使用
-              </View>
-            </View>
-
-            <ScrollView scrollY className='history-scroll' lowerThreshold={100}>
-              {historyList.length === 0 && !historyLoading ? (
-                <View className='empty-history'>
-                  <Text className='empty-icon'>📦</Text>
-                  <Text className='empty-text'>暂无兑换记录</Text>
-                </View>
-              ) : (
-                <View className='history-list'>
-                  {historyList.map((item: any) => (
-                    <View key={item._id} className={`history-item ${item.isDeleted ? 'deleted' : ''} ${item.status}`}>
-                      <View className='item-left'>
-                        {item.image ? (
-                          <Image src={item.image} className='item-image' mode='aspectFill' />
-                        ) : (
-                          <View className='item-placeholder'>🎁</View>
-                        )}
-                      </View>
-                      <View className='item-center'>
-                        <Text className='item-name'>{item.name}</Text>
-                        <Text className='item-points'>-{item.points} 积分</Text>
-                      </View>
-                      <View className={`item-status ${item.status}`}>
-                        {item.isDeleted ? '已删除' : item.status === 'unused' ? '待使用' : '已使用'}
-                      </View>
-                    </View>
-                  ))}
-                  {historyLoading && (
-                    <View className='loading-more'>加载中...</View>
-                  )}
-                  {!hasMoreHistory && historyList.length > 0 && (
-                    <View className='no-more'>没有更多了</View>
-                  )}
-                </View>
-              )}
-            </ScrollView>
-          </View>
-        </View>
-      )}
+      <ExchangeHistoryModal
+        visible={showExchangeHistory}
+        historyList={historyList}
+        loading={historyLoading}
+        hasMore={hasMoreHistory}
+        filter={historyFilter}
+        onClose={() => setShowExchangeHistory(false)}
+        onFilterChange={handleHistoryFilterChange}
+        onLoadMore={() => loadExchangeHistory(false)}
+      />
     </View>
   )
 }
