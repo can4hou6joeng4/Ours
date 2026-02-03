@@ -3,6 +3,8 @@ import Taro, { useDidShow } from '@tarojs/taro'
 import { useState, useMemo, useEffect } from 'react'
 import dayjs from 'dayjs'
 import { Dialog, Button } from '@taroify/core'
+import InventoryItemCard from '../../components/InventoryItemCard'
+import ExchangeHistoryModal from '../../components/ExchangeHistoryModal'
 import { getIconifyUrl } from '../../utils/assets'
 import { requestSubscribe } from '../../utils/subscribe'
 import './index.scss'
@@ -140,16 +142,6 @@ export default function Inventory() {
     return acc
   }, [])
 
-  // 根据类型获取图标
-  const getItemIcon = (name: string) => {
-    if (name.includes('电影')) return 'tabler:movie'
-    if (name.includes('家务')) return 'tabler:vacuum-cleaner'
-    if (name.includes('盒')) return 'tabler:gift'
-    if (name.includes('奶茶')) return 'tabler:cup'
-    if (name.includes('金牌')) return 'tabler:medal'
-    return 'tabler:box'
-  }
-
   return (
     <View className='inventory-container'>
       {/* 兑换历史入口按钮 */}
@@ -191,37 +183,12 @@ export default function Inventory() {
           ) : (
             <View className='items-grid'>
               {stackedItems.map(item => (
-                <View key={item._id} className={`item-card-v4 ${currentTab} ${item.count > 1 ? 'is-stacked' : ''}`}>
-                  <View className='item-icon-box'>
-                    {item.image || item.cover ? (
-                      <Image
-                        src={item.image || item.cover}
-                        className='inner-icon thumb-img'
-                        mode='aspectFill'
-                      />
-                    ) : (
-                      <Image
-                        src={getIconifyUrl(getItemIcon(item.name), currentTab === 'unused' ? '#D4B185' : '#BBB')}
-                        className='inner-icon'
-                      />
-                    )}
-                    {item.count > 1 && (
-                      <View className='item-count-badge'>x{item.count}</View>
-                    )}
-                  </View>
-                  <View className='item-info'>
-                    <Text className='item-name'>{item.name}</Text>
-                    <Text className='item-time'>
-                      {currentTab === 'unused'
-                        ? `${dayjs(item.createTime).format('YYYY.MM.DD HH:mm')} 获得`
-                        : `${dayjs(item.useTime).format('YYYY.MM.DD HH:mm')} 已兑换`
-                      }
-                    </Text>
-                  </View>
-                  {currentTab === 'unused' && (
-                    <View className='use-btn-pill' onClick={() => openUseConfirm(item)}>去使用</View>
-                  )}
-                </View>
+                <InventoryItemCard
+                  key={item._id}
+                  item={item}
+                  currentTab={currentTab}
+                  onUse={openUseConfirm}
+                />
               ))}
             </View>
           )}
