@@ -7,16 +7,24 @@ cloud.init({
 
 const db = cloud.database()
 
-// 安全截断文本
+/**
+ * 安全截断文本
+ * @param {string} text - 原始文本
+ * @param {number} maxLength - 最大长度
+ * @returns {string} 截断后的文本
+ */
 function safeTruncate(text, maxLength) {
   if (!text) return ''
-  const truncated = text.toString().substring(0, maxLength)
-  return truncated + (text.toString().length > maxLength ? '...' : '')
+  const strText = String(text)
+  const truncated = strText.substring(0, maxLength)
+  return truncated + (strText.length > maxLength ? '...' : '')
 }
 
 /**
  * 核心绑定逻辑
- * event.partnerCode: 对方的邀请码 (OpenID 后 6 位)
+ * @param {Object} event - 云函数事件
+ * @param {Object} context - 云函数上下文
+ * @returns {Promise<Object>} 返回绑定结果
  */
 exports.main = async (event, context) => {
   const { partnerCode } = event
@@ -27,10 +35,8 @@ exports.main = async (event, context) => {
   }
 
   try {
-    // 1. 获取所有用户来匹配邀请码 (在 Users 集合中)
     const partnerRes = await db.collection('Users').get()
 
-    // 匹配 OpenID 后 6 位
     const targetUser = partnerRes.data.find(u =>
       u._id !== OPENID && u._id.slice(-6).toUpperCase() === partnerCode.toUpperCase()
     )
@@ -41,13 +47,11 @@ exports.main = async (event, context) => {
 
     const partnerOpenid = targetUser._id
 
-    // 2. 检查绑定状态
     const myInfo = await db.collection('Users').doc(OPENID).get()
     if (myInfo.data.partnerId || targetUser.partnerId) {
       return { success: false, message: '一方已存在绑定关系' }
     }
 
-    // 3. 事务处理原子绑定
     await db.runTransaction(async transaction => {
       await transaction.collection('Users').doc(OPENID).update({
         data: { partnerId: partnerOpenid }
@@ -57,14 +61,13 @@ exports.main = async (event, context) => {
       })
     })
 
-    // 4. 发送订阅消息通知对方 (被动方)
     try {
       const myInfoRes = await db.collection('Users').doc(OPENID).get()
       const nickName = safeTruncate(myInfoRes.data.nickName, 10)
       
       await cloud.openapi.subscribeMessage.send({
         touser: partnerOpenid,
-        templateId: 'fnKrftUCVOwXvlo7exFmer78w_R0JfKR3evP5IxxjhE', // 关系绑定状态更新提醒
+        templateId: 'fnKrftUCVOwXvlo7exFmer78w_R0JfKR3evP5IxxjhE',
         page: 'pages/index/index',
         data: {
           thing1: { value: '绑定成功' },
