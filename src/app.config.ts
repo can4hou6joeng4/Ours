@@ -5,7 +5,6 @@ export default defineAppConfig({
     'pages/history/index',
     'pages/me/index',
     'pages/inventory/index',
-    'pages/binding/index',
     'pages/gift-edit/index',
     'pages/exchange-history/index'
   ],
