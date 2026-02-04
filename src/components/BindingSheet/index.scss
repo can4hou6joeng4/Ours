@@ -97,19 +97,36 @@
           font-family: 'Courier New', monospace;
         }
 
-        .copy-btn {
+        .code-actions {
+          display: flex;
+          gap: 16rpx;
+        }
+
+        .copy-btn,
+        .share-btn {
           font-size: 24rpx;
           height: 60rpx;
           line-height: 60rpx;
-          padding: 0 32rpx;
+          padding: 0 28rpx;
           background: #FFF;
           color: $primary-color;
           border: 1rpx solid rgba($primary-color, 0.3);
           border-radius: 30rpx;
           font-weight: bold;
+          margin: 0;
 
           &:active {
             background: rgba($primary-color, 0.05);
+          }
+        }
+
+        .share-btn {
+          background: $primary-color;
+          color: #FFF;
+          border: none;
+
+          &:active {
+            opacity: 0.9;
           }
         }
       }

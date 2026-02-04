@@ -1,4 +1,4 @@
-import { View, Text } from '@tarojs/components'
+import { View, Text, Button as TaroButton } from '@tarojs/components'
 import { Button, Input } from '@taroify/core'
 import Taro from '@tarojs/taro'
 import React, { useState, useEffect } from 'react'
@@ -91,7 +91,16 @@ const BindingSheet: React.FC<BindingSheetProps> = React.memo(({
             <Text className='label'>我的邀请码</Text>
             <View className='code-box'>
               <Text className='code'>{myCode || '------'}</Text>
-              <View className='copy-btn' onClick={handleCopyCode}>复制</View>
+              <View className='code-actions'>
+                <View className='copy-btn' onClick={handleCopyCode}>复制</View>
+                <TaroButton
+                  className='share-btn'
+                  openType='share'
+                  data-code={myCode}
+                >
+                  邀请
+                </TaroButton>
+              </View>
             </View>
           </View>
 
