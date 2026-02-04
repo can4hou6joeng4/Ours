@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
-import Taro, { useDidShow } from '@tarojs/taro'
+import Taro, { useDidShow, useShareAppMessage } from '@tarojs/taro'
 import { View, Text, ScrollView } from '@tarojs/components'
 import { Notify, Tabs, Button, Input, Popup } from '@taroify/core'
 import dayjs from 'dayjs'
@@ -9,6 +9,7 @@ import NoticeModal from '../../components/NoticeModal'
 import TaskDetailModal from '../../components/TaskDetailModal'
 import AddTaskSheet from '../../components/AddTaskSheet'
 import BindingSheet from '../../components/BindingSheet'
+import InviteConfirmModal from '../../components/InviteConfirmModal'
 import { requestSubscribe } from '../../utils/subscribe'
 import { smartFetchUser, setCachedUser } from '../../utils/userCache'
 import './index.scss'
@@ -29,8 +30,11 @@ export default function Index() {
   const [selectedTask, setSelectedTask] = useState<any>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showBindingSheet, setShowBindingSheet] = useState(false)
+  const [inviteCode, setInviteCode] = useState('')
+  const [showInviteConfirm, setShowInviteConfirm] = useState(false)
 
   const confettiRef = useRef<ConfettiRef>(null)
+  const inviteChecked = useRef(false) // 防止重复检测邀请码
 
   const filterTabs = [
     { label: '待完成', value: 'pending' },
@@ -118,6 +122,32 @@ export default function Index() {
         startWatchers(res.user._id, res.user.partnerId || '')
       }
     })
+  })
+
+  // 检测邀请码参数（从分享链接进入）
+  useEffect(() => {
+    if (inviteChecked.current) return
+    inviteChecked.current = true
+
+    // 获取启动参数或页面参数
+    const launchOptions = Taro.getLaunchOptionsSync()
+    const code = launchOptions.query?.inviteCode
+
+    if (code && !partnerId) {
+      // 有邀请码且未绑定，显示确认弹窗
+      setInviteCode(code.toUpperCase())
+      setShowInviteConfirm(true)
+    }
+  }, [partnerId])
+
+  // 配置分享
+  useShareAppMessage(() => {
+    const userCode = Taro.getStorageSync('userId')?.slice(-6)?.toUpperCase() || ''
+    return {
+      title: '邀请你成为我的另一半 💕',
+      path: `/pages/index/index?inviteCode=${userCode}`,
+      imageUrl: '' // 可选：自定义分享图片
+    }
   })
 
   // 自动触发通知关闭
@@ -591,6 +621,16 @@ export default function Index() {
         onClose={() => setShowBindingSheet(false)}
         onSuccess={() => {
           // 绑定成功后刷新页面数据
+          setTimeout(() => Taro.reLaunch({ url: '/pages/index/index' }), 500)
+        }}
+      />
+
+      {/* 邀请确认弹窗 */}
+      <InviteConfirmModal
+        visible={showInviteConfirm}
+        inviteCode={inviteCode}
+        onClose={() => setShowInviteConfirm(false)}
+        onSuccess={() => {
           setTimeout(() => Taro.reLaunch({ url: '/pages/index/index' }), 500)
         }}
       />
