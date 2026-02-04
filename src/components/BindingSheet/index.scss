@@ -1,0 +1,202 @@
+@import "../../styles/theme.scss";
+
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.binding-sheet-root {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(10rpx);
+  z-index: 2100;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+
+  .sheet-content {
+    width: 100%;
+    background: #FFFFFF;
+    border-top-left-radius: 60rpx;
+    border-top-right-radius: 60rpx;
+    display: flex;
+    flex-direction: column;
+    animation: sheet-slide-up 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+    box-shadow: 0 -20rpx 60rpx rgba(0, 0, 0, 0.1);
+
+    .sheet-header {
+      padding: 48rpx 48rpx 20rpx;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+
+      .header-info {
+        display: flex;
+        flex-direction: column;
+
+        .title {
+          font-size: 40rpx;
+          font-weight: 900;
+          color: $text-main;
+          letter-spacing: 2rpx;
+          margin-bottom: 8rpx;
+        }
+
+        .subtitle {
+          font-size: 20rpx;
+          color: #BBB;
+          letter-spacing: 2rpx;
+          text-transform: uppercase;
+        }
+      }
+
+      .close {
+        font-size: 50rpx;
+        color: #DDD;
+        padding: 10rpx;
+        line-height: 1;
+      }
+    }
+
+    .sheet-body {
+      padding: 20rpx 48rpx 40rpx;
+
+      .section {
+        margin-bottom: 32rpx;
+
+        .label {
+          font-size: 22rpx;
+          color: #999;
+          font-weight: 800;
+          margin-bottom: 16rpx;
+          display: block;
+          text-transform: uppercase;
+          letter-spacing: 1rpx;
+        }
+      }
+
+      .code-box {
+        background: linear-gradient(135deg, #FAFAFA, #F5F5F5);
+        padding: 32rpx 40rpx;
+        border-radius: 24rpx;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border: 1rpx solid #EFEFEF;
+
+        .code {
+          font-size: 48rpx;
+          font-weight: 900;
+          color: $primary-color;
+          letter-spacing: 8rpx;
+          font-family: 'Courier New', monospace;
+        }
+
+        .copy-btn {
+          font-size: 24rpx;
+          height: 60rpx;
+          line-height: 60rpx;
+          padding: 0 32rpx;
+          background: #FFF;
+          color: $primary-color;
+          border: 1rpx solid rgba($primary-color, 0.3);
+          border-radius: 30rpx;
+          font-weight: bold;
+
+          &:active {
+            background: rgba($primary-color, 0.05);
+          }
+        }
+      }
+
+      .divider {
+        display: flex;
+        align-items: center;
+        margin: 40rpx 0;
+
+        &::before,
+        &::after {
+          content: "";
+          flex: 1;
+          height: 1rpx;
+          background: #F0F0F0;
+        }
+
+        .divider-text {
+          padding: 0 24rpx;
+          font-size: 22rpx;
+          color: #CCC;
+        }
+      }
+
+      .custom-input {
+        width: 100%;
+        height: 100rpx;
+        line-height: 100rpx;
+        background: #FAFAFA;
+        border-radius: 24rpx;
+        padding: 0 32rpx;
+        box-sizing: border-box;
+        font-size: 36rpx;
+        color: $text-main;
+        font-weight: 700;
+        letter-spacing: 8rpx;
+        text-align: center;
+        text-transform: uppercase;
+
+        &.taroify-input {
+          height: 100rpx;
+          line-height: 100rpx;
+          background: #FAFAFA;
+          padding: 0 32rpx;
+
+          .taroify-input__placeholder {
+            line-height: 100rpx;
+            letter-spacing: 0;
+            font-weight: 400;
+          }
+        }
+      }
+    }
+
+    .sheet-footer {
+      padding: 20rpx 48rpx calc(60rpx + env(safe-area-inset-bottom));
+
+      .taroify-button {
+        width: 100%;
+        height: 100rpx;
+        line-height: 100rpx;
+        border-radius: 50rpx;
+        font-size: 32rpx;
+        font-weight: bold;
+        &::after { border: none; }
+      }
+
+      .bind-btn {
+        background: linear-gradient(135deg, $primary-color, #E5C59F);
+        color: #fff;
+        box-shadow: 0 20rpx 40rpx rgba($primary-color, 0.2);
+
+        &[disabled] {
+          background: #E0E0E0;
+          box-shadow: none;
+        }
+
+        &:active:not([disabled]) {
+          transform: scale(0.98);
+          opacity: 0.9;
+        }
+      }
+    }
+  }
+}
+
+@keyframes sheet-slide-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
