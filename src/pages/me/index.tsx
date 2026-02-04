@@ -4,6 +4,7 @@ import { View, Text, Image } from '@tarojs/components'
 import { Button } from '@taroify/core'
 import UserHeaderCard from '../../components/UserHeaderCard'
 import ProfileEditSheet from '../../components/ProfileEditSheet'
+import { smartFetchUser, setCachedUser } from '../../utils/userCache'
 import './index.scss'
 
 export default function Me() {
@@ -15,7 +16,23 @@ export default function Me() {
   const [saving, setSaving] = useState(false)
 
   useDidShow(() => {
-    fetchUserInfo(!!userInfo)
+    // 使用智能缓存：优先显示缓存数据，后台刷新
+    smartFetchUser({
+      onCacheHit: (cached) => {
+        setUserInfo(cached.user)
+        setLoading(false)
+      },
+      onFresh: (result) => {
+        if (result?.success) {
+          setUserInfo(result.user)
+        }
+      }
+    }).then((res: any) => {
+      if (!res?.fromCache && res?.success) {
+        setUserInfo(res.user)
+        setLoading(false)
+      }
+    })
   })
 
   const handleOpenEdit = () => {
@@ -78,7 +95,10 @@ export default function Me() {
         }
       })
 
-      setUserInfo({ ...userInfo, nickName: tempNickname, avatarUrl: finalAvatarUrl })
+      const updatedUser = { ...userInfo, nickName: tempNickname, avatarUrl: finalAvatarUrl }
+      setUserInfo(updatedUser)
+      // 同步更新缓存
+      setCachedUser(updatedUser)
       setShowEditSheet(false)
       Taro.showToast({ title: '资料已更新', icon: 'success' })
     } catch (err) {
