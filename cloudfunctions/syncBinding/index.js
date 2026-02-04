@@ -48,8 +48,30 @@ exports.main = async (event, context) => {
     const partnerOpenid = targetUser._id
 
     const myInfo = await db.collection('Users').doc(OPENID).get()
-    if (myInfo.data.partnerId || targetUser.partnerId) {
-      return { success: false, message: '一方已存在绑定关系' }
+
+    // 精细化绑定状态检查
+    const myPartnerId = myInfo.data.partnerId
+    const theirPartnerId = targetUser.partnerId
+
+    // 场景1: 双方已经是伴侣
+    if (myPartnerId === partnerOpenid && theirPartnerId === OPENID) {
+      return { success: false, message: '你们已经是伴侣了 💕', alreadyBound: true }
+    }
+
+    // 场景2: 自己已绑定其他人
+    if (myPartnerId && myPartnerId !== partnerOpenid) {
+      return { success: false, message: '你已有伴侣，无法再次绑定' }
+    }
+
+    // 场景3: 对方已绑定其他人
+    if (theirPartnerId && theirPartnerId !== OPENID) {
+      return { success: false, message: '对方已有伴侣' }
+    }
+
+    // 场景4: 单向绑定异常（数据不一致），尝试修复
+    if ((myPartnerId === partnerOpenid && !theirPartnerId) ||
+        (!myPartnerId && theirPartnerId === OPENID)) {
+      // 继续执行绑定流程来修复数据
     }
 
     await db.runTransaction(async transaction => {

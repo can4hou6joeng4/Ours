@@ -32,9 +32,14 @@ const InviteConfirmModal: React.FC<InviteConfirmModalProps> = React.memo(({
         name: 'syncBinding',
         data: { partnerCode: inviteCode }
       })
-      const { success, message } = res.result as any
+      const { success, message, alreadyBound } = res.result as any
       if (success) {
         Taro.showToast({ title: '绑定成功！', icon: 'success' })
+        onClose()
+        onSuccess?.()
+      } else if (alreadyBound) {
+        // 已经是伴侣，直接关闭并刷新
+        Taro.showToast({ title: message, icon: 'success' })
         onClose()
         onSuccess?.()
       } else {

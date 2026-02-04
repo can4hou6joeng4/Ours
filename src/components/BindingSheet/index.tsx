@@ -58,9 +58,15 @@ const BindingSheet: React.FC<BindingSheetProps> = React.memo(({
         name: 'syncBinding',
         data: { partnerCode: inputCode }
       })
-      const { success, message } = res.result as any
+      const { success, message, alreadyBound } = res.result as any
       if (success) {
         Taro.showToast({ title: '绑定成功！', icon: 'success' })
+        setInputCode('')
+        onClose()
+        onSuccess?.()
+      } else if (alreadyBound) {
+        // 已经是伴侣，友好提示并刷新
+        Taro.showToast({ title: message, icon: 'success' })
         setInputCode('')
         onClose()
         onSuccess?.()
