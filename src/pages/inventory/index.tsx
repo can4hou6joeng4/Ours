@@ -1,6 +1,6 @@
 import { View, Text, ScrollView, Image, Input } from '@tarojs/components'
 import Taro, { useDidShow } from '@tarojs/taro'
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import dayjs from 'dayjs'
 import { Dialog, Button } from '@taroify/core'
 import InventoryItemCard from '../../components/InventoryItemCard'
@@ -8,6 +8,9 @@ import ExchangeHistoryModal from '../../components/ExchangeHistoryModal'
 import { getIconifyUrl } from '../../utils/assets'
 import { requestSubscribe } from '../../utils/subscribe'
 import './index.scss'
+
+// 数据缓存有效期（毫秒）
+const DATA_CACHE_DURATION = 30 * 1000 // 30秒
 
 export default function Inventory() {
   const [items, setItems] = useState<any[]>([])
@@ -24,7 +27,15 @@ export default function Inventory() {
   const [hasMoreHistory, setHasMoreHistory] = useState(true)
   const [historyFilter, setHistoryFilter] = useState<'all' | 'unused' | 'used'>('all')
 
+  // 性能优化：记录上次数据获取时间
+  const lastFetchTime = useRef<number>(0)
+
   useDidShow(() => {
+    // 性能优化：如果距离上次获取不足缓存时间且有数据，跳过请求
+    const now = Date.now()
+    if (items.length > 0 && now - lastFetchTime.current < DATA_CACHE_DURATION) {
+      return
+    }
     fetchItems()
   })
 
@@ -82,6 +93,7 @@ export default function Inventory() {
       const { result }: any = await Taro.cloud.callFunction({ name: 'getItems' })
       if (result.success) {
         setItems(result.data)
+        lastFetchTime.current = Date.now() // 记录获取时间
       }
     } catch (e) {
       Taro.showToast({ title: '获取背包失败', icon: 'none' })

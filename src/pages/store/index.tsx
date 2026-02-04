@@ -1,6 +1,6 @@
 import { View, Text, ScrollView, Button, Image, Input } from '@tarojs/components'
 import Taro, { useDidShow, useReachBottom, eventCenter } from '@tarojs/taro'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { Dialog, Toast } from '@taroify/core'
 import DuxGrid from '../../components/DuxGrid'
 import DuxCard from '../../components/DuxCard'
@@ -10,8 +10,12 @@ import GiftEditSheet from '../../components/GiftEditSheet'
 import ExchangeHistoryModal from '../../components/ExchangeHistoryModal'
 import { getIconifyUrl } from '../../utils/assets'
 import { requestSubscribe } from '../../utils/subscribe'
+import { smartFetchUser } from '../../utils/userCache'
 import dayjs from 'dayjs'
 import './index.scss'
+
+// 数据缓存有效期（毫秒）
+const DATA_CACHE_DURATION = 30 * 1000 // 30秒
 
 export default function Store() {
   const [totalPoints, setTotalPoints] = useState(0)
@@ -37,7 +41,15 @@ export default function Store() {
   const [hasMoreHistory, setHasMoreHistory] = useState(true)
   const [historyFilter, setHistoryFilter] = useState<'all' | 'unused' | 'used'>('all')
 
+  // 性能优化：记录上次数据获取时间
+  const lastFetchTime = useRef<number>(0)
+
   useDidShow(() => {
+    // 性能优化：如果距离上次获取不足缓存时间且有数据，跳过请求
+    const now = Date.now()
+    if (products.length > 0 && now - lastFetchTime.current < DATA_CACHE_DURATION) {
+      return
+    }
     fetchData()
   })
 
@@ -45,6 +57,12 @@ export default function Store() {
     eventCenter.on('refreshStore', fetchData)
     return () => { eventCenter.off('refreshStore', fetchData) }
   }, [])
+
+  // 性能优化：使用 useMemo 缓存瀑布流列计算
+  const { leftCol, rightCol } = useMemo(() => ({
+    leftCol: products.filter((_, i) => i % 2 === 0),
+    rightCol: products.filter((_, i) => i % 2 !== 0)
+  }), [products])
 
   // 加载兑换历史数据
   const loadExchangeHistory = async (reset = false) => {
@@ -99,20 +117,30 @@ export default function Store() {
   const fetchData = async () => {
     setLoading(true)
     try {
-      const [userRes, giftsRes]: any = await Promise.all([
-        Taro.cloud.callFunction({ name: 'initUser' }),
+      // 优化：用户信息使用缓存，礼品列表并行请求
+      const [userResult, giftsRes]: any = await Promise.all([
+        smartFetchUser({
+          onCacheHit: (cached) => {
+            // 立即使用缓存渲染
+            const user = cached.user
+            setTotalPoints(user?.totalPoints || 0)
+            setHasPartner(!!user?.partnerId)
+            setIsAdmin(true)
+          }
+        }),
         Taro.cloud.callFunction({ name: 'getGifts' })
       ])
 
-      if (userRes.result.success) {
-        const user = userRes.result.user
-        setTotalPoints(user.totalPoints || 0)
-        setHasPartner(!!user.partnerId)
-        setIsAdmin(true) // 这里的逻辑可以根据需求精细化
+      // 处理用户信息（无缓存时或后台刷新后）
+      if (userResult?.success && !userResult.fromCache) {
+        setTotalPoints(userResult.user?.totalPoints || 0)
+        setHasPartner(!!userResult.user?.partnerId)
+        setIsAdmin(true)
       }
 
       if (giftsRes.result.success) {
         setProducts(giftsRes.result.gifts)
+        lastFetchTime.current = Date.now() // 记录获取时间
       }
     } catch (e) {
       console.error('获取数据失败', e)
@@ -242,10 +270,6 @@ export default function Store() {
       setTimeout(() => setIsSubmitting(false), 200)
     }
   }
-
-  // 将产品列表拆分为两列以实现瀑布流
-  const leftCol = products.filter((_, i) => i % 2 === 0)
-  const rightCol = products.filter((_, i) => i % 2 !== 0)
 
   const renderProduct = (item) => (
     <ProductCard
