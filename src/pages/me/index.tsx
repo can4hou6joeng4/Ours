@@ -4,6 +4,7 @@ import { View, Text, Image } from '@tarojs/components'
 import { Button } from '@taroify/core'
 import UserHeaderCard from '../../components/UserHeaderCard'
 import ProfileEditSheet from '../../components/ProfileEditSheet'
+import BindingSheet from '../../components/BindingSheet'
 import { smartFetchUser, setCachedUser } from '../../utils/userCache'
 import './index.scss'
 
@@ -14,6 +15,7 @@ export default function Me() {
   const [tempNickname, setTempNickname] = useState('')
   const [tempAvatar, setTempAvatar] = useState('')
   const [saving, setSaving] = useState(false)
+  const [showBindingSheet, setShowBindingSheet] = useState(false)
 
   useDidShow(() => {
     // 使用智能缓存：优先显示缓存数据，后台刷新
@@ -129,7 +131,7 @@ export default function Me() {
               <Text className='guide-text'>绑定另一半，开启双人互动空间</Text>
               <Button className='action-btn' onClick={(e) => {
                 e.stopPropagation()
-                Taro.navigateTo({ url: '/pages/binding/index' })
+                setShowBindingSheet(true)
               }}>
                 去绑定
               </Button>
@@ -159,6 +161,17 @@ export default function Me() {
         onChangeNickname={setTempNickname}
         onChangeAvatar={setTempAvatar}
         onSave={handleSaveProfile}
+      />
+
+      {/* 绑定弹窗 */}
+      <BindingSheet
+        visible={showBindingSheet}
+        onClose={() => setShowBindingSheet(false)}
+        onSuccess={() => {
+          setShowBindingSheet(false)
+          // 刷新页面获取最新绑定状态
+          setTimeout(() => Taro.reLaunch({ url: '/pages/me/index' }), 500)
+        }}
       />
     </View>
   )

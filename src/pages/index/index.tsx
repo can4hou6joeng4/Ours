@@ -8,6 +8,7 @@ import Confetti, { ConfettiRef } from '../../components/Confetti'
 import NoticeModal from '../../components/NoticeModal'
 import TaskDetailModal from '../../components/TaskDetailModal'
 import AddTaskSheet from '../../components/AddTaskSheet'
+import BindingSheet from '../../components/BindingSheet'
 import { requestSubscribe } from '../../utils/subscribe'
 import { smartFetchUser, setCachedUser } from '../../utils/userCache'
 import './index.scss'
@@ -26,7 +27,8 @@ export default function Index() {
   const [loading, setLoading] = useState(!Taro.getStorageSync('partnerId'))
   const [showDetailModal, setShowDetailModal] = useState(false)
   const [selectedTask, setSelectedTask] = useState<any>(null)
-  const [isSubmitting, setIsSubmitting] = useState(false) // 新增：提交锁
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [showBindingSheet, setShowBindingSheet] = useState(false)
 
   const confettiRef = useRef<ConfettiRef>(null)
 
@@ -483,7 +485,7 @@ export default function Index() {
             title='尚未开启连接'
             desc='完成另一半绑定后，方可发布与查看双人任务'
             btnText='去绑定'
-            onAction={() => Taro.navigateTo({ url: '/pages/binding/index' })}
+            onAction={() => setShowBindingSheet(true)}
           />
         ) : filteredTasks.length === 0 ? (
           <EmptyState
@@ -543,17 +545,7 @@ export default function Index() {
         className='fab-btn-v2'
         onClick={() => {
           if (!partnerId) {
-            Taro.showModal({
-              title: '尚未绑定',
-              content: '发布任务需要先与另一半建立连接，是否前往绑定？',
-              confirmText: '去绑定',
-              confirmColor: '#D4B185',
-              success: (res) => {
-                if (res.confirm) {
-                  Taro.navigateTo({ url: '/pages/binding/index' })
-                }
-              }
-            })
+            setShowBindingSheet(true)
             return
           }
           setShowAddModal(true)
@@ -580,7 +572,7 @@ export default function Index() {
         onRevoke={handleRevoke}
       />
 
-      {/* 发布任务底部抽屉 (重塑为高级侧滑交互) */}
+      {/* 发布任务底部抽屉 */}
       <AddTaskSheet
         visible={showAddModal}
         title={newTaskTitle}
@@ -591,6 +583,16 @@ export default function Index() {
         onChangePoints={setNewTaskPoints}
         onChangeType={setNewTaskType}
         onConfirm={handleAddTask}
+      />
+
+      {/* 绑定弹窗 */}
+      <BindingSheet
+        visible={showBindingSheet}
+        onClose={() => setShowBindingSheet(false)}
+        onSuccess={() => {
+          // 绑定成功后刷新页面数据
+          setTimeout(() => Taro.reLaunch({ url: '/pages/index/index' }), 500)
+        }}
       />
     </View>
   )

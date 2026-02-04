@@ -8,6 +8,7 @@ import ProductCard from '../../components/ProductCard'
 import EmptyState from '../../components/EmptyState'
 import GiftEditSheet from '../../components/GiftEditSheet'
 import ExchangeHistoryModal from '../../components/ExchangeHistoryModal'
+import BindingSheet from '../../components/BindingSheet'
 import { getIconifyUrl } from '../../utils/assets'
 import { requestSubscribe } from '../../utils/subscribe'
 import { smartFetchUser } from '../../utils/userCache'
@@ -40,6 +41,7 @@ export default function Store() {
   const [historyPage, setHistoryPage] = useState(1)
   const [hasMoreHistory, setHasMoreHistory] = useState(true)
   const [historyFilter, setHistoryFilter] = useState<'all' | 'unused' | 'used'>('all')
+  const [showBindingSheet, setShowBindingSheet] = useState(false)
 
   // 性能优化：记录上次数据获取时间
   const lastFetchTime = useRef<number>(0)
@@ -318,7 +320,7 @@ export default function Store() {
                 title='兑换中心尚未开启'
                 desc='绑定另一半后，可以使用积分兑换心仪的礼品'
                 btnText='去绑定'
-                onAction={() => Taro.navigateTo({ url: '/pages/binding/index' })}
+                onAction={() => setShowBindingSheet(true)}
               />
             ) : loading ? (
               <View className='skeleton-grid'>
@@ -404,6 +406,16 @@ export default function Store() {
         onClose={() => setShowExchangeHistory(false)}
         onFilterChange={handleHistoryFilterChange}
         onLoadMore={() => loadExchangeHistory(false)}
+      />
+
+      {/* 绑定弹窗 */}
+      <BindingSheet
+        visible={showBindingSheet}
+        onClose={() => setShowBindingSheet(false)}
+        onSuccess={() => {
+          setShowBindingSheet(false)
+          fetchData()
+        }}
       />
     </View>
   )
