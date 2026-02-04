@@ -140,13 +140,14 @@ export default function Index() {
     }
   }, [partnerId])
 
-  // 配置分享
+  // 配置分享（支持用户自定义标题）
   useShareAppMessage(() => {
+    const customTitle = Taro.getStorageSync('customShareTitle')
     const userCode = Taro.getStorageSync('userId')?.slice(-6)?.toUpperCase() || ''
     return {
-      title: '邀请你成为我的另一半 💕',
+      title: customTitle || '邀请你成为我的另一半 💕',
       path: `/pages/index/index?inviteCode=${userCode}`,
-      imageUrl: '' // 可选：自定义分享图片
+      imageUrl: ''
     }
   })
 

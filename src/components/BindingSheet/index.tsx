@@ -1,8 +1,9 @@
-import { View, Text, Button as TaroButton } from '@tarojs/components'
+import { View, Text } from '@tarojs/components'
 import { Button, Input } from '@taroify/core'
 import Taro from '@tarojs/taro'
 import React, { useState, useEffect } from 'react'
 import { requestSubscribe } from '../../utils/subscribe'
+import ShareEditSheet from '../ShareEditSheet'
 import './index.scss'
 
 interface BindingSheetProps {
@@ -19,6 +20,7 @@ const BindingSheet: React.FC<BindingSheetProps> = React.memo(({
   const [myCode, setMyCode] = useState('')
   const [inputCode, setInputCode] = useState('')
   const [isBinding, setIsBinding] = useState(false)
+  const [showShareEdit, setShowShareEdit] = useState(false)
 
   useEffect(() => {
     if (visible && !myCode) {
@@ -93,13 +95,12 @@ const BindingSheet: React.FC<BindingSheetProps> = React.memo(({
               <Text className='code'>{myCode || '------'}</Text>
               <View className='code-actions'>
                 <View className='copy-btn' onClick={handleCopyCode}>复制</View>
-                <TaroButton
+                <View
                   className='share-btn'
-                  openType='share'
-                  data-code={myCode}
+                  onClick={() => setShowShareEdit(true)}
                 >
                   邀请
-                </TaroButton>
+                </View>
               </View>
             </View>
           </View>
@@ -133,6 +134,13 @@ const BindingSheet: React.FC<BindingSheetProps> = React.memo(({
           </Button>
         </View>
       </View>
+
+      {/* 分享内容编辑弹窗 */}
+      <ShareEditSheet
+        visible={showShareEdit}
+        inviteCode={myCode}
+        onClose={() => setShowShareEdit(false)}
+      />
     </View>
   )
 })
