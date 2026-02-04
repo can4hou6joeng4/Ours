@@ -11,26 +11,29 @@ export default function CustomTabBar() {
     {
       pagePath: 'pages/index/index',
       text: '首页',
-      icon: 'tabler:home'
+      icon: 'solar:home-2-bold',
+      iconOutline: 'solar:home-2-linear'
     },
     {
       pagePath: 'pages/store/index',
       text: '兑换',
-      icon: 'tabler:refresh'
+      icon: 'solar:bag-heart-bold',
+      iconOutline: 'solar:bag-heart-linear'
     },
     {
       pagePath: 'pages/inventory/index',
       text: '背包',
-      icon: 'tabler:package'
+      icon: 'solar:box-bold',
+      iconOutline: 'solar:box-linear'
     },
     {
       pagePath: 'pages/me/index',
       text: '我的',
-      icon: 'tabler:user'
+      icon: 'solar:user-rounded-bold',
+      iconOutline: 'solar:user-rounded-linear'
     }
   ]
 
-  // 核心修复：更高效的路由同步
   useEffect(() => {
     const updateSelected = () => {
       const pages = Taro.getCurrentPages()
@@ -43,10 +46,9 @@ export default function CustomTabBar() {
     }
 
     updateSelected()
-    // 增加一个微小延迟的二次检查，确保在某些环境下的准确性
     const timer = setTimeout(updateSelected, 50)
     return () => clearTimeout(timer)
-  }, [Taro.getCurrentPages().length]) // 监听页面栈长度变化
+  }, [Taro.getCurrentPages().length])
 
   const switchTab = (index, url) => {
     if (selected === index) return
@@ -55,11 +57,8 @@ export default function CustomTabBar() {
 
   return (
     <View className='tab-bar-root'>
-      {/* 核心修复：背景遮罩层，防止内容穿透 */}
-      <View className='tab-bar-mask'></View>
-
-      <View className='tab-bar-wrapper'>
-        <View className='tab-bar-capsule'>
+      <View className='tab-bar-container'>
+        <View className='tab-bar-inner'>
           {LIST.map((item, index) => (
             <View
               key={index}
@@ -67,7 +66,10 @@ export default function CustomTabBar() {
               onClick={() => switchTab(index, item.pagePath)}
             >
               <Image
-                src={getIconifyUrl(item.icon, selected === index ? '#D4B185' : '#888')}
+                src={getIconifyUrl(
+                  selected === index ? item.icon : item.iconOutline,
+                  selected === index ? '#D4B185' : '#666666'
+                )}
                 className='tab-icon'
               />
               <Text className='tab-text'>{item.text}</Text>

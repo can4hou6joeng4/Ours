@@ -6,42 +6,18 @@
   left: 0;
   right: 0;
   z-index: 999;
-  pointer-events: none;
 
-  // 遮罩层：颜色与背景色一致，高度覆盖胶囊及安全区
-  .tab-bar-mask {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: calc(110rpx + env(safe-area-inset-bottom));
-    background: $bg-color; // 关键：使用全局背景色遮挡滚动内容
-    z-index: 998;
-    // 使用渐变使遮挡更自然
-    mask-image: linear-gradient(to bottom, transparent, black 20rpx);
-  }
-
-  .tab-bar-wrapper {
-    position: relative;
+  .tab-bar-container {
+    width: 100%;
+    background: #ffffff;
+    border-top: 1rpx solid #E5E5E5;
     padding-bottom: env(safe-area-inset-bottom);
-    display: flex;
-    justify-content: center;
-    z-index: 999;
-    pointer-events: none;
 
-    .tab-bar-capsule {
-      pointer-events: auto;
-      width: 480rpx;
-      height: 100rpx;
-      background: rgba(255, 255, 255, 0.98); // 提高不透明度
-      backdrop-filter: blur(15px);
-      border-radius: 100rpx;
+    .tab-bar-inner {
       display: flex;
       align-items: center;
       justify-content: space-around;
-      padding: 0 30rpx;
-      border: 1rpx solid rgba(0, 0, 0, 0.05);
-      box-shadow: 0 20rpx 40rpx rgba(0, 0, 0, 0.1);
+      height: 110rpx;
 
       .tab-item {
         flex: 1;
@@ -49,23 +25,25 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
+        height: 100%;
+        position: relative;
 
         .tab-icon {
-          width: 40rpx;
-          height: 40rpx;
-          margin-bottom: 2rpx;
+          width: 52rpx;
+          height: 52rpx;
+          margin-bottom: 4rpx;
         }
 
         .tab-text {
-          font-size: 18rpx;
-          color: #888;
-          font-weight: 500;
+          font-size: 22rpx;
+          color: #333333;
+          font-weight: 400;
         }
 
         &.active {
           .tab-text {
             color: $primary-color;
-            font-weight: bold;
+            font-weight: 600;
           }
         }
       }
