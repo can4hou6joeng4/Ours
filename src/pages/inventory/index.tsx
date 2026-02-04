@@ -5,8 +5,11 @@ import dayjs from 'dayjs'
 import { Dialog, Button } from '@taroify/core'
 import InventoryItemCard from '../../components/InventoryItemCard'
 import ExchangeHistoryModal from '../../components/ExchangeHistoryModal'
+import BindingSheet from '../../components/BindingSheet'
+import EmptyState from '../../components/EmptyState'
 import { getIconifyUrl } from '../../utils/assets'
 import { requestSubscribe } from '../../utils/subscribe'
+import { smartFetchUser } from '../../utils/userCache'
 import './index.scss'
 
 // 数据缓存有效期（毫秒）
@@ -26,11 +29,25 @@ export default function Inventory() {
   const [historyPage, setHistoryPage] = useState(1)
   const [hasMoreHistory, setHasMoreHistory] = useState(true)
   const [historyFilter, setHistoryFilter] = useState<'all' | 'unused' | 'used'>('all')
+  const [hasPartner, setHasPartner] = useState(false)
+  const [showBindingSheet, setShowBindingSheet] = useState(false)
 
   // 性能优化：记录上次数据获取时间
   const lastFetchTime = useRef<number>(0)
 
   useDidShow(() => {
+    // 获取用户绑定状态
+    smartFetchUser({
+      onCacheHit: (cached) => {
+        setHasPartner(!!cached.user?.partnerId)
+      },
+      onFresh: (result) => {
+        if (result?.success) {
+          setHasPartner(!!result.user?.partnerId)
+        }
+      }
+    })
+
     // 性能优化：如果距离上次获取不足缓存时间且有数据，跳过请求
     const now = Date.now()
     if (items.length > 0 && now - lastFetchTime.current < DATA_CACHE_DURATION) {
@@ -77,6 +94,10 @@ export default function Inventory() {
 
   // 打开兑换历史弹窗
   const handleShowExchangeHistory = () => {
+    if (!hasPartner) {
+      setShowBindingSheet(true)
+      return
+    }
     setShowExchangeHistory(true)
     loadExchangeHistory(true)
   }
@@ -187,7 +208,15 @@ export default function Inventory() {
 
       <ScrollView scrollY className='items-scroll'>
         <View className='items-inner'>
-          {filteredItems.length === 0 && !loading ? (
+          {!hasPartner ? (
+            <EmptyState
+              icon='tabler:link'
+              title='背包尚未开启'
+              desc='绑定另一半后，可以查看和使用兑换的礼品'
+              btnText='去绑定'
+              onAction={() => setShowBindingSheet(true)}
+            />
+          ) : filteredItems.length === 0 && !loading ? (
             <View className='empty-state'>
               <Image src={getIconifyUrl('tabler:package-off', '#8E8E93')} className='empty-icon-img' />
               <Text className='empty-text'>背包空空如也</Text>
@@ -230,6 +259,17 @@ export default function Inventory() {
         onClose={() => setShowExchangeHistory(false)}
         onFilterChange={handleHistoryFilterChange}
         onLoadMore={() => loadExchangeHistory()}
+      />
+
+      {/* 绑定弹窗 */}
+      <BindingSheet
+        visible={showBindingSheet}
+        onClose={() => setShowBindingSheet(false)}
+        onSuccess={() => {
+          setShowBindingSheet(false)
+          setHasPartner(true)
+          fetchItems()
+        }}
       />
     </View>
   )

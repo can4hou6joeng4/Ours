@@ -295,13 +295,19 @@ export default function Store() {
             </View>
             <View
               className='asset-btn'
-              onClick={() => Taro.navigateTo({ url: '/pages/history/index' })}
+              onClick={() => {
+                if (!hasPartner) {
+                  setShowBindingSheet(true)
+                  return
+                }
+                Taro.navigateTo({ url: '/pages/history/index' })
+              }}
             >
               明细 ⟩
             </View>
           </View>
 
-          {isAdmin && (
+          {isAdmin && hasPartner && (
             <View className='admin-actions'>
               <Button className='add-btn' onClick={() => {
                 setSelectedGift(null)

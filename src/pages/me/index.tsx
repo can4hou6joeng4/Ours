@@ -38,6 +38,11 @@ export default function Me() {
   })
 
   const handleOpenEdit = () => {
+    // 未绑定时提示去绑定
+    if (!userInfo?.partnerId) {
+      setShowBindingSheet(true)
+      return
+    }
     setTempNickname(userInfo?.nickName || '')
     setTempAvatar(userInfo?.avatarUrl || '')
     setShowEditSheet(true)
