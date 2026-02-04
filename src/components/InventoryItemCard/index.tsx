@@ -10,7 +10,7 @@ interface InventoryItemCardProps {
   onUse: (item: any) => void
 }
 
-const InventoryItemCard: React.FC<InventoryItemCardProps> = ({ item, currentTab, onUse }) => {
+const InventoryItemCard: React.FC<InventoryItemCardProps> = React.memo(({ item, currentTab, onUse }) => {
   // 根据类型获取图标
   const getItemIcon = (name: string) => {
     if (name.includes('电影')) return 'tabler:movie'
@@ -54,6 +54,6 @@ const InventoryItemCard: React.FC<InventoryItemCardProps> = ({ item, currentTab,
       )}
     </View>
   )
-}
+})
 
 export default InventoryItemCard

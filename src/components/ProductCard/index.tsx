@@ -10,7 +10,7 @@ interface ProductCardProps {
   onLongPress: (item: any) => void
 }
 
-const ProductCard: React.FC<ProductCardProps> = ({ item, onBuy, onLongPress }) => {
+const ProductCard: React.FC<ProductCardProps> = React.memo(({ item, onBuy, onLongPress }) => {
   return (
     <DuxCard
       className='product-card-v4 masonry-item'
@@ -45,6 +45,6 @@ const ProductCard: React.FC<ProductCardProps> = ({ item, onBuy, onLongPress }) =
       </View>
     </DuxCard>
   )
-}
+})
 
 export default ProductCard
