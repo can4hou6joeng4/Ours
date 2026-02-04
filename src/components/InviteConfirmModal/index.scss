@@ -1,0 +1,98 @@
+@import "../../styles/theme.scss";
+
+.invite-confirm-root {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(10rpx);
+  z-index: 2200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48rpx;
+  box-sizing: border-box;
+
+  .confirm-card {
+    width: 100%;
+    max-width: 600rpx;
+    background: #FFFFFF;
+    border-radius: 40rpx;
+    padding: 60rpx 48rpx;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    animation: card-pop-in 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+    box-shadow: 0 40rpx 80rpx rgba(0, 0, 0, 0.15);
+
+    .card-icon {
+      font-size: 80rpx;
+      margin-bottom: 32rpx;
+    }
+
+    .card-title {
+      font-size: 36rpx;
+      font-weight: 900;
+      color: $text-main;
+      margin-bottom: 16rpx;
+    }
+
+    .card-desc {
+      font-size: 28rpx;
+      color: #888;
+      text-align: center;
+      margin-bottom: 32rpx;
+    }
+
+    .card-code {
+      font-size: 32rpx;
+      font-weight: 700;
+      color: $primary-color;
+      background: rgba($primary-color, 0.1);
+      padding: 16rpx 40rpx;
+      border-radius: 20rpx;
+      margin-bottom: 48rpx;
+      letter-spacing: 4rpx;
+    }
+
+    .card-actions {
+      display: flex;
+      width: 100%;
+      gap: 24rpx;
+
+      .taroify-button {
+        flex: 1;
+        height: 88rpx;
+        line-height: 88rpx;
+        border-radius: 44rpx;
+        font-size: 28rpx;
+        font-weight: bold;
+        &::after { border: none; }
+      }
+
+      .cancel-btn {
+        background: #F5F5F5;
+        color: #999;
+      }
+
+      .confirm-btn {
+        background: linear-gradient(135deg, $primary-color, #E5C59F);
+        color: #fff;
+        box-shadow: 0 12rpx 24rpx rgba($primary-color, 0.3);
+      }
+    }
+  }
+}
+
+@keyframes card-pop-in {
+  from {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
