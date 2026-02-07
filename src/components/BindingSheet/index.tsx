@@ -49,9 +49,6 @@ const BindingSheet: React.FC<BindingSheetProps> = React.memo(({
       return
     }
 
-    // 引导订阅
-    await requestSubscribe(['BIND_SUCCESS'])
-
     setIsBinding(true)
     try {
       const res = await Taro.cloud.callFunction({
@@ -62,6 +59,10 @@ const BindingSheet: React.FC<BindingSheetProps> = React.memo(({
       if (success) {
         Taro.showToast({ title: '绑定成功！', icon: 'success' })
         setInputCode('')
+
+        // 绑定成功后引导订阅所有消息模板（一次性请求，提升送达率）
+        await requestSubscribe(['NEW_TASK', 'TASK_DONE', 'GIFT_USED'])
+
         onClose()
         onSuccess?.()
       } else if (alreadyBound) {
