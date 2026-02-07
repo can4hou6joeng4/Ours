@@ -78,16 +78,16 @@ exports.main = async (event, context) => {
       // 4. 发送微信订阅消息 (异步执行，不阻塞事务)
       try {
         const taskTitle = safeTruncate(title, 20)
-        const nickName = safeTruncate(userRes.data.nickName, 10)
-        
+        const creatorName = safeTruncate(userRes.data.nickName, 20) || '对方'
+
         await cloud.openapi.subscribeMessage.send({
           touser: targetId,
           templateId: 'BDmFGTb7vGdwB_BX1k6DGrqfRt2yl_dReh_ar3g8CN0', // 备忘录任务提醒 (新任务)
           page: 'pages/index/index',
           data: {
-            thing1: { value: taskTitle },
-            name2: { value: nickName || '对方' },
-            time3: { value: dayjs().format('YYYY年MM月DD日 HH:mm') }
+            thing1: { value: taskTitle },      // 任务名称
+            thing6: { value: creatorName },    // 创建人
+            time4: { value: dayjs().format('YYYY年MM月DD日 HH:mm') }  // 开始时间
           }
         })
       } catch (sendError) {

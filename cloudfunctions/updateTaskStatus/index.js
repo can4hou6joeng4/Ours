@@ -77,9 +77,9 @@ exports.main = async (event, context) => {
             templateId: 'BDmFGTb7vGdwB_BX1k6DGlsnq1YEpEDEy8n2y8g41_E', // 备忘录任务提醒 (任务完成)
             page: 'pages/index/index',
             data: {
-              thing1: { value: taskTitle },
-              phrase2: { value: '已完成' },
-              time3: { value: dayjs().format('YYYY年MM月DD日 HH:mm') }
+              thing1: { value: taskTitle },                              // 任务名称
+              short_thing8: { value: '已完成' },                          // 任务状态
+              character_string2: { value: dayjs().format('YYYY/MM/DD HH:mm') }  // 截止时间
             }
           })
         }

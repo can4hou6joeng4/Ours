@@ -85,16 +85,16 @@ exports.main = async (event, context) => {
 
     try {
       const myInfoRes = await db.collection('Users').doc(OPENID).get()
-      const nickName = safeTruncate(myInfoRes.data.nickName, 10)
+      const nickName = safeTruncate(myInfoRes.data.nickName, 20)
       
       await cloud.openapi.subscribeMessage.send({
         touser: partnerOpenid,
         templateId: 'fnKrftUCVOwXvlo7exFmer78w_R0JfKR3evP5IxxjhE',
         page: 'pages/index/index',
         data: {
-          thing1: { value: '绑定成功' },
-          time3: { value: dayjs().format('YYYY年MM月DD日 HH:mm') },
-          name2: { value: nickName || '对方' }
+          thing1: { value: '绑定成功' },                               // 变更类型
+          time3: { value: dayjs().format('YYYY年MM月DD日 HH:mm') },    // 时间
+          thing2: { value: nickName || '对方' }                        // 姓名
         }
       })
     } catch (sendError) {

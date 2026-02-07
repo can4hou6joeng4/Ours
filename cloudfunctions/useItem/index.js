@@ -1,6 +1,14 @@
 const cloud = require('wx-server-sdk')
+const dayjs = require('dayjs')
+
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 const db = cloud.database()
+
+function safeTruncate(text, maxLength) {
+  if (!text) return ''
+  const truncated = text.toString().substring(0, maxLength)
+  return truncated + (text.toString().length > maxLength ? '...' : '')
+}
 
 exports.main = async (event, context) => {
   const { OPENID } = cloud.getWXContext()
@@ -64,9 +72,9 @@ exports.main = async (event, context) => {
             templateId: 'bxIAEflde73fD0hcYRnE6LkOCtT6QlVJqb1Zr6AKcmM', // 日程提醒 (礼品使用)
             page: 'pages/inventory/index',
             data: {
-              thing1: { value: itemName },
-              name2: { value: nickName || '对方' },
-              time3: { value: dayjs().format('YYYY年MM月DD日 HH:mm') }
+              thing31: { value: itemName },                             // 任务名称（礼品名称）
+              thing24: { value: nickName || '对方' },                   // 参加人（使用者）
+              time3: { value: dayjs().format('YYYY年MM月DD日 HH:mm') }  // 执行时间
             }
           })
         } catch (sendError) {
