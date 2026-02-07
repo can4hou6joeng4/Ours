@@ -26,6 +26,9 @@ const config = {
     enable: false
   },
   mini: {
+    miniCssExtractPluginOption: {
+      ignoreOrder: true  // 忽略 CSS 模块顺序警告
+    },
     postcss: {
       pxtransform: {
         enable: true,
