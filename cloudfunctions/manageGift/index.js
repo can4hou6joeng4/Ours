@@ -86,9 +86,13 @@ exports.main = async (event, context) => {
     }
 
     if (action === 'delete') {
-      // 权限校验：只有创建者可删除
+      // 权限校验：创建者或伴侣可删除
       const giftRes = await db.collection('Gifts').doc(giftId).get()
-      if (giftRes.data.creatorId !== OPENID) {
+      const gift = giftRes.data
+      const isCreator = gift.creatorId === OPENID
+      const isPartner = gift.partnerId === OPENID
+
+      if (!isCreator && !isPartner) {
         return { success: false, message: '无权删除此礼品' }
       }
       await db.collection('Gifts').doc(giftId).remove()
