@@ -24,6 +24,7 @@ exports.main = async (event, context) => {
           data: {
             ...giftData,
             creatorId: OPENID,
+            partnerId: partnerId || null,  // 记录创建时的伴侣，用于数据隔离
             createTime: db.serverDate(),
             updateTime: db.serverDate()
           }
@@ -85,6 +86,11 @@ exports.main = async (event, context) => {
     }
 
     if (action === 'delete') {
+      // 权限校验：只有创建者可删除
+      const giftRes = await db.collection('Gifts').doc(giftId).get()
+      if (giftRes.data.creatorId !== OPENID) {
+        return { success: false, message: '无权删除此礼品' }
+      }
       await db.collection('Gifts').doc(giftId).remove()
       return { success: true }
     }
