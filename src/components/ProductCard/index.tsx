@@ -22,7 +22,7 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({ item, onBuy, onLon
         onLongPress={() => onLongPress(item)}
       >
         <View className='card-top'>
-          {item.coverImg && /^cloud:\/\//.test(item.coverImg.trim()) ? (
+          {item.coverImg && (/^cloud:\/\//.test(item.coverImg.trim()) || /^https?:\/\//.test(item.coverImg.trim())) ? (
             <Image
               src={item.coverImg.trim()}
               mode='widthFix'
