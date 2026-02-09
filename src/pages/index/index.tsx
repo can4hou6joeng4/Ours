@@ -402,19 +402,23 @@ export default function Index() {
     }
   }
 
-  const handleDone = async (taskId: string) => {
+  const handleDone = async (taskId: string, action: 'submit' | 'confirm' = 'confirm') => {
     Taro.showLoading({ title: '处理中' })
     try {
       const res = await Taro.cloud.callFunction({
         name: 'updateTaskStatus',
-        data: { taskId }
+        data: { taskId, action }
       })
       const data = res.result as any
       if (data.success) {
-        Taro.showToast({ title: `获得 ${data.points} 积分！`, icon: 'success' })
+        if (action === 'submit') {
+          Taro.showToast({ title: '已提交，等待对方验收', icon: 'success' })
+        } else {
+          Taro.showToast({ title: `获得 ${data.points || 0} 积分！`, icon: 'success' })
+          // 成功后引导订阅对方后续的动作（如礼品使用或新任务）
+          requestSubscribe(['TASK_DONE'])
+        }
         setShowDetailModal(false)
-        // 成功后引导订阅对方后续的动作（如礼品使用或新任务）
-        requestSubscribe(['TASK_DONE'])
       }
     } catch (e) {
       Taro.showToast({ title: '操作失败', icon: 'none' })

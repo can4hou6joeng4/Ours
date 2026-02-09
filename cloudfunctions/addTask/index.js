@@ -36,6 +36,7 @@ exports.main = async (event, context) => {
       status: type === 'reward' ? 'pending' : 'done',
       creatorId: OPENID,
       targetId,
+      executorId: targetId, // 明确执行者
       createTime: db.serverDate()
     }
 

@@ -9,7 +9,7 @@ interface TaskDetailModalProps {
   task: any
   currentUserId: string
   onClose: () => void
-  onDone: (taskId: string) => void
+  onDone: (taskId: string, action: 'submit' | 'confirm') => void
   onRevoke: (taskId: string) => void
 }
 
@@ -22,6 +22,9 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
   onRevoke
 }) => {
   if (!visible || !task) return null
+
+  const isExecutor = task.executorId === currentUserId || task.targetId === currentUserId
+  const isCreator = task.creatorId === currentUserId
 
   return (
     <View
@@ -39,6 +42,9 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
             <Text className={`category-label ${task.type}`}>
               {task.type === 'reward' ? '奖赏任务' : '惩罚任务'}
             </Text>
+            {/* 状态标签 */}
+            {task.status === 'waiting_confirmation' && <Text className='status-tag waiting'>待验收</Text>}
+            {task.status === 'done' && <Text className='status-tag done'>已完成</Text>}
           </View>
 
           <View className='info-list'>
@@ -57,17 +63,33 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
             <View className='info-item'>
               <Text className='label'>关联身份</Text>
               <Text className='value'>
-                {task.creatorId === currentUserId ? '我发布的' : '对方发布'}
+                {isCreator ? '我发布的' : '对方发布'}
               </Text>
             </View>
           </View>
         </View>
 
         <View className='card-footer'>
-          {task.status === 'pending' && (
-            <Button className='btn-primary' block onClick={() => onDone(task._id)}>确认完成</Button>
+          {/* 1. 待完成：执行者可见 */}
+          {task.status === 'pending' && isExecutor && (
+            <Button className='btn-primary' block onClick={() => onDone(task._id, 'submit')}>我已完成</Button>
           )}
-          {task.creatorId === currentUserId && (
+
+          {/* 2. 待验收：发布者可见 */}
+          {task.status === 'waiting_confirmation' && isCreator && (
+            <Button className='btn-primary' block onClick={() => onDone(task._id, 'confirm')}>确认完成</Button>
+          )}
+
+          {/* 3. 等待中提示 */}
+          {task.status === 'pending' && !isExecutor && (
+             <Button className='btn-disabled' block disabled>等待对方完成</Button>
+          )}
+          {task.status === 'waiting_confirmation' && !isCreator && (
+             <Button className='btn-disabled' block disabled>等待对方验收</Button>
+          )}
+
+          {/* 撤销按钮：仅发布者在未完成时可见 */}
+          {isCreator && task.status !== 'done' && (
             <Button className='btn-secondary' block onClick={() => {
               onClose()
               onRevoke(task._id)
