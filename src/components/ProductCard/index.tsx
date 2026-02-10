@@ -11,6 +11,16 @@ interface ProductCardProps {
 }
 
 const ProductCard: React.FC<ProductCardProps> = React.memo(({ item, onBuy, onLongPress }) => {
+  // 调试：打印每个商品的图片信息
+  React.useEffect(() => {
+    console.log('礼品卡片渲染:', {
+      name: item.name,
+      coverImg: item.coverImg,
+      hasImg: !!item.coverImg,
+      imgType: item.coverImg ? (item.coverImg.startsWith('cloud://') ? 'cloud' : item.coverImg.startsWith('http') ? 'http' : 'unknown') : 'none'
+    })
+  }, [item.coverImg])
+
   return (
     <DuxCard
       className='product-card-v4 masonry-item'
@@ -27,7 +37,8 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({ item, onBuy, onLon
               src={item.coverImg.trim()}
               mode='widthFix'
               className='product-image'
-              onError={(e) => console.error('图片加载失败:', item.name, e)}
+              onLoad={() => console.log('图片加载成功:', item.name)}
+              onError={(e) => console.error('图片加载失败:', item.name, item.coverImg, e)}
             />
           ) : (
             <View className='icon-circle'>
