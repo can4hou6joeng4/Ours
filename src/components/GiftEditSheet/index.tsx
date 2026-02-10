@@ -29,6 +29,28 @@ const GiftEditSheet: React.FC<GiftEditSheetProps> = ({
   onUpdate,
   onSave
 }) => {
+  const [previewUrl, setPreviewUrl] = React.useState('')
+
+  // 当 editData.coverImg 变化时，转换为临时链接用于预览
+  React.useEffect(() => {
+    if (editData.coverImg && editData.coverImg.startsWith('cloud://')) {
+      Taro.cloud.getTempFileURL({
+        fileList: [editData.coverImg]
+      }).then(res => {
+        if (res.fileList[0]?.tempFileURL) {
+          setPreviewUrl(res.fileList[0].tempFileURL)
+        }
+      }).catch(err => {
+        console.error('获取临时链接失败', err)
+        setPreviewUrl(editData.coverImg) // 失败时回退使用原始 ID
+      })
+    } else if (editData.coverImg) {
+      setPreviewUrl(editData.coverImg) // 如果已经是 https:// 链接，直接使用
+    } else {
+      setPreviewUrl('')
+    }
+  }, [editData.coverImg])
+
   if (!visible) return null
 
   const handleUploadImg = async () => {
@@ -65,8 +87,8 @@ const GiftEditSheet: React.FC<GiftEditSheetProps> = ({
         <ScrollView scrollY className='sheet-body'>
           <View className='form-group'>
             <View className='image-upload-box' onClick={handleUploadImg}>
-              {editData.coverImg ? (
-                <Image src={editData.coverImg} mode='aspectFill' className='preview' />
+              {previewUrl ? (
+                <Image src={previewUrl} mode='aspectFill' className='preview' />
               ) : (
                 <View className='placeholder'>
                   <Image src={getIconifyUrl('tabler:camera', '#D4B185')} className='icon' />
