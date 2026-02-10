@@ -36,6 +36,7 @@
 
     .product-image {
       width: 100%;
+      min-height: 200rpx; // 添加最小高度，防止加载时高度为0
       height: auto; // 配合 widthFix
       border-top-left-radius: 24rpx;
       border-top-right-radius: 24rpx;
