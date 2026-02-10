@@ -403,6 +403,13 @@ export default function Index() {
   }
 
   const handleDone = async (taskId: string, action: 'submit' | 'confirm' = 'confirm') => {
+    // 关键修复：在异步操作前先请求订阅权限（必须在用户点击的同步回调中）
+    try {
+      await requestSubscribe(['TASK_DONE'])
+    } catch (e) {
+      console.warn('订阅消息请求失败', e)
+    }
+
     Taro.showLoading({ title: '处理中' })
     try {
       const res = await Taro.cloud.callFunction({
@@ -415,10 +422,10 @@ export default function Index() {
           Taro.showToast({ title: '已提交，等待对方验收', icon: 'success' })
         } else {
           Taro.showToast({ title: `获得 ${data.points || 0} 积分！`, icon: 'success' })
-          // 成功后引导订阅对方后续的动作（如礼品使用或新任务）
-          requestSubscribe(['TASK_DONE'])
         }
         setShowDetailModal(false)
+      } else {
+        Taro.showToast({ title: data.message || '操作失败', icon: 'none' })
       }
     } catch (e) {
       Taro.showToast({ title: '操作失败', icon: 'none' })

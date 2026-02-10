@@ -33,21 +33,23 @@ exports.main = async (event, context) => {
               createTime: db.serverDate()
             }
           })
-          // 重置为待完成
-          await transaction.collection('Tasks').doc(taskId).update({
-            data: {
-              status: 'pending',
-              revokeTime: db.serverDate()
-            }
-          })
-        } else {
-          // 奖赏待完成：直接设为已撤销
+          // 直接标记为已撤销
           await transaction.collection('Tasks').doc(taskId).update({
             data: {
               status: 'revoked',
               revokeTime: db.serverDate()
             }
           })
+        } else if (status === 'waiting_confirmation' || status === 'pending') {
+          // 奖赏待完成或待验收：直接设为已撤销
+          await transaction.collection('Tasks').doc(taskId).update({
+            data: {
+              status: 'revoked',
+              revokeTime: db.serverDate()
+            }
+          })
+        } else {
+          throw new Error('任务状态异常，无法撤销')
         }
       } else if (type === 'penalty') {
         // 惩罚任务：撤销时退回已扣除的积分
