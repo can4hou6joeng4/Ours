@@ -23,6 +23,7 @@ const NoticeModal: React.FC<NoticeModalProps> = ({ visible, notice, closing, onC
         <View className='card-body'>
           <View className='notice-icon-box'>
             {notice.type === 'NEW_TASK' && <Text className='emoji'>✨</Text>}
+            {notice.type === 'TASK_CONFIRM' && <Text className='emoji'>👀</Text>}
             {notice.type === 'TASK_DONE' && <Text className='emoji'>🎉</Text>}
             {notice.type === 'NEW_GIFT' && <Text className='emoji'>🎁</Text>}
             {notice.type === 'GIFT_USED' && <Text className='emoji'>💝</Text>}

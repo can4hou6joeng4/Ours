@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef, useMemo } from 'react'
-import Taro, { useDidShow, useShareAppMessage } from '@tarojs/taro'
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
+import Taro, { useDidShow, useDidHide, useShareAppMessage } from '@tarojs/taro'
 import { View, Text, ScrollView } from '@tarojs/components'
 import { Notify, Button } from '@taroify/core'
 import dayjs from 'dayjs'
@@ -16,8 +16,6 @@ import './index.scss'
 
 export default function Index() {
   const [tasks, setTasks] = useState<any[]>([])
-  const [points, setPoints] = useState(0)
-  const [todayChange, setTodayChange] = useState(0)
   const [currentUserId, setCurrentUserId] = useState(Taro.getStorageSync('userId') || '')
   const [partnerId, setPartnerId] = useState(Taro.getStorageSync('partnerId') || '')
   const [currentTab, setCurrentTab] = useState<'pending' | 'done' | 'all'>('pending')
@@ -47,9 +45,9 @@ export default function Index() {
   const [notifyData, setNotifyData] = useState<any>(null)
 
   const watcher = useRef<any>(null)
-  const userWatcher = useRef<any>(null)
   const giftWatcher = useRef<any>(null)
   const noticeWatcher = useRef<any>(null)
+  const startWatchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const lastTaskIds = useRef<Set<string>>(new Set())
   const lastGiftIds = useRef<Set<string>>(new Set())
   const isFirstLoad = useRef(true)
@@ -99,14 +97,23 @@ export default function Index() {
     return null
   }
 
+  const closeAllWatchers = useCallback(() => {
+    if (startWatchTimer.current) {
+      clearTimeout(startWatchTimer.current)
+      startWatchTimer.current = null
+    }
+    if (watcher.current) { watcher.current.close(); watcher.current = null }
+    if (giftWatcher.current) { giftWatcher.current.close(); giftWatcher.current = null }
+    if (noticeWatcher.current) { noticeWatcher.current.close(); noticeWatcher.current = null }
+    watcherUserId.current = ''
+  }, [])
+
   useDidShow(() => {
     // 使用智能缓存：优先读取缓存快速显示，后台静默刷新
     smartFetchUser({
       onCacheHit: (cached) => {
         // 立即使用缓存数据渲染 UI
         const user = cached.user
-        setPoints(user?.totalPoints || 0)
-        setTodayChange(cached.todayChange || 0)
         setCurrentUserId(user?._id || '')
         setPartnerId(user?.partnerId || '')
         setLoading(false)
@@ -118,8 +125,6 @@ export default function Index() {
       onFresh: (result) => {
         // 后台刷新完成后更新状态
         if (result?.success) {
-          setPoints(result.user?.totalPoints || 0)
-          setTodayChange(result.todayChange || 0)
           setCurrentUserId(result.user?._id || '')
           setPartnerId(result.user?.partnerId || '')
           Taro.setStorageSync('userId', result.user?._id)
@@ -129,8 +134,6 @@ export default function Index() {
     }).then((res: any) => {
       // 无缓存时的首次加载
       if (!res?.fromCache && res?.success && res?.user?._id) {
-        setPoints(res.user?.totalPoints || 0)
-        setTodayChange(res.todayChange || 0)
         setCurrentUserId(res.user._id)
         setPartnerId(res.user.partnerId || '')
         Taro.setStorageSync('userId', res.user._id)
@@ -140,6 +143,14 @@ export default function Index() {
       }
     })
   })
+
+  useDidHide(() => {
+    closeAllWatchers()
+  })
+
+  useEffect(() => () => {
+    closeAllWatchers()
+  }, [closeAllWatchers])
 
   // 检测邀请码参数（从分享链接进入）
   useEffect(() => {
@@ -190,20 +201,13 @@ export default function Index() {
     const db = Taro.cloud.database()
     const _ = db.command
 
-    // 关闭已有监听器
-    const closeAllWatchers = () => {
-      if (watcher.current) { watcher.current.close(); watcher.current = null }
-      if (giftWatcher.current) { giftWatcher.current.close(); giftWatcher.current = null }
-      if (userWatcher.current) { userWatcher.current.close(); userWatcher.current = null }
-      if (noticeWatcher.current) { noticeWatcher.current.close(); noticeWatcher.current = null }
-    }
-
     closeAllWatchers()
     watcherUserId.current = myId // 记录当前用户ID
 
     // 延迟启动监听器，确保云环境登录完成
-    setTimeout(() => {
+    startWatchTimer.current = setTimeout(() => {
       try {
+        startWatchTimer.current = null
         // 1. 任务监听器
         watcher.current = db.collection('Tasks')
           .where(_.or([{ creatorId: myId }, { targetId: myId }]))
@@ -230,37 +234,31 @@ export default function Index() {
           })
 
         // 2. 礼品监听器
-        giftWatcher.current = db.collection('Gifts').watch({
-          onChange: (snapshot) => {
-            const currentIds = new Set(snapshot.docs.map(d => d._id))
-            if (!isFirstLoad.current && pId) {
-              snapshot.docChanges.forEach(change => {
-                if (change.dataType === 'add' && !lastGiftIds.current.has(change.doc._id)) {
-                  if (change.doc.creatorId === pId) {
-                    showNotification({
-                      title: '商店上新',
-                      message: change.doc.name,
-                      type: 'reward'
-                    })
+        giftWatcher.current = db.collection('Gifts')
+          .where(_.or([{ creatorId: myId }, { partnerId: myId }]))
+          .watch({
+            onChange: (snapshot) => {
+              const currentIds = new Set(snapshot.docs.map(d => d._id))
+              if (!isFirstLoad.current && pId) {
+                snapshot.docChanges.forEach(change => {
+                  if (change.dataType === 'add' && !lastGiftIds.current.has(change.doc._id)) {
+                    if (change.doc.creatorId === pId) {
+                      showNotification({
+                        title: '商店上新',
+                        message: change.doc.name,
+                        type: 'reward'
+                      })
+                    }
                   }
-                }
-              })
-            }
-            lastGiftIds.current = currentIds
-            isFirstLoad.current = false
-          },
-          onError: (err) => console.warn('礼品监听暂不可用', err)
-        })
+                })
+              }
+              lastGiftIds.current = currentIds
+              isFirstLoad.current = false
+            },
+            onError: (err) => console.warn('礼品监听暂不可用', err)
+          })
 
-        // 3. 用户监听器
-        userWatcher.current = db.collection('Users').doc(myId).watch({
-          onChange: (snapshot) => {
-            if (snapshot.docs.length > 0) setPoints(snapshot.docs[0].totalPoints || 0)
-          },
-          onError: (err) => console.warn('用户监听暂不可用', err)
-        })
-
-        // 4. 通知监听器
+        // 3. 通知监听器
         noticeWatcher.current = db.collection('Notices')
           .where({
             receiverId: myId,

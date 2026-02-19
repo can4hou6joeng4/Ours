@@ -26,7 +26,7 @@ exports.main = async (event, context) => {
   }
 
   try {
-    return await db.runTransaction(async transaction => {
+    const txResult = await db.runTransaction(async transaction => {
       const taskRes = await transaction.collection('Tasks').doc(taskId).get()
       const task = taskRes.data
 
@@ -35,10 +35,10 @@ exports.main = async (event, context) => {
       // 1. 提交完成 (执行者操作)
       if (action === 'submit') {
         if (task.status !== 'pending') throw new Error('任务状态异常')
-        // 校验执行者权限 (如果是自己发布的任务，自己也可以提交)
+        // 校验执行者权限：仅执行者可提交
         const executorId = task.executorId || task.targetId
-        if (executorId !== OPENID && task.creatorId !== OPENID) {
-          throw new Error('无权提交此任务')
+        if (executorId !== OPENID) {
+          throw new Error('只有任务执行者可以提交完成')
         }
 
         await transaction.collection('Tasks').doc(taskId).update({
@@ -63,26 +63,18 @@ exports.main = async (event, context) => {
               createTime: db.serverDate()
             }
           })
-
-          // 订阅消息 (提醒创建者验收)
-          // 复用 NEW_TASK 模板或 TASK_DONE 模板?
-          // 这里使用 NEW_TASK 模板变通一下，或者 TASK_DONE
-          try {
-             await cloud.openapi.subscribeMessage.send({
-              touser: task.creatorId,
-              templateId: 'BDmFGTb7vGdwB_BX1k6DGlsnq1YEpEDEy8n2y8g41_E', // 任务状态提醒
-              page: 'pages/index/index',
-              data: {
-                thing1: { value: safeTruncate(task.title, 20) },
-                short_thing8: { value: '待验收' },
-                character_string2: { value: dayjs().format('YYYY/MM/DD HH:mm') }
-              }
-            })
-          } catch (e) {
-            console.warn('发送待验收通知失败', e)
-          }
         }
-        return { success: true, status: 'waiting_confirmation', points: 0 }
+
+        return {
+          success: true,
+          status: 'waiting_confirmation',
+          points: 0,
+          subscribePayload: task.creatorId && task.creatorId !== OPENID ? {
+            touser: task.creatorId,
+            taskTitle: safeTruncate(task.title, 20),
+            statusText: '待验收'
+          } : null
+        }
       }
 
       // 2. 确认完成 (创建者操作)
@@ -147,28 +139,43 @@ exports.main = async (event, context) => {
               createTime: db.serverDate()
             }
           })
-
-          // 订阅消息
-          try {
-            await cloud.openapi.subscribeMessage.send({
-              touser: executorId,
-              templateId: 'BDmFGTb7vGdwB_BX1k6DGlsnq1YEpEDEy8n2y8g41_E', // 任务完成提醒
-              page: 'pages/index/index',
-              data: {
-                thing1: { value: safeTruncate(task.title, 20) },
-                short_thing8: { value: '已验收' },
-                character_string2: { value: dayjs().format('YYYY/MM/DD HH:mm') }
-              }
-            })
-          } catch (e) {
-            console.warn('发送验收通知失败', e)
-          }
         }
-        return { success: true, status: 'done', points: rewardPoints }
+
+        return {
+          success: true,
+          status: 'done',
+          points: rewardPoints,
+          subscribePayload: executorId && executorId !== OPENID ? {
+            touser: executorId,
+            taskTitle: safeTruncate(task.title, 20),
+            statusText: '已验收'
+          } : null
+        }
       }
 
       throw new Error('未知的操作类型')
     })
+
+    // 事务提交后再发订阅消息，不影响业务主流程
+    if (txResult?.subscribePayload) {
+      try {
+        await cloud.openapi.subscribeMessage.send({
+          touser: txResult.subscribePayload.touser,
+          templateId: 'BDmFGTb7vGdwB_BX1k6DGlsnq1YEpEDEy8n2y8g41_E', // 任务状态提醒
+          page: 'pages/index/index',
+          data: {
+            thing1: { value: txResult.subscribePayload.taskTitle },
+            short_thing8: { value: txResult.subscribePayload.statusText },
+            character_string2: { value: dayjs().format('YYYY/MM/DD HH:mm') }
+          }
+        })
+      } catch (sendError) {
+        console.warn('发送任务状态通知失败', sendError)
+      }
+    }
+
+    const { subscribePayload, ...result } = txResult || {}
+    return result
   } catch (e) {
     console.error('更新任务失败', e)
     return { success: false, message: e.message }

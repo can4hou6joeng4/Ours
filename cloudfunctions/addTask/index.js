@@ -56,8 +56,8 @@ exports.main = async (event, context) => {
       createTime: db.serverDate()
     }
 
-    // 全量使用事务处理，确保任务与通知的原子性
-    return await db.runTransaction(async transaction => {
+    // 事务仅处理数据库写入，避免外部调用放大事务失败面
+    const txResult = await db.runTransaction(async transaction => {
       // 1. 如果是惩罚任务，原子扣除积分并记录流水
       if (normalizedType === 'penalty') {
         await transaction.collection('Users').doc(targetId).update({
@@ -92,27 +92,37 @@ exports.main = async (event, context) => {
         }
       })
 
-      // 4. 发送微信订阅消息 (异步执行，不阻塞事务)
-      try {
-        const taskTitle = safeTruncate(normalizedTitle, 20)
-        const creatorName = safeTruncate(userRes.data.nickName, 20) || '对方'
-
-        await cloud.openapi.subscribeMessage.send({
+      return {
+        success: true,
+        id: addRes._id,
+        subscribePayload: {
           touser: targetId,
+          taskTitle: safeTruncate(normalizedTitle, 20),
+          creatorName: safeTruncate(userRes.data.nickName, 20) || '对方'
+        }
+      }
+    })
+
+    // 事务提交后再发订阅消息，不影响主流程成功
+    if (txResult?.subscribePayload) {
+      try {
+        await cloud.openapi.subscribeMessage.send({
+          touser: txResult.subscribePayload.touser,
           templateId: 'BDmFGTb7vGdwB_BX1k6DGrqfRt2yl_dReh_ar3g8CN0', // 备忘录任务提醒 (新任务)
           page: 'pages/index/index',
           data: {
-            thing1: { value: taskTitle },      // 任务名称
-            thing6: { value: creatorName },    // 创建人
+            thing1: { value: txResult.subscribePayload.taskTitle },   // 任务名称
+            thing6: { value: txResult.subscribePayload.creatorName }, // 创建人
             time4: { value: dayjs().format('YYYY年MM月DD日 HH:mm') }  // 开始时间
           }
         })
       } catch (sendError) {
         console.warn('订阅消息发送失败', sendError)
       }
+    }
 
-      return { success: true, id: addRes._id }
-    })
+    const { subscribePayload, ...result } = txResult || {}
+    return result
   } catch (e) {
     console.error('发布任务失败', e)
     // 统一返回 message 字段，方便前端展示
