@@ -18,6 +18,18 @@ function safeTruncate(text, maxLength) {
 exports.main = async (event, context) => {
   const { OPENID } = cloud.getWXContext()
   const { title, points, type, targetId: customTargetId } = event
+  const normalizedTitle = String(title || '').trim()
+  const normalizedType = type === 'reward' || type === 'penalty' ? type : ''
+  const rawPoints = String(points ?? '').trim()
+  const parsedPoints = Number(rawPoints)
+
+  if (!normalizedTitle) return { success: false, message: '任务描述不能为空' }
+  if (normalizedTitle.length > 40) return { success: false, message: '任务描述不能超过 40 字' }
+  if (!normalizedType) return { success: false, message: '任务类型不合法' }
+  if (!/^\d+$/.test(rawPoints) || !Number.isInteger(parsedPoints) || parsedPoints <= 0) {
+    return { success: false, message: '积分必须是正整数' }
+  }
+  if (parsedPoints > 9999) return { success: false, message: '积分不能超过 9999' }
 
   try {
     // 性能优化：并行获取发布者资料
@@ -25,15 +37,19 @@ exports.main = async (event, context) => {
     const { partnerId } = userRes.data || {}
 
     if (!partnerId) return { success: false, message: '请先绑定伙伴' }
+    if (partnerId === OPENID) return { success: false, message: '伙伴信息异常，请重新绑定' }
+    if (customTargetId && customTargetId !== partnerId) {
+      return { success: false, message: '目标用户不合法' }
+    }
 
-    const targetId = customTargetId || (type === 'reward' ? OPENID : partnerId)
-    const pointsNum = Math.abs(parseInt(points)) || 0 // 确保为正整数
+    const targetId = partnerId
+    const pointsNum = parsedPoints
 
     const newTask = {
-      title,
+      title: normalizedTitle,
       points: pointsNum,
-      type,
-      status: type === 'reward' ? 'pending' : 'done',
+      type: normalizedType,
+      status: normalizedType === 'reward' ? 'pending' : 'done',
       creatorId: OPENID,
       targetId,
       executorId: targetId, // 明确执行者
@@ -43,7 +59,7 @@ exports.main = async (event, context) => {
     // 全量使用事务处理，确保任务与通知的原子性
     return await db.runTransaction(async transaction => {
       // 1. 如果是惩罚任务，原子扣除积分并记录流水
-      if (type === 'penalty') {
+      if (normalizedType === 'penalty') {
         await transaction.collection('Users').doc(targetId).update({
           data: { totalPoints: _.inc(-pointsNum) }
         })
@@ -52,7 +68,7 @@ exports.main = async (event, context) => {
           data: {
             userId: targetId,
             amount: -pointsNum,
-            reason: `[惩罚] ${title}`,
+            reason: `[惩罚] ${normalizedTitle}`,
             type: 'penalty',
             createTime: db.serverDate()
           }
@@ -66,9 +82,9 @@ exports.main = async (event, context) => {
       await transaction.collection('Notices').add({
         data: {
           type: 'NEW_TASK',
-          title: type === 'reward' ? '✨ 收到新任务' : '💢 收到惩罚任务',
-          message: title,
-          points: type === 'reward' ? pointsNum : -pointsNum,
+          title: normalizedType === 'reward' ? '✨ 收到新任务' : '💢 收到惩罚任务',
+          message: normalizedTitle,
+          points: normalizedType === 'reward' ? pointsNum : -pointsNum,
           senderId: OPENID,
           receiverId: targetId,
           read: false,
@@ -78,7 +94,7 @@ exports.main = async (event, context) => {
 
       // 4. 发送微信订阅消息 (异步执行，不阻塞事务)
       try {
-        const taskTitle = safeTruncate(title, 20)
+        const taskTitle = safeTruncate(normalizedTitle, 20)
         const creatorName = safeTruncate(userRes.data.nickName, 20) || '对方'
 
         await cloud.openapi.subscribeMessage.send({

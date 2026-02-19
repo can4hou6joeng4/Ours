@@ -6,6 +6,7 @@ const _ = db.command
 exports.main = async (event, context) => {
   const { OPENID } = cloud.getWXContext()
   const { taskId } = event
+  if (!taskId) return { success: false, message: '任务 ID 不能为空' }
 
   try {
     return await db.runTransaction(async transaction => {
@@ -71,12 +72,14 @@ exports.main = async (event, context) => {
             revokeTime: db.serverDate()
           }
         })
+      } else {
+        throw new Error('任务类型异常，无法撤销')
       }
 
       return { success: true }
     })
   } catch (e) {
     console.error(e)
-    return { success: false, error: e.message }
+    return { success: false, message: e.message, error: e.message }
   }
 }

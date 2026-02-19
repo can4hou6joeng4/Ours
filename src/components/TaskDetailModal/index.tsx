@@ -88,8 +88,8 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
              <Button className='btn-disabled' block disabled>等待对方验收</Button>
           )}
 
-          {/* 撤销按钮：仅发布者在未完成时可见 */}
-          {isCreator && task.status !== 'done' && (
+          {/* 撤销按钮：仅发布者可见（已撤销状态除外） */}
+          {isCreator && task.status !== 'revoked' && (
             <Button className='btn-secondary' block onClick={() => {
               onClose()
               onRevoke(task._id)

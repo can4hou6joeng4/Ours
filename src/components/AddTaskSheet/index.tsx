@@ -59,6 +59,7 @@ const AddTaskSheet: React.FC<AddTaskSheetProps> = ({
                 className='custom-input'
                 placeholder={type === 'reward' ? '例如：洗碗一次' : '例如：熬夜/乱花钱'}
                 value={title}
+                maxlength={40}
                 onChange={(e) => onChangeTitle(e.detail.value)}
               />
             </View>
@@ -69,6 +70,7 @@ const AddTaskSheet: React.FC<AddTaskSheetProps> = ({
                 type='number'
                 placeholder='0'
                 value={points}
+                maxlength={4}
                 onChange={(e) => onChangePoints(e.detail.value)}
               />
             </View>

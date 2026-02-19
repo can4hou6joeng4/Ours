@@ -20,6 +20,11 @@ exports.main = async (event, context) => {
   const { OPENID } = cloud.getWXContext()
   const { taskId, action } = event
 
+  if (!taskId) return { success: false, message: '任务 ID 不能为空' }
+  if (action && action !== 'submit' && action !== 'confirm') {
+    return { success: false, message: '操作类型不合法' }
+  }
+
   try {
     return await db.runTransaction(async transaction => {
       const taskRes = await transaction.collection('Tasks').doc(taskId).get()
@@ -77,7 +82,7 @@ exports.main = async (event, context) => {
             console.warn('发送待验收通知失败', e)
           }
         }
-        return { success: true, status: 'waiting_confirmation' }
+        return { success: true, status: 'waiting_confirmation', points: 0 }
       }
 
       // 2. 确认完成 (创建者操作)
@@ -106,6 +111,8 @@ exports.main = async (event, context) => {
           }
         })
 
+        const rewardPoints = task.type === 'reward' ? task.points : 0
+
         // 结算积分
         if (task.type === 'reward') {
           const targetId = task.targetId || task.executorId
@@ -132,8 +139,8 @@ exports.main = async (event, context) => {
             data: {
               type: 'TASK_DONE',
               title: '🎉 任务已验收',
-              message: `任务 ${task.title} 已验收，积分 +${task.points}`,
-              points: task.points,
+              message: `任务 ${task.title} 已验收，积分 +${rewardPoints}`,
+              points: rewardPoints,
               senderId: OPENID,
               receiverId: executorId,
               read: false,
@@ -157,7 +164,7 @@ exports.main = async (event, context) => {
             console.warn('发送验收通知失败', e)
           }
         }
-        return { success: true, status: 'done' }
+        return { success: true, status: 'done', points: rewardPoints }
       }
 
       throw new Error('未知的操作类型')

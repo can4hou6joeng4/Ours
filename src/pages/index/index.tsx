@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import Taro, { useDidShow, useShareAppMessage } from '@tarojs/taro'
 import { View, Text, ScrollView } from '@tarojs/components'
-import { Notify, Tabs, Button, Input, Popup } from '@taroify/core'
+import { Notify, Button } from '@taroify/core'
 import dayjs from 'dayjs'
 import EmptyState from '../../components/EmptyState'
 import Confetti, { ConfettiRef } from '../../components/Confetti'
@@ -11,7 +11,7 @@ import AddTaskSheet from '../../components/AddTaskSheet'
 import BindingSheet from '../../components/BindingSheet'
 import InviteConfirmModal from '../../components/InviteConfirmModal'
 import { requestSubscribe } from '../../utils/subscribe'
-import { smartFetchUser, setCachedUser } from '../../utils/userCache'
+import { smartFetchUser } from '../../utils/userCache'
 import './index.scss'
 
 export default function Index() {
@@ -37,7 +37,7 @@ export default function Index() {
   const inviteChecked = useRef(false) // 防止重复检测邀请码
 
   const filterTabs = [
-    { label: '待完成', value: 'pending' },
+    { label: '待处理', value: 'pending' },
     { label: '已完成', value: 'done' },
     { label: '全部', value: 'all' }
   ]
@@ -62,7 +62,7 @@ export default function Index() {
 
   // 1. 实时任务指标计算 (性能优化：使用 useMemo)
   const taskStats = useMemo(() => ({
-    pending: tasks.filter(t => t.status === 'pending').length,
+    pending: tasks.filter(t => t.status === 'pending' || t.status === 'waiting_confirmation').length,
     todayAdded: tasks.filter(t => {
       if (!t.createTime) return false
       return dayjs(t.createTime).isSame(dayjs(), 'day')
@@ -73,14 +73,31 @@ export default function Index() {
   // 2. 综合过滤逻辑 (性能优化：使用 useMemo)
   const filteredTasks = useMemo(() => {
     return tasks.filter(t => {
-      const isMyTask = t.targetId === currentUserId || t.type === 'reward'
-      if (!isMyTask) return false
+      const executorId = t.executorId || t.targetId
+      const isRelatedTask = t.creatorId === currentUserId || t.targetId === currentUserId || executorId === currentUserId
+      if (!isRelatedTask) return false
 
-      if (currentTab === 'pending') return t.status === 'pending'
+      if (currentTab === 'pending') return t.status === 'pending' || t.status === 'waiting_confirmation'
       if (currentTab === 'done') return t.status === 'done'
       return t.status !== 'revoked'
     })
   }, [tasks, currentTab, currentUserId])
+
+  const getTaskAction = (task: any): { label: string, action: 'submit' | 'confirm' } | null => {
+    const executorId = task.executorId || task.targetId
+    const isExecutor = executorId === currentUserId || task.targetId === currentUserId
+    const isCreator = task.creatorId === currentUserId
+
+    if (task.status === 'pending' && isExecutor) {
+      return { label: '完成', action: 'submit' }
+    }
+
+    if (task.status === 'waiting_confirmation' && isCreator) {
+      return { label: '验收', action: 'confirm' }
+    }
+
+    return null
+  }
 
   useDidShow(() => {
     // 使用智能缓存：优先读取缓存快速显示，后台静默刷新
@@ -158,30 +175,6 @@ export default function Index() {
       return () => clearTimeout(timer)
     }
   }, [notifyVisible])
-
-  const refreshUserInfo = async () => {
-    try {
-      const { result }: any = await Taro.cloud.callFunction({ name: 'initUser' })
-      if (result?.success) {
-        const myId = result.user?._id
-        const pId = result.user?.partnerId || ''
-
-        setPoints(result.user?.totalPoints || 0)
-        setTodayChange(result.todayChange || 0)
-
-        setCurrentUserId(myId)
-        setPartnerId(pId)
-        Taro.setStorageSync('userId', myId)
-        Taro.setStorageSync('partnerId', pId)
-        return result
-      }
-    } catch (e) {
-      console.error('刷新信息失败', e)
-      return { success: false }
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const startWatchers = (myId: string, pId: string) => {
     // 核心优化：如果监听器已存在且用户ID未变，跳过重建
@@ -347,8 +340,11 @@ export default function Index() {
               name: 'revokeTask',
               data: { taskId }
             })
-            if ((result.result as any).success) {
+            const data = result.result as any
+            if (data.success) {
               Taro.showToast({ title: '已撤销' })
+            } else {
+              Taro.showToast({ title: data.message || data.error || '撤销失败', icon: 'none' })
             }
           } catch (e) {
             Taro.showToast({ title: '撤销失败', icon: 'none' })
@@ -361,9 +357,28 @@ export default function Index() {
   }
 
   const handleAddTask = async () => {
-    if (isSubmitting || !newTaskTitle || !newTaskPoints) return
+    if (isSubmitting) return
     if (!partnerId) {
       Taro.showToast({ title: '请先完成账号绑定', icon: 'none' })
+      return
+    }
+    const normalizedTitle = newTaskTitle.trim()
+    if (!normalizedTitle) {
+      Taro.showToast({ title: '请输入任务描述', icon: 'none' })
+      return
+    }
+    if (normalizedTitle.length > 40) {
+      Taro.showToast({ title: '任务描述最多 40 字', icon: 'none' })
+      return
+    }
+    const pointsText = newTaskPoints.trim()
+    const pointsNum = Number(pointsText)
+    if (!/^\d+$/.test(pointsText) || !Number.isInteger(pointsNum) || pointsNum <= 0) {
+      Taro.showToast({ title: '积分需为正整数', icon: 'none' })
+      return
+    }
+    if (pointsNum > 9999) {
+      Taro.showToast({ title: '积分不能超过 9999', icon: 'none' })
       return
     }
 
@@ -376,10 +391,9 @@ export default function Index() {
       const res = await Taro.cloud.callFunction({
         name: 'addTask',
         data: {
-          title: newTaskTitle,
-          points: newTaskPoints,
-          type: newTaskType,
-          targetId: partnerId
+          title: normalizedTitle,
+          points: pointsNum,
+          type: newTaskType
         }
       })
       const data = res.result as any
@@ -402,7 +416,7 @@ export default function Index() {
     }
   }
 
-  const handleDone = async (taskId: string, action: 'submit' | 'confirm' = 'confirm') => {
+  const handleDone = async (taskId: string, action: 'submit' | 'confirm' = 'submit') => {
     // 关键修复：在异步操作前先请求订阅权限（必须在用户点击的同步回调中）
     try {
       await requestSubscribe(['TASK_DONE'])
@@ -420,8 +434,10 @@ export default function Index() {
       if (data.success) {
         if (action === 'submit') {
           Taro.showToast({ title: '已提交，等待对方验收', icon: 'success' })
+        } else if ((data.points || 0) > 0) {
+          Taro.showToast({ title: `获得 ${data.points} 积分！`, icon: 'success' })
         } else {
-          Taro.showToast({ title: `获得 ${data.points || 0} 积分！`, icon: 'success' })
+          Taro.showToast({ title: '已确认完成', icon: 'success' })
         }
         setShowDetailModal(false)
       } else {
@@ -536,49 +552,53 @@ export default function Index() {
             desc='点击右下角“+”号发布一个新任务吧'
           />
         ) : (
-          filteredTasks.map(task => (
-            <View
-              key={task._id}
-              className={`task-card-v2 ${task.type}`}
-              onClick={() => handleShowDetail(task)}
-            >
-              <View className='left'>
-                <Text className='title-truncated'>{task.title}</Text>
-                <View className='tags'>
-                  <Text className={`tag ${task.type}`}>{task.type === 'reward' ? '奖赏' : '惩罚'}</Text>
-                  {/* 身份关系标签 */}
-                  {task.creatorId === currentUserId ? (
-                    <Text className='tag identity mine'>我发布的</Text>
-                  ) : (
-                    <Text className='tag identity partner'>对方发起</Text>
-                  )}
-                  {task.targetId === currentUserId && (
-                    <Text className={`tag identity target ${task.type}`}>
-                      {task.type === 'reward' ? '给我的' : '我被罚'}
-                    </Text>
-                  )}
+          filteredTasks.map(task => {
+            const taskAction = getTaskAction(task)
+
+            return (
+              <View
+                key={task._id}
+                className={`task-card-v2 ${task.type}`}
+                onClick={() => handleShowDetail(task)}
+              >
+                <View className='left'>
+                  <Text className='title-truncated'>{task.title}</Text>
+                  <View className='tags'>
+                    <Text className={`tag ${task.type}`}>{task.type === 'reward' ? '奖赏' : '惩罚'}</Text>
+                    {/* 身份关系标签 */}
+                    {task.creatorId === currentUserId ? (
+                      <Text className='tag identity mine'>我发布的</Text>
+                    ) : (
+                      <Text className='tag identity partner'>对方发起</Text>
+                    )}
+                    {task.targetId === currentUserId && (
+                      <Text className={`tag identity target ${task.type}`}>
+                        {task.type === 'reward' ? '给我的' : '我被罚'}
+                      </Text>
+                    )}
+                  </View>
+                </View>
+                <View className='right'>
+                  <Text className={`points ${task.type}`}>
+                    {task.type === 'reward' ? '+' : '-'}{task.points}
+                  </Text>
+                  <View className='actions'>
+                    {taskAction && (
+                      <Button
+                        className='done-btn-v2'
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleDone(task._id, taskAction.action)
+                        }}
+                      >
+                        {taskAction.label}
+                      </Button>
+                    )}
+                  </View>
                 </View>
               </View>
-              <View className='right'>
-                <Text className={`points ${task.type}`}>
-                  {task.type === 'reward' ? '+' : '-'}{task.points}
-                </Text>
-                <View className='actions'>
-                  {task.status === 'pending' && (
-                    <Button
-                      className='done-btn-v2'
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleDone(task._id)
-                      }}
-                    >
-                      完成
-                    </Button>
-                  )}
-                </View>
-              </View>
-            </View>
-          ))
+            )
+          })
         )}
       </ScrollView>
 
