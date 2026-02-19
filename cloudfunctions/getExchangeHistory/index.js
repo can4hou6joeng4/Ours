@@ -2,6 +2,7 @@ const cloud = require('wx-server-sdk')
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 const db = cloud.database()
 const _ = db.command
+const QUERY_BATCH_SIZE = 100
 
 /**
  * 获取兑换历史记录
@@ -48,53 +49,56 @@ exports.main = async (event, context) => {
 }
 
 async function getPurchaseRecords(userId) {
-  const res = await db.collection('Records')
-    .where({
-      userId,
-      type: 'outcome',
-      reason: db.RegExp({
-        regexp: '^兑换:'
-      })
-    })
-    .orderBy('createTime', 'desc')
-    .get()
-
-  return res.data
+	return queryAllByCreateTimeDesc('Records', {
+		userId,
+		type: 'outcome',
+		reason: db.RegExp({
+			regexp: '^兑换:'
+		})
+	})
 }
 
 async function getItems(userId) {
-  const res = await db.collection('Items')
-    .where({
-      userId
-    })
-    .orderBy('createTime', 'desc')
-    .get()
-
-  return res.data
+	return queryAllByCreateTimeDesc('Items', { userId })
 }
 
 async function getUseRecords(userId) {
-  const res = await db.collection('Records')
-    .where({
-      userId,
-      type: 'gift_use'
-    })
-    .orderBy('createTime', 'desc')
-    .get()
-
-  return res.data
+	return queryAllByCreateTimeDesc('Records', {
+		userId,
+		type: 'gift_use'
+	})
 }
 
 async function getUseNotices(userId) {
-  const res = await db.collection('Notices')
-    .where(_.or([
-      { type: 'GIFT_USED', senderId: userId },
-      { type: 'GIFT_USED', receiverId: userId }
-    ]))
-    .orderBy('createTime', 'desc')
-    .get()
+	return queryAllByCreateTimeDesc(
+		'Notices',
+		_.or([
+			{ type: 'GIFT_USED', senderId: userId },
+			{ type: 'GIFT_USED', receiverId: userId }
+		])
+	)
+}
 
-  return res.data
+async function queryAllByCreateTimeDesc(collectionName, whereCondition) {
+	let skip = 0
+	const merged = []
+
+	while (true) {
+		const res = await db.collection(collectionName)
+			.where(whereCondition)
+			.orderBy('createTime', 'desc')
+			.skip(skip)
+			.limit(QUERY_BATCH_SIZE)
+			.get()
+
+		const batch = Array.isArray(res.data) ? res.data : []
+		merged.push(...batch)
+
+		if (batch.length < QUERY_BATCH_SIZE) break
+		skip += QUERY_BATCH_SIZE
+	}
+
+	return merged
 }
 
 async function integrateData(userId, purchaseRecords, items, useRecords, notices) {
@@ -113,24 +117,25 @@ async function integrateData(userId, purchaseRecords, items, useRecords, notices
   const useRecordsByName = new Map()
   const usedUseRecordIds = new Set()
 
-  useRecords.forEach(record => {
-    if (record.giftId && !useRecordByItemId.has(record.giftId)) {
-      useRecordByItemId.set(record.giftId, record)
-    }
-    pushToGroup(useRecordsByName, extractUseItemName(record.reason), record)
-  })
+	useRecords.forEach(record => {
+		const directItemId = resolveItemIdFromRecord(record, itemById)
+		if (directItemId && !useRecordByItemId.has(directItemId)) {
+			useRecordByItemId.set(directItemId, record)
+		}
+		pushToGroup(useRecordsByName, extractUseItemName(record.reason), record)
+	})
 
   const noticeByItemId = new Map()
   const noticesByName = new Map()
   const usedNoticeIds = new Set()
 
-  notices.forEach(notice => {
-    const noticeItemId = notice.itemId || notice.giftId
-    if (noticeItemId && !noticeByItemId.has(noticeItemId)) {
-      noticeByItemId.set(noticeItemId, notice)
-    }
-    pushToGroup(noticesByName, extractNoticeItemName(notice.message), notice)
-  })
+	notices.forEach(notice => {
+		const noticeItemId = resolveItemIdFromNotice(notice, itemById)
+		if (noticeItemId && !noticeByItemId.has(noticeItemId)) {
+			noticeByItemId.set(noticeItemId, notice)
+		}
+		pushToGroup(noticesByName, extractNoticeItemName(notice.message), notice)
+	})
 
   // 预排序，保证兜底匹配稳定
   sortGroupedByCreateTime(itemsByName)
@@ -168,15 +173,16 @@ async function integrateData(userId, purchaseRecords, items, useRecords, notices
       usedUseRecordIds
     })
 
-    const notice = resolveNotice({
-      item,
-      itemName,
-      purchaseRecord,
-      useRecord,
-      noticeByItemId,
-      noticesByName,
-      usedNoticeIds
-    })
+		const notice = resolveNotice({
+			item,
+			itemName,
+			purchaseRecord,
+			useRecord,
+			itemById,
+			noticeByItemId,
+			noticesByName,
+			usedNoticeIds
+		})
 
     const historyItem = {
       _id: item?._id || `virtual_${purchaseRecord._id}`,
@@ -252,51 +258,82 @@ function resolveUseRecord({
 }
 
 function resolveNotice({
-  item,
-  itemName,
-  purchaseRecord,
-  useRecord,
-  noticeByItemId,
-  noticesByName,
-  usedNoticeIds
+	item,
+	itemName,
+	purchaseRecord,
+	useRecord,
+	itemById,
+	noticeByItemId,
+	noticesByName,
+	usedNoticeIds
 }) {
-  const relatedItemId = item?._id || useRecord?.giftId
-  if (relatedItemId && noticeByItemId.has(relatedItemId)) {
-    const directNotice = noticeByItemId.get(relatedItemId)
-    if (!usedNoticeIds.has(directNotice._id)) {
-      usedNoticeIds.add(directNotice._id)
-      return directNotice
-    }
-  }
+	const relatedItemId = resolveRelatedItemId(item, useRecord, itemById)
+	if (relatedItemId && noticeByItemId.has(relatedItemId)) {
+		const directNotice = noticeByItemId.get(relatedItemId)
+		if (!usedNoticeIds.has(directNotice._id)) {
+			usedNoticeIds.add(directNotice._id)
+			return directNotice
+		}
+	}
 
-  const bucket = noticesByName.get(itemName) || []
-  const baseTime = useRecord?.createTime || purchaseRecord.createTime
-  const matched = pickByNearestTime(bucket, baseTime, usedNoticeIds)
-  if (matched) usedNoticeIds.add(matched._id)
-  return matched
+	const bucket = noticesByName.get(itemName) || []
+	const baseTime = useRecord?.createTime || purchaseRecord.createTime
+	const matched = pickByNearestTime(bucket, baseTime, usedNoticeIds)
+	if (matched) usedNoticeIds.add(matched._id)
+	return matched
+}
+
+function resolveItemIdFromRecord(record, itemById) {
+	if (!record) return ''
+	if (record.itemId) return String(record.itemId)
+
+	// 兼容历史数据：旧版 giftId 可能直接存储的是 itemId
+	if (record.giftId && itemById.has(record.giftId)) {
+		return String(record.giftId)
+	}
+	return ''
+}
+
+function resolveItemIdFromNotice(notice, itemById) {
+	if (!notice) return ''
+	if (notice.itemId) return String(notice.itemId)
+
+	// 兼容历史数据：旧版 giftId 可能直接存储的是 itemId
+	if (notice.giftId && itemById.has(notice.giftId)) {
+		return String(notice.giftId)
+	}
+	return ''
+}
+
+function resolveRelatedItemId(item, useRecord, itemById) {
+	if (item?._id) return item._id
+	if (useRecord?.itemId) return useRecord.itemId
+	if (useRecord?.giftId && itemById.has(useRecord.giftId)) return useRecord.giftId
+	return ''
 }
 
 async function getUsersInfo(userIds) {
-  const usersMap = new Map()
-  if (userIds.length === 0) return usersMap
+	const usersMap = new Map()
+	const validUserIds = userIds.filter(Boolean)
+	if (validUserIds.length === 0) return usersMap
 
-  const batchSize = 20
-  for (let i = 0; i < userIds.length; i += batchSize) {
-    const batch = userIds.slice(i, i + batchSize)
-    if (batch.length === 0) continue
+	const batchSize = 20
+	for (let i = 0; i < validUserIds.length; i += batchSize) {
+		const batch = validUserIds.slice(i, i + batchSize)
+		if (batch.length === 0) continue
 
-    const res = await db.collection('Users')
-      .where({
-        _id: _.in(batch)
-      })
-      .get()
+		const res = await db.collection('Users')
+			.where({
+				_id: _.in(batch)
+			})
+			.get()
 
-    res.data.forEach(user => {
-      usersMap.set(user._id, user)
-    })
-  }
+		res.data.forEach(user => {
+			usersMap.set(user._id, user)
+		})
+	}
 
-  return usersMap
+	return usersMap
 }
 
 function getUserName(usersMap, targetId, currentUserId) {
