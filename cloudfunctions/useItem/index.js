@@ -51,6 +51,8 @@ exports.main = async (event, context) => {
       if (userRes.data && userRes.data.partnerId) {
         await transaction.collection('Notices').add({
           data: {
+            itemId,
+            giftId: itemId,
             type: 'GIFT_USED',
             title: '💝 收到使用请求',
             message: `对方想要使用：${itemRes.data.name}`,

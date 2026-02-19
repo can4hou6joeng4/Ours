@@ -8,39 +8,49 @@ exports.main = async (event, context) => {
   const { item } = event // { name, points, type }
 
   try {
+    const itemName = String(item?.name || '').trim()
+    const itemPoints = Math.max(0, parseInt(item?.points, 10) || 0)
+    const itemImage = String(item?.image || item?.cover || '').trim()
+    const itemType = String(item?.type || 'unknown')
+
+    if (!itemName || itemPoints <= 0) {
+      throw new Error('礼品信息异常')
+    }
+
     const result = await db.runTransaction(async transaction => {
       const userRes = await transaction.collection('Users').doc(OPENID).get()
       if (!userRes.data) throw new Error('用户不存在')
 
       const { totalPoints } = userRes.data
-      if (totalPoints < item.points) throw new Error('积分不足')
+      if (totalPoints < itemPoints) throw new Error('积分不足')
 
       // 1. 扣减积分
       await transaction.collection('Users').doc(OPENID).update({
         data: {
-          totalPoints: _.inc(-item.points)
+          totalPoints: _.inc(-itemPoints)
         }
       })
 
-      // 2. 写入消费记录 (Records 集合)
-      await transaction.collection('Records').add({
+      // 2. 存入我的背包 (Items 集合)
+      const itemRes = await transaction.collection('Items').add({
         data: {
           userId: OPENID,
-          type: 'outcome',
-          amount: item.points,
-          reason: `兑换: ${item.name}`,
+          name: itemName,
+          image: itemImage,
+          type: itemType,
+          status: 'unused', // unused: 待使用, used: 已使用
           createTime: db.serverDate()
         }
       })
 
-      // 3. 存入我的背包 (Items 集合)
-      await transaction.collection('Items').add({
+      // 3. 写入消费记录 (Records 集合)
+      await transaction.collection('Records').add({
         data: {
+          itemId: itemRes._id,
           userId: OPENID,
-          name: item.name,
-          image: item.image || item.cover || '', // 同步存入图片字段
-          type: item.type || 'unknown',
-          status: 'unused', // unused: 待使用, used: 已使用
+          type: 'outcome',
+          amount: itemPoints,
+          reason: `兑换: ${itemName}`,
           createTime: db.serverDate()
         }
       })

@@ -2,6 +2,20 @@ const cloud = require('wx-server-sdk')
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 const db = cloud.database()
 
+function normalizeGiftData(giftData = {}) {
+  return {
+    name: String(giftData.name || '').trim(),
+    points: Math.max(0, parseInt(giftData.points, 10) || 0),
+    coverImg: String(giftData.coverImg || '').trim(),
+    desc: String(giftData.desc || '').trim()
+  }
+}
+
+function canManageGift(gift, openid) {
+  if (!gift) return false
+  return gift.creatorId === openid || gift.partnerId === openid
+}
+
 /**
  * 礼品管理逻辑
  * event: { action: 'add'|'update'|'delete', giftData, giftId }
@@ -15,6 +29,11 @@ exports.main = async (event, context) => {
     // 在小程序端已经过身份校验，此处直接执行业务逻辑以提升响应速度
 
     if (action === 'add') {
+      const normalizedGiftData = normalizeGiftData(giftData)
+      if (!normalizedGiftData.name) {
+        return { success: false, message: '礼品名称不能为空' }
+      }
+
       return await db.runTransaction(async transaction => {
         const userRes = await transaction.collection('Users').doc(OPENID).get()
         const { partnerId } = userRes.data || {}
@@ -22,7 +41,7 @@ exports.main = async (event, context) => {
         // 1. 创建礼品记录
         const res = await transaction.collection('Gifts').add({
           data: {
-            ...giftData,
+            ...normalizedGiftData,
             creatorId: OPENID,
             partnerId: partnerId || null,  // 记录创建时的伴侣，用于数据隔离
             createTime: db.serverDate(),
@@ -36,8 +55,8 @@ exports.main = async (event, context) => {
             data: {
               type: 'NEW_GIFT',
               title: '🎁 商店上新啦',
-              message: `新增了礼品：${giftData.name}`,
-              points: Number(giftData.points),
+              message: `新增了礼品：${normalizedGiftData.name}`,
+              points: normalizedGiftData.points,
               senderId: OPENID,
               receiverId: partnerId,
               read: false,
@@ -51,9 +70,27 @@ exports.main = async (event, context) => {
     }
 
     if (action === 'update') {
+      if (!giftId) {
+        return { success: false, message: 'giftId 缺失' }
+      }
+
+      const giftRes = await db.collection('Gifts').doc(giftId).get().catch(() => null)
+      const gift = giftRes?.data
+      if (!gift) {
+        return { success: false, message: '礼品不存在' }
+      }
+      if (!canManageGift(gift, OPENID)) {
+        return { success: false, message: '无权修改此礼品' }
+      }
+
+      const normalizedGiftData = normalizeGiftData(giftData)
+      if (!normalizedGiftData.name) {
+        return { success: false, message: '礼品名称不能为空' }
+      }
+
       await db.collection('Gifts').doc(giftId).update({
         data: {
-          ...giftData,
+          ...normalizedGiftData,
           updateTime: db.serverDate()
         }
       })
@@ -87,12 +124,13 @@ exports.main = async (event, context) => {
 
     if (action === 'delete') {
       // 权限校验：创建者或伴侣可删除
-      const giftRes = await db.collection('Gifts').doc(giftId).get()
-      const gift = giftRes.data
-      const isCreator = gift.creatorId === OPENID
-      const isPartner = gift.partnerId === OPENID
+      const giftRes = await db.collection('Gifts').doc(giftId).get().catch(() => null)
+      const gift = giftRes?.data
+      if (!gift) {
+        return { success: false, message: '礼品不存在' }
+      }
 
-      if (!isCreator && !isPartner) {
+      if (!canManageGift(gift, OPENID)) {
         return { success: false, message: '无权删除此礼品' }
       }
       await db.collection('Gifts').doc(giftId).remove()

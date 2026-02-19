@@ -7,6 +7,33 @@ cloud.init({
 
 const db = cloud.database()
 
+function escapeRegExp(text) {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+async function findUserByInviteCode(inviteCode, currentUserId) {
+  const normalizedCode = inviteCode.toUpperCase()
+
+  const candidateRes = await db.collection('Users')
+    .where({
+      _id: db.RegExp({
+        regexp: `${escapeRegExp(normalizedCode)}$`,
+        options: 'i'
+      })
+    })
+    .limit(20)
+    .get()
+
+  const matchedUsers = candidateRes.data.filter(user => (
+    user._id !== currentUserId &&
+    user._id.slice(-6).toUpperCase() === normalizedCode
+  ))
+
+  if (matchedUsers.length === 0) return { user: null, ambiguous: false }
+  if (matchedUsers.length > 1) return { user: null, ambiguous: true }
+  return { user: matchedUsers[0], ambiguous: false }
+}
+
 /**
  * 安全截断文本
  * @param {string} text - 原始文本
@@ -30,16 +57,21 @@ exports.main = async (event, context) => {
   const { partnerCode } = event
   const { OPENID } = cloud.getWXContext()
 
-  if (!partnerCode) {
+  const normalizedCode = String(partnerCode || '').trim().toUpperCase()
+
+  if (!normalizedCode) {
     return { success: false, message: '请输入邀请码' }
+  }
+  if (normalizedCode.length !== 6) {
+    return { success: false, message: '邀请码格式不正确' }
   }
 
   try {
-    const partnerRes = await db.collection('Users').get()
+    const { user: targetUser, ambiguous } = await findUserByInviteCode(normalizedCode, OPENID)
 
-    const targetUser = partnerRes.data.find(u =>
-      u._id !== OPENID && u._id.slice(-6).toUpperCase() === partnerCode.toUpperCase()
-    )
+    if (ambiguous) {
+      return { success: false, message: '邀请码匹配到多个用户，请让对方重新分享邀请链接' }
+    }
 
     if (!targetUser) {
       return { success: false, message: '邀请码无效或对方尚未登录' }

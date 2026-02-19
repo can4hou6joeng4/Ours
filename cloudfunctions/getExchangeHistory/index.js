@@ -13,7 +13,6 @@ exports.main = async (event, context) => {
   const { page = 1, pageSize = 20, filter = 'all' } = event
 
   try {
-    // 并行查询所有相关数据
     const [purchaseRecords, items, useRecords, notices] = await Promise.all([
       getPurchaseRecords(OPENID),
       getItems(OPENID),
@@ -21,7 +20,6 @@ exports.main = async (event, context) => {
       getUseNotices(OPENID)
     ])
 
-    // 整合数据
     const historyList = await integrateData(
       OPENID,
       purchaseRecords,
@@ -30,7 +28,6 @@ exports.main = async (event, context) => {
       notices
     )
 
-    // 筛选和分页
     const filteredList = filterHistoryList(historyList, filter)
     const paginatedList = paginateList(filteredList, page, pageSize)
 
@@ -50,9 +47,6 @@ exports.main = async (event, context) => {
   }
 }
 
-/**
- * 获取购买记录
- */
 async function getPurchaseRecords(userId) {
   const res = await db.collection('Records')
     .where({
@@ -68,9 +62,6 @@ async function getPurchaseRecords(userId) {
   return res.data
 }
 
-/**
- * 获取物品记录
- */
 async function getItems(userId) {
   const res = await db.collection('Items')
     .where({
@@ -82,9 +73,6 @@ async function getItems(userId) {
   return res.data
 }
 
-/**
- * 获取使用记录
- */
 async function getUseRecords(userId) {
   const res = await db.collection('Records')
     .where({
@@ -97,92 +85,120 @@ async function getUseRecords(userId) {
   return res.data
 }
 
-/**
- * 获取使用通知
- */
 async function getUseNotices(userId) {
   const res = await db.collection('Notices')
-    .where({
-      type: 'GIFT_USED',
-      _or: [
-        { senderId: userId },
-        { receiverId: userId }
-      ]
-    })
+    .where(_.or([
+      { type: 'GIFT_USED', senderId: userId },
+      { type: 'GIFT_USED', receiverId: userId }
+    ]))
     .orderBy('createTime', 'desc')
     .get()
 
   return res.data
 }
 
-/**
- * 整合数据，构建完整的物品生命周期
- */
 async function integrateData(userId, purchaseRecords, items, useRecords, notices) {
   const result = []
 
-  // 1. 创建物品映射（用于快速查找）
-  const itemsMap = new Map()
+  const itemById = new Map()
+  const itemsByName = new Map()
+  const usedItemIds = new Set()
+
   items.forEach(item => {
-    itemsMap.set(item.name, item)
+    itemById.set(item._id, item)
+    pushToGroup(itemsByName, item.name, item)
   })
 
-  // 2. 查询用户昵称（用于显示操作人）
-  const userIds = new Set()
+  const useRecordByItemId = new Map()
+  const useRecordsByName = new Map()
+  const usedUseRecordIds = new Set()
+
+  useRecords.forEach(record => {
+    if (record.giftId && !useRecordByItemId.has(record.giftId)) {
+      useRecordByItemId.set(record.giftId, record)
+    }
+    pushToGroup(useRecordsByName, extractUseItemName(record.reason), record)
+  })
+
+  const noticeByItemId = new Map()
+  const noticesByName = new Map()
+  const usedNoticeIds = new Set()
+
+  notices.forEach(notice => {
+    const noticeItemId = notice.itemId || notice.giftId
+    if (noticeItemId && !noticeByItemId.has(noticeItemId)) {
+      noticeByItemId.set(noticeItemId, notice)
+    }
+    pushToGroup(noticesByName, extractNoticeItemName(notice.message), notice)
+  })
+
+  // 预排序，保证兜底匹配稳定
+  sortGroupedByCreateTime(itemsByName)
+  sortGroupedByCreateTime(useRecordsByName)
+  sortGroupedByCreateTime(noticesByName)
 
   // 收集需要查询的用户 ID
-  purchaseRecords.forEach(record => {
-    userIds.add(record.userId)
-  })
-  useRecords.forEach(record => {
-    userIds.add(record.userId)
-  })
+  const userIds = new Set()
+  purchaseRecords.forEach(record => userIds.add(record.userId))
+  useRecords.forEach(record => userIds.add(record.userId))
   notices.forEach(notice => {
     userIds.add(notice.senderId)
     userIds.add(notice.receiverId)
   })
 
-  // 批量查询用户信息
   const usersMap = await getUsersInfo(Array.from(userIds))
 
-  // 3. 处理每个购买记录
-  for (const record of purchaseRecords) {
-    const itemName = record.reason.replace('兑换:', '').trim()
-    const item = itemsMap.get(itemName)
+  for (const purchaseRecord of purchaseRecords) {
+    const itemName = extractPurchaseItemName(purchaseRecord.reason)
 
-    // 构建历史项
+    const item = resolveItem({
+      purchaseRecord,
+      itemName,
+      itemById,
+      itemsByName,
+      usedItemIds
+    })
+
+    const useRecord = resolveUseRecord({
+      item,
+      itemName,
+      purchaseRecord,
+      useRecordByItemId,
+      useRecordsByName,
+      usedUseRecordIds
+    })
+
+    const notice = resolveNotice({
+      item,
+      itemName,
+      purchaseRecord,
+      useRecord,
+      noticeByItemId,
+      noticesByName,
+      usedNoticeIds
+    })
+
     const historyItem = {
-      _id: item?._id || `virtual_${record._id}`,
+      _id: item?._id || `virtual_${purchaseRecord._id}`,
       name: itemName,
       image: item?.image || '',
-      points: Math.abs(record.amount),
+      points: Math.abs(purchaseRecord.amount),
       status: item?.status || 'deleted',
-      createTime: record.createTime,
+      createTime: purchaseRecord.createTime,
       isDeleted: !item,
-
-      // 购买记录
       purchaseRecord: {
-        _id: record._id,
-        amount: record.amount,
-        createTime: record.createTime,
-        operator: getUserName(usersMap, record.userId, userId)
+        _id: purchaseRecord._id,
+        amount: purchaseRecord.amount,
+        createTime: purchaseRecord.createTime,
+        operator: getUserName(usersMap, purchaseRecord.userId, userId)
       }
     }
 
-    // 4. 关联使用记录
-    const useRecord = useRecords.find(r =>
-      r.reason.includes(`[兑换请求] ${itemName}`)
-    )
-
     if (useRecord) {
-      const notice = notices.find(n =>
-        n.message.includes(itemName)
-      )
-
       historyItem.useRecord = {
         _id: useRecord._id,
         useTime: item?.useTime || useRecord.createTime,
-        operator: getUserName(usersMap, notice?.senderId, userId),
+        operator: getUserName(usersMap, notice?.senderId || useRecord.userId, userId),
         receiver: getUserName(usersMap, notice?.receiverId, userId),
         message: notice?.message || ''
       }
@@ -194,16 +210,81 @@ async function integrateData(userId, purchaseRecords, items, useRecords, notices
   return result
 }
 
-/**
- * 批量查询用户信息
- */
+function resolveItem({
+  purchaseRecord,
+  itemName,
+  itemById,
+  itemsByName,
+  usedItemIds
+}) {
+  if (purchaseRecord.itemId && itemById.has(purchaseRecord.itemId)) {
+    const directItem = itemById.get(purchaseRecord.itemId)
+    usedItemIds.add(directItem._id)
+    return directItem
+  }
+
+  const bucket = itemsByName.get(itemName) || []
+  const matched = pickByNearestTime(bucket, purchaseRecord.createTime, usedItemIds)
+  if (matched) usedItemIds.add(matched._id)
+  return matched
+}
+
+function resolveUseRecord({
+  item,
+  itemName,
+  purchaseRecord,
+  useRecordByItemId,
+  useRecordsByName,
+  usedUseRecordIds
+}) {
+  if (item?._id && useRecordByItemId.has(item._id)) {
+    const directRecord = useRecordByItemId.get(item._id)
+    if (!usedUseRecordIds.has(directRecord._id)) {
+      usedUseRecordIds.add(directRecord._id)
+      return directRecord
+    }
+  }
+
+  const bucket = useRecordsByName.get(itemName) || []
+  const matched = pickByNearestTime(bucket, purchaseRecord.createTime, usedUseRecordIds)
+  if (matched) usedUseRecordIds.add(matched._id)
+  return matched
+}
+
+function resolveNotice({
+  item,
+  itemName,
+  purchaseRecord,
+  useRecord,
+  noticeByItemId,
+  noticesByName,
+  usedNoticeIds
+}) {
+  const relatedItemId = item?._id || useRecord?.giftId
+  if (relatedItemId && noticeByItemId.has(relatedItemId)) {
+    const directNotice = noticeByItemId.get(relatedItemId)
+    if (!usedNoticeIds.has(directNotice._id)) {
+      usedNoticeIds.add(directNotice._id)
+      return directNotice
+    }
+  }
+
+  const bucket = noticesByName.get(itemName) || []
+  const baseTime = useRecord?.createTime || purchaseRecord.createTime
+  const matched = pickByNearestTime(bucket, baseTime, usedNoticeIds)
+  if (matched) usedNoticeIds.add(matched._id)
+  return matched
+}
+
 async function getUsersInfo(userIds) {
   const usersMap = new Map()
+  if (userIds.length === 0) return usersMap
 
-  // 分批查询（云开发限制每次最多 20 条）
   const batchSize = 20
   for (let i = 0; i < userIds.length; i += batchSize) {
     const batch = userIds.slice(i, i + batchSize)
+    if (batch.length === 0) continue
+
     const res = await db.collection('Users')
       .where({
         _id: _.in(batch)
@@ -218,9 +299,6 @@ async function getUsersInfo(userIds) {
   return usersMap
 }
 
-/**
- * 获取用户昵称
- */
 function getUserName(usersMap, targetId, currentUserId) {
   if (!targetId) return '未知'
   if (targetId === currentUserId) return '我'
@@ -229,9 +307,6 @@ function getUserName(usersMap, targetId, currentUserId) {
   return user?.nickName || '对方'
 }
 
-/**
- * 筛选历史列表
- */
 function filterHistoryList(list, filter) {
   switch (filter) {
     case 'unused':
@@ -244,11 +319,63 @@ function filterHistoryList(list, filter) {
   }
 }
 
-/**
- * 分页处理
- */
 function paginateList(list, page, pageSize) {
   const start = (page - 1) * pageSize
   const end = start + pageSize
   return list.slice(start, end)
+}
+
+function extractPurchaseItemName(reason) {
+  return String(reason || '')
+    .replace(/^兑换[：:]\s*/, '')
+    .trim()
+}
+
+function extractUseItemName(reason) {
+  return String(reason || '')
+    .replace(/^\[兑换请求\]\s*/, '')
+    .trim()
+}
+
+function extractNoticeItemName(message) {
+  return String(message || '')
+    .replace(/^对方想要使用[：:]\s*/, '')
+    .trim()
+}
+
+function pushToGroup(map, key, value) {
+  if (!key) return
+  if (!map.has(key)) map.set(key, [])
+  map.get(key).push(value)
+}
+
+function sortGroupedByCreateTime(groupedMap) {
+  groupedMap.forEach(list => {
+    list.sort((a, b) => toTimestamp(b.createTime) - toTimestamp(a.createTime))
+  })
+}
+
+function pickByNearestTime(candidates, baseTime, usedIdSet) {
+  if (!Array.isArray(candidates) || candidates.length === 0) return null
+
+  const baseTimestamp = toTimestamp(baseTime)
+  let bestCandidate = null
+  let bestDiff = Number.MAX_SAFE_INTEGER
+
+  for (const candidate of candidates) {
+    if (!candidate?._id || usedIdSet.has(candidate._id)) continue
+
+    const diff = Math.abs(toTimestamp(candidate.createTime) - baseTimestamp)
+    if (diff < bestDiff) {
+      bestDiff = diff
+      bestCandidate = candidate
+    }
+  }
+
+  return bestCandidate
+}
+
+function toTimestamp(value) {
+  const ts = new Date(value).getTime()
+  return Number.isFinite(ts) ? ts : 0
 }
