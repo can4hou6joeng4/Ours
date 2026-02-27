@@ -3,23 +3,37 @@ cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 const db = cloud.database()
 const _ = db.command
 
+function canAccessGift(gift, openid) {
+  if (!gift) return false
+  return gift.creatorId === openid || gift.partnerId === openid
+}
+
 exports.main = async (event, context) => {
   const { OPENID } = cloud.getWXContext()
-  const { item } = event // { name, points, type }
+  const { giftId, item } = event // 新版传 giftId；兼容读取 item.giftId
 
   try {
-    const itemName = String(item?.name || '').trim()
-    const itemPoints = Math.max(0, parseInt(item?.points, 10) || 0)
-    const itemImage = String(item?.image || item?.cover || '').trim()
-    const itemType = String(item?.type || 'unknown')
-
-    if (!itemName || itemPoints <= 0) {
-      throw new Error('礼品信息异常')
-    }
+    const normalizedGiftId = String(giftId || item?.giftId || '').trim()
+    if (!normalizedGiftId) throw new Error('缺少礼品ID')
 
     const result = await db.runTransaction(async transaction => {
-      const userRes = await transaction.collection('Users').doc(OPENID).get()
+      const [userRes, giftRes] = await Promise.all([
+        transaction.collection('Users').doc(OPENID).get(),
+        transaction.collection('Gifts').doc(normalizedGiftId).get().catch(() => null)
+      ])
+
       if (!userRes.data) throw new Error('用户不存在')
+      const gift = giftRes?.data
+      if (!gift) throw new Error('礼品不存在')
+      if (!canAccessGift(gift, OPENID)) throw new Error('无权兑换该礼品')
+
+      const itemName = String(gift.name || '').trim()
+      const giftPoints = Number(gift.points)
+      const itemPoints = Number.isInteger(giftPoints) ? giftPoints : 0
+      const itemImage = String(gift.coverImg || '').trim()
+      const itemType = 'gift'
+
+      if (!itemName || itemPoints <= 0) throw new Error('礼品信息异常')
 
       const { totalPoints } = userRes.data
       if (totalPoints < itemPoints) throw new Error('积分不足')
@@ -35,6 +49,7 @@ exports.main = async (event, context) => {
       const itemRes = await transaction.collection('Items').add({
         data: {
           userId: OPENID,
+          sourceGiftId: normalizedGiftId,
           name: itemName,
           image: itemImage,
           type: itemType,
@@ -47,6 +62,7 @@ exports.main = async (event, context) => {
       await transaction.collection('Records').add({
         data: {
           itemId: itemRes._id,
+          giftId: normalizedGiftId,
           userId: OPENID,
           type: 'outcome',
           amount: itemPoints,
@@ -55,7 +71,7 @@ exports.main = async (event, context) => {
         }
       })
 
-      return { success: true }
+      return { success: true, itemId: itemRes._id, cost: itemPoints }
     })
 
     return result

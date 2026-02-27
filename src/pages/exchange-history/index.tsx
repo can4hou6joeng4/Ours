@@ -1,11 +1,12 @@
 import { View, Text, ScrollView, Image } from '@tarojs/components'
 import Taro, { useDidShow, useReachBottom } from '@tarojs/taro'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import dayjs from 'dayjs'
 import relativeTimePlugin from 'dayjs/plugin/relativeTime'
 import './index.scss'
 
 dayjs.extend(relativeTimePlugin)
+const EXCHANGE_HISTORY_PAGE_SIZE = 20
 
 interface ExchangeHistoryItem {
   _id: string
@@ -55,32 +56,27 @@ export default function ExchangeHistory() {
     }
   })
 
-  const fetchData = async (reset = false) => {
-    if (reset) {
-      setPage(1)
-      setHasMore(true)
-    }
+  const fetchData = async (reset = false, filter = filterType) => {
+    if (loading) return
+    if (!hasMore && !reset) return
+    const requestPage = reset ? 1 : page
 
     setLoading(true)
     try {
       const { result }: any = await Taro.cloud.callFunction({
         name: 'getExchangeHistory',
         data: {
-          page: reset ? 1 : page,
-          pageSize: 20,
-          filter: filterType
+          page: requestPage,
+          pageSize: EXCHANGE_HISTORY_PAGE_SIZE,
+          filter
         }
       })
 
       if (result.success) {
-        const newData = result.data
-        if (reset) {
-          setHistoryList(newData)
-        } else {
-          setHistoryList(prev => [...prev, ...newData])
-        }
-
-        setHasMore(newData.length >= 20)
+        const newData = Array.isArray(result.data) ? result.data : []
+        setHistoryList(prev => (reset ? newData : [...prev, ...newData]))
+        setHasMore(newData.length >= EXCHANGE_HISTORY_PAGE_SIZE)
+        setPage(requestPage + 1)
       }
     } catch (e) {
       Taro.showToast({ title: '加载失败', icon: 'none' })
@@ -93,7 +89,7 @@ export default function ExchangeHistory() {
     setFilterType(type)
     setPage(1)
     setHasMore(true)
-    fetchData(true)
+    fetchData(true, type)
   }
 
   const formatTime = (time: string | Date) => {

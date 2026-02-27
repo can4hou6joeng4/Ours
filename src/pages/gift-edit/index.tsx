@@ -68,7 +68,9 @@ export default function GiftEdit() {
   }
 
   const handleSave = async () => {
-    if (!giftData.name || !giftData.points) {
+    const points = Number(giftData.points)
+    const isValidPoints = Number.isInteger(points) && points > 0
+    if (!giftData.name || !isValidPoints) {
       Taro.showToast({ title: '请填写完整信息', icon: 'none' })
       return
     }
@@ -85,7 +87,7 @@ export default function GiftEdit() {
           giftId: router.params.id,
           giftData: {
             ...giftData,
-            points: Number(giftData.points)
+            points
           }
         }
       })
@@ -96,7 +98,7 @@ export default function GiftEdit() {
         Taro.eventCenter.trigger('refreshStore')
         setTimeout(() => Taro.navigateBack(), 1500)
       } else {
-        throw new Error(result.error)
+        throw new Error(result.message || result.error || '保存失败')
       }
     } catch (e) {
       Taro.showToast({ title: e.message || '保存失败', icon: 'none' })

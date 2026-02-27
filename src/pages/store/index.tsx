@@ -17,6 +17,7 @@ import './index.scss'
 
 // 数据缓存有效期（毫秒）
 const DATA_CACHE_DURATION = 30 * 1000 // 30秒
+const EXCHANGE_HISTORY_PAGE_SIZE = 20
 
 export default function Store() {
   const [totalPoints, setTotalPoints] = useState(0)
@@ -67,28 +68,29 @@ export default function Store() {
   }), [products])
 
   // 加载兑换历史数据
-  const loadExchangeHistory = async (reset = false) => {
+  const loadExchangeHistory = async ({
+    reset = false,
+    filter = historyFilter
+  }: {
+    reset?: boolean
+    filter?: 'all' | 'unused' | 'used'
+  } = {}) => {
+    if (historyLoading) return
     if (!hasMoreHistory && !reset) return
 
     setHistoryLoading(true)
     try {
-      const page = reset ? 1 : historyPage
+      const requestPage = reset ? 1 : historyPage
       const { result }: any = await Taro.cloud.callFunction({
         name: 'getExchangeHistory',
-        data: { page, pageSize: 20, filter: historyFilter }
+        data: { page: requestPage, pageSize: EXCHANGE_HISTORY_PAGE_SIZE, filter }
       })
 
       if (result.success) {
-        if (reset) {
-          setHistoryList(result.data)
-          setHistoryPage(1)
-        } else {
-          setHistoryList(prev => [...prev, ...result.data])
-        }
-        setHasMoreHistory(result.data.length >= 20)
-        if (!reset) {
-          setHistoryPage(prev => prev + 1)
-        }
+        const nextData = Array.isArray(result.data) ? result.data : []
+        setHistoryList(prev => (reset ? nextData : [...prev, ...nextData]))
+        setHasMoreHistory(nextData.length >= EXCHANGE_HISTORY_PAGE_SIZE)
+        setHistoryPage(requestPage + 1)
       }
     } catch (e) {
       console.error('加载兑换历史失败', e)
@@ -100,13 +102,15 @@ export default function Store() {
   // 打开兑换历史弹窗
   const handleShowExchangeHistory = () => {
     setShowExchangeHistory(true)
-    loadExchangeHistory(true)
+    loadExchangeHistory({ reset: true, filter: historyFilter })
   }
 
   // 切换历史筛选
   const handleHistoryFilterChange = (filter: 'all' | 'unused' | 'used') => {
     setHistoryFilter(filter)
-    loadExchangeHistory(true)
+    setHistoryPage(1)
+    setHasMoreHistory(true)
+    loadExchangeHistory({ reset: true, filter })
   }
 
   // 触底加载更多历史 (由组件内部处理，不再依赖页面级 useReachBottom 触发弹窗内滚动)
@@ -200,7 +204,9 @@ export default function Store() {
   }
 
   const handleUpdateGift = async () => {
-    if (saving || !editData.name || !editData.points) {
+    const points = Number(editData.points)
+    const isValidPoints = Number.isInteger(points) && points > 0
+    if (saving || !editData.name || !isValidPoints) {
       if (!saving) Taro.showToast({ title: '信息不全', icon: 'none' })
       return
     }
@@ -216,7 +222,7 @@ export default function Store() {
         data: {
           action: isEdit ? 'update' : 'add',
           giftId: isEdit ? selectedGift._id : undefined,
-          giftData: { ...editData, points: Number(editData.points) }
+          giftData: { ...editData, points }
         }
       })
 
@@ -224,6 +230,8 @@ export default function Store() {
         Taro.showToast({ title: isEdit ? '更新成功' : '添加成功' })
         setShowEditSheet(false)
         fetchData()
+      } else {
+        Taro.showToast({ title: res.result.message || res.result.error || '保存失败', icon: 'none' })
       }
     } catch (e) {
       Taro.showToast({ title: '保存失败', icon: 'none' })
@@ -251,11 +259,7 @@ export default function Store() {
       const { result }: any = await Taro.cloud.callFunction({
         name: 'buyItem',
         data: {
-          item: {
-            name: item.name,
-            points: item.points,
-            image: item.coverImg // 关键修复：补全图片字段传递
-          }
+          giftId: item._id
         }
       })
 
@@ -411,7 +415,7 @@ export default function Store() {
         filter={historyFilter}
         onClose={() => setShowExchangeHistory(false)}
         onFilterChange={handleHistoryFilterChange}
-        onLoadMore={() => loadExchangeHistory(false)}
+        onLoadMore={() => loadExchangeHistory()}
       />
 
       {/* 绑定弹窗 */}

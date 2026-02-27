@@ -3,12 +3,21 @@ cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 const db = cloud.database()
 
 function normalizeGiftData(giftData = {}) {
+  const points = Number(giftData.points)
   return {
     name: String(giftData.name || '').trim(),
-    points: Math.max(0, parseInt(giftData.points, 10) || 0),
+    points: Number.isInteger(points) ? points : 0,
     coverImg: String(giftData.coverImg || '').trim(),
     desc: String(giftData.desc || '').trim()
   }
+}
+
+function validateGiftData(giftData) {
+  if (!giftData.name) return '礼品名称不能为空'
+  if (!Number.isInteger(giftData.points) || giftData.points <= 0) {
+    return '积分必须是大于 0 的整数'
+  }
+  return ''
 }
 
 function canManageGift(gift, openid) {
@@ -30,9 +39,8 @@ exports.main = async (event, context) => {
 
     if (action === 'add') {
       const normalizedGiftData = normalizeGiftData(giftData)
-      if (!normalizedGiftData.name) {
-        return { success: false, message: '礼品名称不能为空' }
-      }
+      const validationMessage = validateGiftData(normalizedGiftData)
+      if (validationMessage) return { success: false, message: validationMessage }
 
       return await db.runTransaction(async transaction => {
         const userRes = await transaction.collection('Users').doc(OPENID).get()
@@ -84,9 +92,8 @@ exports.main = async (event, context) => {
       }
 
       const normalizedGiftData = normalizeGiftData(giftData)
-      if (!normalizedGiftData.name) {
-        return { success: false, message: '礼品名称不能为空' }
-      }
+      const validationMessage = validateGiftData(normalizedGiftData)
+      if (validationMessage) return { success: false, message: validationMessage }
 
       await db.collection('Gifts').doc(giftId).update({
         data: {
