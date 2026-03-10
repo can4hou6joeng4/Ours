@@ -5,6 +5,7 @@ import { Button, Notify } from '@taroify/core'
 import UserHeaderCard from '../../components/UserHeaderCard'
 import ProfileEditSheet from '../../components/ProfileEditSheet'
 import BindingSheet from '../../components/BindingSheet'
+import { getIconifyUrl } from '../../utils/assets'
 import { smartFetchUser, setCachedUser } from '../../utils/userCache'
 import './index.scss'
 
@@ -128,6 +129,28 @@ export default function Me() {
         userInfo={userInfo}
         onEdit={handleOpenEdit}
       />
+
+		<View className='menu-section'>
+			<Text className='section-label'>FUNCTIONS / 常用功能</Text>
+			<View className='menu-list'>
+				<View
+					className='menu-item'
+					onClick={() => Taro.navigateTo({ url: '/pages/partner-gift-history/index' })}
+				>
+					<View className='menu-left'>
+						<Image
+							src={getIconifyUrl('tabler:gift', '#D4B185')}
+							className='menu-icon'
+						/>
+						<Text className='menu-label'>TA 使用过的礼品</Text>
+					</View>
+					<Image
+						src={getIconifyUrl('tabler:chevron-right', '#CCCCCC')}
+						className='menu-arrow'
+					/>
+				</View>
+			</View>
+		</View>
 
       {/* 另一半/绑定状态区 */}
       <View className='binding-section'>

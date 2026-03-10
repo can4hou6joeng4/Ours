@@ -1,0 +1,117 @@
+@import "../../styles/theme.scss";
+
+.partner-gift-history-page {
+	min-height: 100vh;
+	background: $bg-color;
+
+	.history-scroll {
+		height: 100vh;
+		box-sizing: border-box;
+
+		.history-inner {
+			padding: 32rpx 32rpx calc(32rpx + env(safe-area-inset-bottom));
+			box-sizing: border-box;
+			min-height: 100vh;
+		}
+
+		.history-list {
+			display: flex;
+			flex-direction: column;
+			gap: 24rpx;
+		}
+
+		.history-skeleton {
+			width: 100%;
+			display: block;
+
+			.gift-card-skeleton {
+				height: 184rpx;
+				border-radius: $border-radius-lg;
+			}
+		}
+
+		.gift-card {
+			background: $text-white;
+			border-radius: $border-radius-lg;
+			box-shadow: $card-shadow;
+			padding: 32rpx;
+			display: flex;
+			align-items: center;
+			gap: 24rpx;
+			transition: transform 0.12s ease;
+
+			&:active {
+				transform: scale(0.96);
+			}
+
+			.gift-cover {
+				width: 120rpx;
+				height: 120rpx;
+				border-radius: 24rpx;
+				object-fit: cover;
+				flex-shrink: 0;
+				background: #F4F4F4;
+			}
+
+			.gift-cover-placeholder {
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				background: linear-gradient(135deg, rgba($primary-color, 0.24), rgba($primary-color, 0.08));
+
+				.gift-placeholder-icon {
+					width: 56rpx;
+					height: 56rpx;
+				}
+			}
+
+			.gift-content {
+				flex: 1;
+				min-width: 0;
+				display: flex;
+				flex-direction: column;
+				gap: 8rpx;
+
+				.gift-name {
+					font-size: 30rpx;
+					font-weight: 700;
+					color: $text-main;
+					line-height: 1.4;
+				}
+
+				.gift-points {
+					font-size: 24rpx;
+					font-weight: 600;
+					color: $primary-color;
+				}
+
+				.gift-time {
+					font-size: 22rpx;
+					color: $text-sub;
+					line-height: 1.5;
+				}
+
+				.gift-desc {
+					font-size: 24rpx;
+					color: $text-sub;
+					line-height: 1.6;
+					display: -webkit-box;
+					-webkit-line-clamp: 2;
+					-webkit-box-orient: vertical;
+					overflow: hidden;
+					word-break: break-all;
+				}
+			}
+		}
+
+		.history-footer {
+			padding: 12rpx 0 24rpx;
+			text-align: center;
+
+			.history-footer-text {
+				font-size: 22rpx;
+				color: $text-sub;
+			}
+		}
+	}
+}

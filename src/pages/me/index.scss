@@ -21,6 +21,65 @@
   padding: 32rpx;
   box-sizing: border-box;
 
+	.menu-section {
+		margin-top: 20rpx;
+
+		.section-label {
+			font-size: 22rpx;
+			color: $text-sub;
+			margin: 0 0 24rpx 12rpx;
+			font-weight: bold;
+			letter-spacing: 2rpx;
+			display: block;
+			opacity: 0.6;
+		}
+
+		.menu-list {
+			background: #ffffff;
+			border-radius: 24rpx;
+			overflow: hidden;
+			border: 1rpx solid rgba(0, 0, 0, 0.05);
+			box-shadow: $card-shadow;
+
+			.menu-item {
+				padding: 36rpx 32rpx;
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.1s ease;
+
+				&:active {
+					background-color: #FAFAFA;
+					transform: scale(0.98);
+				}
+
+				.menu-left {
+					display: flex;
+					align-items: center;
+					gap: 20rpx;
+
+					.menu-icon {
+						width: 40rpx;
+						height: 40rpx;
+						flex-shrink: 0;
+					}
+
+					.menu-label {
+						font-size: 30rpx;
+						color: $text-main;
+						font-weight: 500;
+					}
+				}
+
+				.menu-arrow {
+					width: 32rpx;
+					height: 32rpx;
+					flex-shrink: 0;
+				}
+			}
+		}
+	}
+
   // 沉浸式黑金用户卡片
   // 样式已提取至 src/components/UserHeaderCard
 
