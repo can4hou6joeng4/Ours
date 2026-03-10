@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import Taro, { useDidShow } from '@tarojs/taro'
 import { View, Text, Image } from '@tarojs/components'
-import { Button } from '@taroify/core'
+import { Button, Notify } from '@taroify/core'
 import UserHeaderCard from '../../components/UserHeaderCard'
 import ProfileEditSheet from '../../components/ProfileEditSheet'
 import BindingSheet from '../../components/BindingSheet'
@@ -71,10 +71,10 @@ export default function Me() {
     }
   }
 
-  const handleSaveProfile = async () => {
+  const handleSaveProfile = async (): Promise<boolean> => {
     if (!tempNickname) {
-      Taro.showToast({ title: '昵称不能为空', icon: 'none' })
-      return
+      Notify.open({ type: 'warning', message: '昵称不能为空' })
+      return false
     }
 
     setSaving(true)
@@ -110,11 +110,13 @@ export default function Me() {
       Taro.showToast({ title: '资料已更新', icon: 'success' })
     } catch (err) {
       console.error('保存失败', err)
-      Taro.showToast({ title: '保存失败', icon: 'none' })
+      Notify.open({ type: 'danger', message: '保存失败' })
     } finally {
       setSaving(false)
       Taro.hideLoading()
     }
+
+    return true
   }
 
   if (loading) return <View className='container'><Text>加载中...</Text></View>

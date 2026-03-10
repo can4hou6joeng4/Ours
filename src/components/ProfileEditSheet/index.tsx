@@ -6,27 +6,35 @@ import { getIconifyUrl } from '../../utils/assets'
 import './index.scss'
 
 interface ProfileEditSheetProps {
-  visible: boolean
-  nickname: string
-  avatar: string
-  saving: boolean
-  onClose: () => void
-  onChangeNickname: (val: string) => void
-  onChangeAvatar: (val: string) => void
-  onSave: () => void
+	visible: boolean
+	nickname: string
+	avatar: string
+	saving: boolean
+	onClose: () => void
+	onChangeNickname: (val: string) => void
+	onChangeAvatar: (val: string) => void
+	onSave: () => Promise<boolean> | boolean
 }
 
 const ProfileEditSheet: React.FC<ProfileEditSheetProps> = ({
-  visible,
-  nickname,
-  avatar,
-  saving,
-  onClose,
-  onChangeNickname,
-  onChangeAvatar,
-  onSave
+	visible,
+	nickname,
+	avatar,
+	saving,
+	onClose,
+	onChangeNickname,
+	onChangeAvatar,
+	onSave
 }) => {
-  if (!visible) return null
+	const [isSubmitting, setIsSubmitting] = React.useState(false)
+
+	React.useEffect(() => {
+		if (!saving) {
+			setIsSubmitting(false)
+		}
+	}, [saving])
+
+	if (!visible) return null
 
   const onChooseAvatar = (e) => {
     const { avatarUrl } = e.detail
@@ -35,58 +43,68 @@ const ProfileEditSheet: React.FC<ProfileEditSheetProps> = ({
     }
   }
 
-  return (
-    <View className='edit-sheet-root' onClick={() => !saving && onClose()}>
-      <View className='sheet-content' onClick={e => e.stopPropagation()}>
-        <View className='sheet-header'>
-          <Text className='title'>个人资料设置</Text>
-          <View className='close' onClick={() => !saving && onClose()}>×</View>
-        </View>
+	const handleSave = async () => {
+		if (saving || isSubmitting) return
+		setIsSubmitting(true)
+		const result = await onSave()
+		if (result === false) {
+			setIsSubmitting(false)
+		}
+	}
 
-        <View className='sheet-body'>
-          <View className='profile-edit-box'>
-            <Button
-              className='avatar-edit-btn'
-              openType='chooseAvatar'
-              onChooseAvatar={onChooseAvatar}
-            >
-              <View className='avatar-preview'>
-                {avatar ? (
-                  <Image src={avatar} className='img' mode='aspectFill' />
-                ) : (
-                  <Image src={getIconifyUrl('tabler:camera', '#D4B185')} className='icon' />
-                )}
-                <View className='upload-badge'>更换头像</View>
-              </View>
-            </Button>
+	return (
+		<View className='edit-sheet-root' onClick={() => !(saving || isSubmitting) && onClose()}>
+			<View className='sheet-content' onClick={e => e.stopPropagation()}>
+				<View className='sheet-header'>
+					<Text className='title'>个人资料设置</Text>
+					<View className='close' onClick={() => !(saving || isSubmitting) && onClose()}>×</View>
+				</View>
 
-            <View className='nickname-edit-area'>
-              <Text className='label'>修改昵称</Text>
-              <Input
-                className='input'
-                type='nickname'
-                value={nickname}
-                onChange={e => onChangeNickname(e.detail.value)}
-                onBlur={e => onChangeNickname(e.detail.value)} // 兼容部分机型失去焦点时赋值
-                placeholder='输入你的专属昵称'
-              />
-            </View>
-          </View>
-        </View>
+				<View className='sheet-body'>
+					<View className='profile-edit-box'>
+						<Button
+							className='avatar-edit-btn'
+							openType='chooseAvatar'
+							onChooseAvatar={onChooseAvatar}
+						>
+							<View className='avatar-preview'>
+								{avatar ? (
+									<Image src={avatar} className='img' mode='aspectFill' />
+								) : (
+									<Image src={getIconifyUrl('tabler:camera', '#D4B185')} className='icon' />
+								)}
+								<View className='upload-badge'>更换头像</View>
+							</View>
+						</Button>
 
-        <View className='sheet-footer'>
-          <Button
-            className='save-btn'
-            loading={saving}
-            block
-            onClick={onSave}
-          >
-            保存资料
-          </Button>
-        </View>
-      </View>
-    </View>
-  )
+						<View className='nickname-edit-area'>
+							<Text className='label'>修改昵称</Text>
+							<Input
+								className='input'
+								type='nickname'
+								value={nickname}
+								onChange={e => onChangeNickname(e.detail.value)}
+								onBlur={e => onChangeNickname(e.detail.value)} // 兼容部分机型失去焦点时赋值
+								placeholder='输入你的专属昵称'
+							/>
+						</View>
+					</View>
+				</View>
+
+				<View className='sheet-footer'>
+					<Button
+						className='save-btn'
+						loading={saving || isSubmitting}
+						disabled={saving || isSubmitting}
+						block
+						onClick={handleSave}
+					>
+						保存资料
+					</Button>
+				</View>
+			</View>
+		</View>
+	)
 }
 
 export default ProfileEditSheet

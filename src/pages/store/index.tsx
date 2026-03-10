@@ -1,7 +1,7 @@
 import { View, Text, ScrollView, Button, Image, Input } from '@tarojs/components'
 import Taro, { useDidShow, useReachBottom, eventCenter } from '@tarojs/taro'
 import { useState, useEffect, useMemo, useRef } from 'react'
-import { Dialog, Toast } from '@taroify/core'
+import { Dialog, Notify } from '@taroify/core'
 import DuxGrid from '../../components/DuxGrid'
 import DuxCard from '../../components/DuxCard'
 import ProductCard from '../../components/ProductCard'
@@ -9,6 +9,7 @@ import EmptyState from '../../components/EmptyState'
 import GiftEditSheet from '../../components/GiftEditSheet'
 import ExchangeHistoryModal from '../../components/ExchangeHistoryModal'
 import BindingSheet from '../../components/BindingSheet'
+import SkeletonCard from '../../components/SkeletonCard'
 import { getIconifyUrl } from '../../utils/assets'
 import { requestSubscribe } from '../../utils/subscribe'
 import { smartFetchUser } from '../../utils/userCache'
@@ -194,7 +195,7 @@ export default function Store() {
               fetchData()
             }
           } catch (e) {
-            Taro.showToast({ title: '删除失败', icon: 'none' })
+            Notify.open({ type: 'danger', message: '删除失败' })
           } finally {
             Taro.hideLoading()
           }
@@ -203,12 +204,12 @@ export default function Store() {
     })
   }
 
-  const handleUpdateGift = async () => {
+  const handleUpdateGift = async (): Promise<boolean> => {
     const points = Number(editData.points)
     const isValidPoints = Number.isInteger(points) && points > 0
     if (saving || !editData.name || !isValidPoints) {
-      if (!saving) Taro.showToast({ title: '信息不全', icon: 'none' })
-      return
+      if (!saving) Notify.open({ type: 'warning', message: '信息不全' })
+      return false
     }
 
     setSaving(true)
@@ -231,18 +232,20 @@ export default function Store() {
         setShowEditSheet(false)
         fetchData()
       } else {
-        Taro.showToast({ title: res.result.message || res.result.error || '保存失败', icon: 'none' })
+        Notify.open({ type: 'danger', message: res.result.message || res.result.error || '保存失败' })
       }
     } catch (e) {
-      Taro.showToast({ title: '保存失败', icon: 'none' })
+      Notify.open({ type: 'danger', message: '保存失败' })
     } finally {
       setSaving(false)
     }
+
+    return true
   }
 
   const handleBuy = async (item) => {
     if (isSubmitting || totalPoints < item.points) {
-      if (!isSubmitting) Taro.showToast({ title: '积分不足', icon: 'error' })
+      if (!isSubmitting) Notify.open({ type: 'warning', message: '积分不足' })
       return
     }
 
@@ -267,10 +270,10 @@ export default function Store() {
         Taro.showToast({ title: '兑换成功', icon: 'success' })
         fetchData()
       } else {
-        Taro.showToast({ title: result.error || '兑换失败', icon: 'none' })
+        Notify.open({ type: 'danger', message: result.error || '兑换失败' })
       }
     } catch (e) {
-      Taro.showToast({ title: '网络错误', icon: 'none' })
+      Notify.open({ type: 'danger', message: '网络错误' })
     } finally {
       Taro.hideLoading()
       setTimeout(() => setIsSubmitting(false), 200)
@@ -332,44 +335,21 @@ export default function Store() {
                 btnText='去绑定'
                 onAction={() => setShowBindingSheet(true)}
               />
-            ) : loading ? (
-              <View className='skeleton-grid'>
-                <View className='skeleton-column'>
-                  {[1, 2].map(i => (
-                    <View key={i} className='skeleton-card'>
-                      <View className='skeleton-image shimmer' />
-                      <View className='skeleton-info'>
-                        <View className='skeleton-line name shimmer' />
-                        <View className='skeleton-line desc shimmer' />
-                        <View className='skeleton-line price shimmer' />
-                      </View>
-                    </View>
-                  ))}
-                </View>
-                <View className='skeleton-column'>
-                  {[3, 4].map(i => (
-                    <View key={i} className='skeleton-card'>
-                      <View className='skeleton-image shimmer' />
-                      <View className='skeleton-info'>
-                        <View className='skeleton-line name shimmer' />
-                        <View className='skeleton-line desc shimmer' />
-                        <View className='skeleton-line price shimmer' />
-                      </View>
-                    </View>
-                  ))}
-                </View>
-              </View>
-            ) : products.length === 0 ? (
-              <EmptyState
-                icon='tabler:package-off'
-                title='货架空空如也'
-                desc='点击上方“新增礼品”按钮丰富商店内容吧'
-              />
             ) : (
-              <View className='masonry-grid'>
-                <View className='masonry-column'>{leftCol.map(renderProduct)}</View>
-                <View className='masonry-column'>{rightCol.map(renderProduct)}</View>
-              </View>
+              <SkeletonCard loading={loading} row={4} className='masonry-skeleton'>
+                {products.length === 0 ? (
+                  <EmptyState
+                    icon='tabler:package-off'
+                    title='货架空空如也'
+                    desc='点击上方“新增礼品”按钮丰富商店内容吧'
+                  />
+                ) : (
+                  <View className='masonry-grid'>
+                    <View className='masonry-column'>{leftCol.map(renderProduct)}</View>
+                    <View className='masonry-column'>{rightCol.map(renderProduct)}</View>
+                  </View>
+                )}
+              </SkeletonCard>
             )}
           </View>
         </View>

@@ -1,10 +1,11 @@
 import { View, Text, ScrollView, Image, Input } from '@tarojs/components'
 import Taro, { useDidShow } from '@tarojs/taro'
 import { useState, useMemo, useRef } from 'react'
-import { Dialog, Button } from '@taroify/core'
+import { Dialog, Button, Notify } from '@taroify/core'
 import InventoryItemCard from '../../components/InventoryItemCard'
 import ExchangeHistoryModal from '../../components/ExchangeHistoryModal'
 import BindingSheet from '../../components/BindingSheet'
+import SkeletonCard from '../../components/SkeletonCard'
 import EmptyState from '../../components/EmptyState'
 import { getIconifyUrl } from '../../utils/assets'
 import { requestSubscribe } from '../../utils/subscribe'
@@ -133,7 +134,7 @@ export default function Inventory() {
 				lastFetchTime.current = Date.now()
 			}
 		} catch (e) {
-			Taro.showToast({ title: '获取背包失败', icon: 'none' })
+			Notify.open({ type: 'danger', message: '获取背包失败' })
 		} finally {
 			setLoading(false)
 		}
@@ -161,10 +162,10 @@ export default function Inventory() {
 				// 成功后引导订阅
 				requestSubscribe(['GIFT_USED'])
 			} else {
-				Taro.showToast({ title: result.error || '操作失败', icon: 'none' })
+				Notify.open({ type: 'danger', message: result.error || '操作失败' })
 			}
 		} catch (e) {
-			Taro.showToast({ title: '网络错误', icon: 'none' })
+			Notify.open({ type: 'danger', message: '网络错误' })
 		} finally {
 			setUsing(false)
 		}
@@ -250,7 +251,21 @@ export default function Inventory() {
 							btnText='去绑定'
 							onAction={() => setShowBindingSheet(true)}
 						/>
-					) : filteredItems.length === 0 && !loading ? (
+					) : loading ? (
+						<View className='inventory-skeleton-list'>
+							{[1, 2, 3].map(item => (
+								<SkeletonCard
+									key={item}
+									loading
+									row={2}
+									rowWidth={['80%', '60%']}
+									className='inventory-skeleton-item'
+								>
+									<View className='inventory-skeleton-card' />
+								</SkeletonCard>
+							))}
+						</View>
+					) : filteredItems.length === 0 ? (
 						<View className='empty-state'>
 							<Image src={getIconifyUrl('tabler:package-off', '#8E8E93')} className='empty-icon-img' />
 							<Text className='empty-text'>{searchTerm ? '没有匹配的礼品' : '背包空空如也'}</Text>
