@@ -217,6 +217,6 @@ exports.main = async (event, context) => {
 		return result
 	} catch (e) {
 		console.error('更新任务失败', e)
-		return { success: false, message: e.message }
+		return { success: false, message: '操作失败，请重试' }
 	}
 }

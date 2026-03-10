@@ -137,6 +137,6 @@ exports.main = async (event, context) => {
 
   } catch (err) {
     console.error(err)
-    return { success: false, message: '错误: ' + err.message }
+    return { success: false, message: '操作失败，请重试' }
   }
 }

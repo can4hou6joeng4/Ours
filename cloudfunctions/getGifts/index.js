@@ -45,6 +45,6 @@ exports.main = async (event, context) => {
     return { success: true, gifts: giftsWithUrls }
   } catch (e) {
     console.error('获取礼品失败', e)
-    return { success: false, error: e.message }
+    return { success: false, message: '操作失败，请重试' }
   }
 }

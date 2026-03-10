@@ -1,32 +1,59 @@
 const cloud = require('wx-server-sdk')
+const {
+	normalizeString,
+	normalizeLimitedString,
+	normalizeOptionalRequestId
+} = require('../shared/validation')
+const { runWithIdempotencyTransaction } = require('../shared/idempotency')
 
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 const db = cloud.database()
 
-/**
- * 更新用户资料
- * event: { avatarUrl, nickName }
- */
-exports.main = async (event, context) => {
-  const { OPENID } = cloud.getWXContext()
-  const { avatarUrl, nickName } = event
+exports.main = async event => {
+	const { OPENID } = cloud.getWXContext()
+	const updateData = {}
+	let requestId = ''
 
-  try {
-    const updateData = {}
-    if (avatarUrl) updateData.avatarUrl = avatarUrl
-    if (nickName) updateData.nickName = nickName
+	try {
+		const normalizedAvatar = normalizeString(event && event.avatarUrl)
+		const normalizedNickName = normalizeLimitedString(event && event.nickName, {
+			fieldName: '昵称',
+			maxLength: 20,
+			allowEmpty: true
+		})
+		requestId = normalizeOptionalRequestId(event && event.requestId)
 
-    if (Object.keys(updateData).length === 0) {
-      return { success: false, message: '无更新内容' }
-    }
+		if (normalizedAvatar) {
+			updateData.avatarUrl = normalizedAvatar
+		}
+		if (normalizedNickName) {
+			updateData.nickName = normalizedNickName
+		}
+		if (Object.keys(updateData).length === 0) {
+			return { success: false, message: '无更新内容' }
+		}
+	} catch (validationError) {
+		return { success: false, message: validationError.message }
+	}
 
-    await db.collection('Users').doc(OPENID).update({
-      data: updateData
-    })
+	try {
+		const result = await runWithIdempotencyTransaction({
+			db,
+			openid: OPENID,
+			scope: 'updateUserProfile',
+			requestId,
+			work: async transaction => {
+				await transaction.collection('Users').doc(OPENID).update({
+					data: updateData
+				})
+				return { success: true }
+			}
+		})
 
-    return { success: true }
-  } catch (e) {
-    console.error(e)
-    return { success: false, error: e.message }
-  }
+		const { __idempotencyReplay, ...finalResult } = result || {}
+		return finalResult
+	} catch (e) {
+		console.error('更新用户资料失败', e)
+		return { success: false, message: '操作失败，请重试' }
+	}
 }

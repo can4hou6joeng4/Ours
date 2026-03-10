@@ -1,4 +1,7 @@
 const cloud = require('wx-server-sdk')
+const { normalizeString } = require('../shared/validation')
+const { getAllowedUserIds, resolveAccessibleUserId } = require('../shared/authz')
+
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 const db = cloud.database()
 const _ = db.command
@@ -10,42 +13,54 @@ const QUERY_BATCH_SIZE = 100
  * filter: 'all' | 'unused' | 'used'
  */
 exports.main = async (event, context) => {
-  const { OPENID } = cloud.getWXContext()
-  const { page = 1, pageSize = 20, filter = 'all' } = event
+	const { OPENID } = cloud.getWXContext()
+	const { page = 1, pageSize = 20 } = event || {}
+	const filterInput = normalizeString(event && event.filter) || 'all'
+	const allowedFilters = ['all', 'unused', 'used']
+	if (!allowedFilters.includes(filterInput)) {
+		return { success: false, message: '筛选条件不合法' }
+	}
 
-  try {
-    const [purchaseRecords, items, useRecords, notices] = await Promise.all([
-      getPurchaseRecords(OPENID),
-      getItems(OPENID),
-      getUseRecords(OPENID),
-      getUseNotices(OPENID)
-    ])
+	const targetUserInput = normalizeString(event && (event.userId || event.targetUserId))
 
-    const historyList = await integrateData(
-      OPENID,
-      purchaseRecords,
-      items,
-      useRecords,
-      notices
-    )
+	try {
+		const userRes = await db.collection('Users').doc(OPENID).get().catch(() => null)
+		const currentUser = userRes && userRes.data ? userRes.data : null
+		const allowedUserIds = getAllowedUserIds(currentUser, OPENID)
+		const targetUserId = resolveAccessibleUserId(currentUser, OPENID, targetUserInput)
 
-    const filteredList = filterHistoryList(historyList, filter)
-    const paginatedList = paginateList(filteredList, page, pageSize)
+		const [purchaseRecords, items, useRecords, notices] = await Promise.all([
+			getPurchaseRecords(targetUserId),
+			getItems(targetUserId),
+			getUseRecords(targetUserId),
+			getUseNotices(targetUserId, allowedUserIds)
+		])
 
-    return {
-      success: true,
-      data: paginatedList,
-      total: filteredList.length,
-      page,
-      pageSize
-    }
-  } catch (e) {
-    console.error('获取兑换历史失败', e)
-    return {
-      success: false,
-      error: e.message
-    }
-  }
+		const historyList = await integrateData(
+			OPENID,
+			purchaseRecords,
+			items,
+			useRecords,
+			notices
+		)
+
+		const filteredList = filterHistoryList(historyList, filterInput)
+		const paginatedList = paginateList(filteredList, page, pageSize)
+
+		return {
+			success: true,
+			data: paginatedList,
+			total: filteredList.length,
+			page,
+			pageSize
+		}
+	} catch (e) {
+		console.error('获取兑换历史失败', e)
+		return {
+			success: false,
+			message: '操作失败，请重试'
+		}
+	}
 }
 
 async function getPurchaseRecords(userId) {
@@ -69,14 +84,20 @@ async function getUseRecords(userId) {
 	})
 }
 
-async function getUseNotices(userId) {
-	return queryAllByCreateTimeDesc(
+async function getUseNotices(userId, allowedUserIds) {
+	const notices = await queryAllByCreateTimeDesc(
 		'Notices',
 		_.or([
 			{ type: 'GIFT_USED', senderId: userId },
 			{ type: 'GIFT_USED', receiverId: userId }
 		])
 	)
+	const allowedSet = new Set(Array.isArray(allowedUserIds) ? allowedUserIds : [])
+	return notices.filter(notice => {
+		const senderAllowed = allowedSet.has(notice.senderId)
+		const receiverAllowed = !notice.receiverId || allowedSet.has(notice.receiverId)
+		return senderAllowed && receiverAllowed
+	})
 }
 
 async function queryAllByCreateTimeDesc(collectionName, whereCondition) {
