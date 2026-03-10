@@ -193,11 +193,17 @@
   // 移除旧的 tab-bar 样式
   .tab-bar { display: none; }
 
+  .skeleton-stack {
+  	width: 100%;
+  	padding-top: 40rpx;
+  }
+
   // 新的任务卡片样式 (v2)
   .task-list-main {
     flex: 1;
 
     .task-card-v2 {
+      transition: all 0.3s ease;
       @include card-base;
       @include active-press; // 应用统一点击反馈
       display: flex;
@@ -293,5 +299,9 @@
         }
       }
     }
+  }
+
+  .skeleton-placeholder-card {
+  	min-height: 160rpx;
   }
 }

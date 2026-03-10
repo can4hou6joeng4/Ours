@@ -27,8 +27,23 @@
         flex: 1;
         font-size: 26rpx;
         color: $text-main;
-      }
-    }
+	}
+}
+
+.inventory-skeleton-list {
+	display: flex;
+	flex-direction: column;
+	gap: 24rpx;
+	padding: 24rpx 0;
+}
+
+.inventory-skeleton-item {
+	width: 100%;
+}
+
+.inventory-skeleton-card {
+	min-height: 140rpx;
+}
   }
 
   .tabs-header {

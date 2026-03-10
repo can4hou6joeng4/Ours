@@ -12,6 +12,7 @@ import BindingSheet from '../../components/BindingSheet'
 import InviteConfirmModal from '../../components/InviteConfirmModal'
 import { requestSubscribe } from '../../utils/subscribe'
 import { smartFetchUser } from '../../utils/userCache'
+import SkeletonCard from '../../components/SkeletonCard'
 import './index.scss'
 
 export default function Index() {
@@ -342,10 +343,10 @@ export default function Index() {
             if (data.success) {
               Taro.showToast({ title: '已撤销' })
             } else {
-              Taro.showToast({ title: data.message || data.error || '撤销失败', icon: 'none' })
+              Notify.open({ type: 'danger', message: data.message || data.error || '撤销失败' })
             }
           } catch (e) {
-            Taro.showToast({ title: '撤销失败', icon: 'none' })
+            Notify.open({ type: 'danger', message: '撤销失败' })
           } finally {
             Taro.hideLoading()
           }
@@ -357,26 +358,26 @@ export default function Index() {
   const handleAddTask = async () => {
     if (isSubmitting) return
     if (!partnerId) {
-      Taro.showToast({ title: '请先完成账号绑定', icon: 'none' })
+      Notify.open({ type: 'warning', message: '请先完成账号绑定' })
       return
     }
     const normalizedTitle = newTaskTitle.trim()
     if (!normalizedTitle) {
-      Taro.showToast({ title: '请输入任务描述', icon: 'none' })
+      Notify.open({ type: 'warning', message: '请输入任务描述' })
       return
     }
     if (normalizedTitle.length > 40) {
-      Taro.showToast({ title: '任务描述最多 40 字', icon: 'none' })
+      Notify.open({ type: 'warning', message: '任务描述最多 40 字' })
       return
     }
     const pointsText = newTaskPoints.trim()
     const pointsNum = Number(pointsText)
     if (!/^\d+$/.test(pointsText) || !Number.isInteger(pointsNum) || pointsNum <= 0) {
-      Taro.showToast({ title: '积分需为正整数', icon: 'none' })
+      Notify.open({ type: 'warning', message: '积分需为正整数' })
       return
     }
     if (pointsNum > 9999) {
-      Taro.showToast({ title: '积分不能超过 9999', icon: 'none' })
+      Notify.open({ type: 'warning', message: '积分不能超过 9999' })
       return
     }
 
@@ -401,10 +402,10 @@ export default function Index() {
         setNewTaskTitle('')
         setNewTaskPoints('')
       } else {
-        Taro.showToast({ title: data.message || '发布失败', icon: 'none' })
+        Notify.open({ type: 'danger', message: data.message || '发布失败' })
       }
     } catch (e) {
-      Taro.showToast({ title: '网络繁忙，请重试', icon: 'none' })
+      Notify.open({ type: 'danger', message: '网络繁忙，请重试' })
     } finally {
       Taro.hideLoading()
       // 延迟一帧执行 Toast，防止被 hideLoading 误伤
@@ -439,10 +440,10 @@ export default function Index() {
         }
         setShowDetailModal(false)
       } else {
-        Taro.showToast({ title: data.message || '操作失败', icon: 'none' })
+        Notify.open({ type: 'danger', message: data.message || '操作失败' })
       }
     } catch (e) {
-      Taro.showToast({ title: '操作失败', icon: 'none' })
+      Notify.open({ type: 'danger', message: '操作失败' })
     } finally {
       Taro.hideLoading()
     }
@@ -455,7 +456,16 @@ export default function Index() {
 
   if (loading) return (
     <View className='container'>
-      <View className='empty-state'><Text>数据加载中...</Text></View>
+      <View className='skeleton-stack'>
+        <SkeletonCard loading row={2} rowWidth='60%'>
+          <View className='task-card-v2 skeleton-placeholder-card' />
+        </SkeletonCard>
+        {[1, 2, 3].map(item => (
+          <SkeletonCard key={item} loading row={3}>
+            <View className='task-card-v2 skeleton-placeholder-card' />
+          </SkeletonCard>
+        ))}
+      </View>
       {/* 即使在加载中，如果收到仪式感通知也允许弹出，增强即时感 */}
       <NoticeModal
         visible={showNoticeModal}
