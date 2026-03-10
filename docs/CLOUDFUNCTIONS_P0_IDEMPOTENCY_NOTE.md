@@ -17,7 +17,7 @@
 
 - 旧字段保持不变：
 - `addTask` / `updateTaskStatus` 继续返回 `message` 错误字段。
-- `buyItem` / `useItem` 继续返回 `error` 错误字段（同时补充 `message` 便于统一消费）。
+- `buyItem` / `useItem` 继续返回 `error` 错误字段（同时补 `message` 便于统一消费）。
 - 成功响应在不破坏旧字段前提下，可额外包含 `requestId` 与 `balanceAfter`。
 
 ## 积分变更安全
