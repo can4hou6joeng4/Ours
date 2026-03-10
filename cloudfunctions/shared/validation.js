@@ -44,10 +44,28 @@ function normalizeOptionalRequestId(value) {
 	return requestId
 }
 
+function normalizeLimitedString(value, options = {}) {
+	const {
+		fieldName = '字段',
+		maxLength = 40,
+		allowEmpty = false
+	} = options
+
+	const normalized = normalizeString(value)
+	if (!allowEmpty) {
+		ensure(normalized, `${fieldName}不能为空`)
+	}
+	if (normalized && normalized.length > maxLength) {
+		throw new Error(`${fieldName}不能超过 ${maxLength} 字`)
+	}
+	return normalized
+}
+
 module.exports = {
 	normalizeString,
 	ensure,
 	ensureEnum,
 	parsePositiveInteger,
-	normalizeOptionalRequestId
+	normalizeOptionalRequestId,
+	normalizeLimitedString
 }

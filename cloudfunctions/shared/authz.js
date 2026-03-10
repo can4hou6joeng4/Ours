@@ -35,6 +35,27 @@ function assertTaskExecutor(task, openid, message = '只有任务执行者可以
 	return executorId
 }
 
+function getAllowedUserIds(user, openid) {
+	const ids = [openid]
+	const partnerId = normalizeString(user && user.partnerId)
+	if (partnerId && partnerId !== openid) {
+		ids.push(partnerId)
+	}
+	return ids
+}
+
+function resolveAccessibleUserId(user, openid, targetUserId, message = '无权访问该用户数据') {
+	const normalizedTargetId = normalizeString(targetUserId)
+	if (!normalizedTargetId || normalizedTargetId === openid) {
+		return openid
+	}
+
+	const partnerId = normalizeString(user && user.partnerId)
+	ensure(partnerId, message)
+	ensure(partnerId === normalizedTargetId, message)
+	return normalizedTargetId
+}
+
 module.exports = {
 	assertBoundPartner,
 	canAccessGift,
@@ -42,5 +63,7 @@ module.exports = {
 	assertItemOwner,
 	getTaskExecutorId,
 	assertTaskCreator,
-	assertTaskExecutor
+	assertTaskExecutor,
+	getAllowedUserIds,
+	resolveAccessibleUserId
 }

@@ -150,6 +150,6 @@ exports.main = async (event, context) => {
 		return result
 	} catch (e) {
 		console.error('发布任务失败', e)
-		return { success: false, message: e.message || '系统繁忙，请稍后再试' }
+		return { success: false, message: '操作失败，请重试' }
 	}
 }

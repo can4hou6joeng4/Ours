@@ -80,6 +80,6 @@ exports.main = async (event, context) => {
     })
   } catch (e) {
     console.error(e)
-    return { success: false, message: e.message, error: e.message }
+    return { success: false, message: '操作失败，请重试' }
   }
 }

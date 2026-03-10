@@ -38,7 +38,7 @@ exports.main = async (event, context) => {
 		console.error('获取背包失败', e)
 		return {
 			success: false,
-			error: e.message
+			message: '操作失败，请重试'
 		}
 	}
 }

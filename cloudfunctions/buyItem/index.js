@@ -99,6 +99,7 @@ exports.main = async (event, context) => {
 		const { __idempotencyReplay, ...finalResult } = result || {}
 		return finalResult
 	} catch (e) {
-		return fail(e.message)
+		console.error('兑换礼品失败', e)
+		return { success: false, message: '操作失败，请重试' }
 	}
 }

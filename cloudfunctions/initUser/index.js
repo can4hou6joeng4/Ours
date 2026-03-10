@@ -42,6 +42,6 @@ exports.main = async (event, context) => {
     return { success: true, user: newUser, todayChange: 0 }
   } catch (e) {
     console.error('初始化用户失败', e)
-    return { success: false, error: e.message }
+    return { success: false, message: '操作失败，请重试' }
   }
 }

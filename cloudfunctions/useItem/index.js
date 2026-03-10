@@ -129,6 +129,7 @@ exports.main = async (event, context) => {
 		const { subscribePayload, __idempotencyReplay, ...result } = txResult || {}
 		return result
 	} catch (e) {
-		return fail(e.message)
+		console.error('使用物品失败', e)
+		return { success: false, message: '操作失败，请重试' }
 	}
 }
