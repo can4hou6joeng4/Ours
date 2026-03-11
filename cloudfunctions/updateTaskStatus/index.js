@@ -3,14 +3,14 @@ const dayjs = require('dayjs')
 const {
   normalizeString,
   normalizeOptionalRequestId
-} = require('../shared/validation')
+} = require('./shared/validation')
 const {
   assertTaskCreator,
   assertTaskExecutor,
   getTaskExecutorId
-} = require('../shared/authz')
-const { runWithIdempotencyTransaction } = require('../shared/idempotency')
-const { changeUserPoints } = require('../shared/points')
+} = require('./shared/authz')
+const { runWithIdempotencyTransaction } = require('./shared/idempotency')
+const { changeUserPoints } = require('./shared/points')
 
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 const db = cloud.database()

@@ -1,6 +1,6 @@
 const cloud = require('wx-server-sdk')
-const { normalizeString } = require('../shared/validation')
-const { getAllowedUserIds, resolveAccessibleUserId } = require('../shared/authz')
+const { normalizeString } = require('./shared/validation')
+const { getAllowedUserIds, resolveAccessibleUserId } = require('./shared/authz')
 
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 const db = cloud.database()

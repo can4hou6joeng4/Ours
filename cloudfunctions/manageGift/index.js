@@ -4,8 +4,8 @@ const {
 	normalizeLimitedString,
 	parsePositiveInteger,
 	normalizeOptionalRequestId
-} = require('../shared/validation')
-const { runWithIdempotencyTransaction } = require('../shared/idempotency')
+} = require('./shared/validation')
+const { runWithIdempotencyTransaction } = require('./shared/idempotency')
 
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 const db = cloud.database()

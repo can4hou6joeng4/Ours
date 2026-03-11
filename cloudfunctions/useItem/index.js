@@ -1,8 +1,8 @@
 const cloud = require('wx-server-sdk')
 const dayjs = require('dayjs')
-const { normalizeString, normalizeOptionalRequestId } = require('../shared/validation')
-const { assertItemOwner } = require('../shared/authz')
-const { runWithIdempotencyTransaction } = require('../shared/idempotency')
+const { normalizeString, normalizeOptionalRequestId } = require('./shared/validation')
+const { assertItemOwner } = require('./shared/authz')
+const { runWithIdempotencyTransaction } = require('./shared/idempotency')
 
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 const db = cloud.database()

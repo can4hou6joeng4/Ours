@@ -5,10 +5,10 @@ const {
   ensureEnum,
   parsePositiveInteger,
   normalizeOptionalRequestId
-} = require('../shared/validation')
-const { assertBoundPartner } = require('../shared/authz')
-const { runWithIdempotencyTransaction } = require('../shared/idempotency')
-const { changeUserPoints } = require('../shared/points')
+} = require('./shared/validation')
+const { assertBoundPartner } = require('./shared/authz')
+const { runWithIdempotencyTransaction } = require('./shared/idempotency')
+const { changeUserPoints } = require('./shared/points')
 
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 const db = cloud.database()

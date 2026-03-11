@@ -172,7 +172,7 @@ export default function PartnerGiftHistory() {
 								return (
 									<View
 										key={group.stackKey}
-										className='gift-group-card'
+										className={`gift-group-card ${count > 1 ? 'is-stacked' : ''}`}
 										onClick={() => toggleExpand(group.stackKey, count)}
 									>
 										{/* 数量角标 */}
