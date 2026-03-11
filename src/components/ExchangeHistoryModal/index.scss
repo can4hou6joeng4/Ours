@@ -129,11 +129,13 @@
             margin-right: 24rpx;
 
             .item-image {
-              width: 96rpx; // 增大图片尺寸
+              width: 96rpx;
               height: 96rpx;
               border-radius: 24rpx;
+              overflow: hidden;
               background: #F8F8F8;
               border: 1rpx solid rgba(0, 0, 0, 0.03);
+              flex-shrink: 0;
             }
 
             .item-placeholder {

@@ -96,7 +96,9 @@ const ExchangeHistoryModal: React.FC<ExchangeHistoryModalProps> = ({
                 >
                   <View className='item-left'>
                     {item.image ? (
-                      <Image src={item.image} className='item-image' mode='aspectFill' />
+                      <View className='item-image'>
+                        <Image src={item.image} mode='aspectFill' style={{ width: '100%', height: '100%', borderRadius: '24rpx', display: 'block' }} />
+                      </View>
                     ) : (
                       <View className='item-placeholder'>🎁</View>
                     )}
@@ -132,8 +134,7 @@ const ExchangeHistoryModal: React.FC<ExchangeHistoryModalProps> = ({
                   mode='aspectFill'
                   style={{ width: '120rpx', height: '120rpx', borderRadius: '24rpx', display: 'block' }}
                 />
-              </View>
-            ) : (
+              </View>            ) : (
               <View className='item-detail-cover-placeholder'>🎁</View>
             )}
             <Text className='item-detail-name'>{selectedItem.name || '未命名礼品'}</Text>
