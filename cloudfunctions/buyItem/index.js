@@ -42,6 +42,8 @@ exports.main = async (event, context) => {
         const itemName = normalizeString(gift.name)
         const itemPoints = parsePositiveInteger(gift.points, { invalidMessage: '礼品信息异常' })
         const itemImage = normalizeString(gift.coverImg)
+        // 只保存 cloud:// 原始文件ID，避免存入过期的临时URL
+        const safeItemImage = itemImage.startsWith('cloud://') ? itemImage : ''
         if (!itemName) throw new Error('礼品信息异常')
 
         const pointsMutation = await changeUserPoints({
@@ -56,7 +58,7 @@ exports.main = async (event, context) => {
             userId: OPENID,
             sourceGiftId: normalizedGiftId,
             name: itemName,
-            image: itemImage,
+            image: safeItemImage,
             type: 'gift',
             status: 'unused',
             createTime: db.serverDate()

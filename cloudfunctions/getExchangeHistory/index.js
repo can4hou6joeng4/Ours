@@ -239,12 +239,30 @@ async function integrateData(userId, purchaseRecords, items, useRecords, notices
 }
 
 async function resolveImageUrls(historyList) {
-  // Step 1: 对 image 字段中已有的 cloud:// 做批量转换
-  const fileIds = [...new Set(
-    historyList.map(item => item.image).filter(img => img && img.startsWith('cloud://'))
-  )]
-  const urlMap = new Map()
+  // 有 giftId 的记录，始终从 Gifts 集合重新拉 coverImg（避免 Items.image 是过期临时URL）
+  const allGiftIds = [...new Set(historyList.map(item => item.giftId).filter(Boolean))]
+  const giftCoverMap = new Map()
 
+  if (allGiftIds.length > 0) {
+    const batchSize = 20
+    for (let i = 0; i < allGiftIds.length; i += batchSize) {
+      const batch = allGiftIds.slice(i, i + batchSize)
+      const giftRes = await db.collection('Gifts').where({ _id: db.command.in(batch) }).get().catch(() => ({ data: [] }))
+      ;(Array.isArray(giftRes.data) ? giftRes.data : []).forEach(gift => {
+        if (gift.coverImg) giftCoverMap.set(gift._id, gift.coverImg)
+      })
+    }
+  }
+
+  // 收集所有需要转换的 cloud:// 文件ID（优先用 Gift 的 coverImg，其次用 Items.image）
+  const fileIdSet = new Set()
+  historyList.forEach(item => {
+    const src = giftCoverMap.get(item.giftId) || item.image || ''
+    if (src.startsWith('cloud://')) fileIdSet.add(src)
+  })
+
+  const urlMap = new Map()
+  const fileIds = [...fileIdSet]
   if (fileIds.length > 0) {
     const res = await cloud.getTempFileURL({ fileList: fileIds })
     ;(Array.isArray(res.fileList) ? res.fileList : []).forEach(f => {
@@ -252,37 +270,9 @@ async function resolveImageUrls(historyList) {
     })
   }
 
-  // Step 2: 对 image 为空但有 giftId 的记录，从 Gifts 集合补图
-  const missingGiftIds = [...new Set(
-    historyList
-      .filter(item => !item.image && item.giftId)
-      .map(item => item.giftId)
-  )]
-
-  const giftCoverMap = new Map()
-  if (missingGiftIds.length > 0) {
-    const batchSize = 20
-    for (let i = 0; i < missingGiftIds.length; i += batchSize) {
-      const batch = missingGiftIds.slice(i, i + batchSize)
-      const giftRes = await db.collection('Gifts').where({ _id: db.command.in(batch) }).get().catch(() => ({ data: [] }))
-      ;(Array.isArray(giftRes.data) ? giftRes.data : []).forEach(gift => {
-        if (gift.coverImg) giftCoverMap.set(gift._id, gift.coverImg)
-      })
-    }
-
-    // 对补到的 cloud:// 也做批量转换
-    const extraFileIds = [...new Set([...giftCoverMap.values()].filter(img => img.startsWith('cloud://')))]
-    if (extraFileIds.length > 0) {
-      const extraRes = await cloud.getTempFileURL({ fileList: extraFileIds })
-      ;(Array.isArray(extraRes.fileList) ? extraRes.fileList : []).forEach(f => {
-        if (f.fileID && f.tempFileURL) urlMap.set(f.fileID, f.tempFileURL)
-      })
-    }
-  }
-
   return historyList.map(item => {
-    const resolvedImage = urlMap.get(item.image) || item.image ||
-      urlMap.get(giftCoverMap.get(item.giftId)) || giftCoverMap.get(item.giftId) || ''
+    const raw = giftCoverMap.get(item.giftId) || item.image || ''
+    const resolvedImage = urlMap.get(raw) || (raw.startsWith('cloud://') ? '' : raw)
     return { ...item, image: resolvedImage }
   })
 }
