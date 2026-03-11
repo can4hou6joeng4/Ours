@@ -122,7 +122,7 @@ const ExchangeHistoryModal: React.FC<ExchangeHistoryModalProps> = ({
       </View>
 
       {selectedItem && (
-        <View className='item-detail-mask' onClick={() => setSelectedItem(null)}>
+        <View className='item-detail-mask' onClick={(e) => { e.stopPropagation(); setSelectedItem(null) }}>
           <View className='item-detail-sheet' onClick={e => e.stopPropagation()}>
             <View className='item-detail-drag-bar' />
             {selectedItem.image ? (

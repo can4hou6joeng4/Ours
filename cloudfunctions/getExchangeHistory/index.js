@@ -209,6 +209,7 @@ async function integrateData(userId, purchaseRecords, items, useRecords, notices
       _id: item?._id || `virtual_${purchaseRecord._id}`,
       name: itemName,
       image: item?.image || '',
+      giftId: item?.sourceGiftId || purchaseRecord.giftId || '',
       points: Math.abs(purchaseRecord.amount),
       status: item?.status || 'deleted',
       createTime: purchaseRecord.createTime,
@@ -238,21 +239,52 @@ async function integrateData(userId, purchaseRecords, items, useRecords, notices
 }
 
 async function resolveImageUrls(historyList) {
+  // Step 1: 对 image 字段中已有的 cloud:// 做批量转换
   const fileIds = [...new Set(
     historyList.map(item => item.image).filter(img => img && img.startsWith('cloud://'))
   )]
-  if (fileIds.length === 0) return historyList
-
-  const res = await cloud.getTempFileURL({ fileList: fileIds })
   const urlMap = new Map()
-  ;(Array.isArray(res.fileList) ? res.fileList : []).forEach(f => {
-    if (f.fileID && f.tempFileURL) urlMap.set(f.fileID, f.tempFileURL)
-  })
 
-  return historyList.map(item => ({
-    ...item,
-    image: urlMap.get(item.image) || item.image
-  }))
+  if (fileIds.length > 0) {
+    const res = await cloud.getTempFileURL({ fileList: fileIds })
+    ;(Array.isArray(res.fileList) ? res.fileList : []).forEach(f => {
+      if (f.fileID && f.tempFileURL) urlMap.set(f.fileID, f.tempFileURL)
+    })
+  }
+
+  // Step 2: 对 image 为空但有 giftId 的记录，从 Gifts 集合补图
+  const missingGiftIds = [...new Set(
+    historyList
+      .filter(item => !item.image && item.giftId)
+      .map(item => item.giftId)
+  )]
+
+  const giftCoverMap = new Map()
+  if (missingGiftIds.length > 0) {
+    const batchSize = 20
+    for (let i = 0; i < missingGiftIds.length; i += batchSize) {
+      const batch = missingGiftIds.slice(i, i + batchSize)
+      const giftRes = await db.collection('Gifts').where({ _id: db.command.in(batch) }).get().catch(() => ({ data: [] }))
+      ;(Array.isArray(giftRes.data) ? giftRes.data : []).forEach(gift => {
+        if (gift.coverImg) giftCoverMap.set(gift._id, gift.coverImg)
+      })
+    }
+
+    // 对补到的 cloud:// 也做批量转换
+    const extraFileIds = [...new Set([...giftCoverMap.values()].filter(img => img.startsWith('cloud://')))]
+    if (extraFileIds.length > 0) {
+      const extraRes = await cloud.getTempFileURL({ fileList: extraFileIds })
+      ;(Array.isArray(extraRes.fileList) ? extraRes.fileList : []).forEach(f => {
+        if (f.fileID && f.tempFileURL) urlMap.set(f.fileID, f.tempFileURL)
+      })
+    }
+  }
+
+  return historyList.map(item => {
+    const resolvedImage = urlMap.get(item.image) || item.image ||
+      urlMap.get(giftCoverMap.get(item.giftId)) || giftCoverMap.get(item.giftId) || ''
+    return { ...item, image: resolvedImage }
+  })
 }
 
 function resolveItem({
