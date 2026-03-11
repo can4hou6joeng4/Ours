@@ -234,15 +234,14 @@
 
 .item-detail-cover,
 .item-detail-cover-placeholder {
-  width: 100rpx;
-  height: 100rpx;
-  border-radius: 20rpx;
-  display: block;
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 24rpx;
   margin: 0 auto 20rpx;
+  display: block;
 }
 
 .item-detail-cover {
-  object-fit: cover;
   background: #f8f8f8;
 }
 
