@@ -124,7 +124,7 @@ export default function Inventory() {
 	}
 
 	const formatPartnerGiftPoints = (points: number) =>
-		points > 0 ? `🪙 ${points} 积分` : '🪙 — 积分'
+		points > 0 ? `🪙 ${points} 积分` : '🪙 积分未知'
 
 	const formatPartnerGiftTime = (t?: string | Date) =>
 		t ? dayjs(t).format('YYYY.MM.DD HH:mm') : '—'
@@ -527,52 +527,38 @@ export default function Inventory() {
 				</View>
 			)}
 
-			{/* TA 的礼品详情居中弹窗 */}
-			<Dialog open={!!selectedPartnerGiftGroup} onClose={() => setSelectedPartnerGiftGroup(null)}>
-				<Dialog.Header>礼品使用详情</Dialog.Header>
-				<Dialog.Content>
-					{selectedPartnerGiftGroup && (
-						<View className='partner-gift-dialog'>
-							<View className='partner-gift-dialog__hero'>
+			{selectedPartnerGiftGroup && (
+				<View className='gift-detail-overlay' onClick={() => setSelectedPartnerGiftGroup(null)}>
+					<View className='gift-detail-modal' onClick={e => e.stopPropagation()}>
+						<View className='gift-detail-header'>
+							<View className='gift-detail-cover-box'>
 								{selectedPartnerGiftGroup.coverImg ? (
-									<Image
-										src={selectedPartnerGiftGroup.coverImg}
-										mode='aspectFill'
-										className='partner-gift-dialog__cover'
-									/>
+									<Image src={selectedPartnerGiftGroup.coverImg} mode='aspectFill' className='gift-detail-cover' />
 								) : (
-									<View className='partner-gift-dialog__cover partner-gift-dialog__cover--placeholder'>
-										<Image src={GIFT_PLACEHOLDER_ICON} className='partner-gift-dialog__placeholder-icon' />
+									<View className='gift-detail-cover gift-detail-cover--placeholder'>
+										<Image src={GIFT_PLACEHOLDER_ICON} className='gift-detail-placeholder-icon' />
 									</View>
 								)}
-								<View className='partner-gift-dialog__meta'>
-									<Text className='partner-gift-dialog__name'>
-										{selectedPartnerGiftGroup.name || '未命名礼品'}
-									</Text>
-									<Text className='partner-gift-dialog__points'>
-										{formatPartnerGiftPoints(selectedPartnerGiftGroup.points)}
-									</Text>
-								</View>
 							</View>
-
-							<ScrollView scrollY className='partner-gift-dialog__records'>
-								<View className='partner-gift-dialog__record-list'>
-									{selectedPartnerGiftGroup.records.map((rec, idx) => (
-										<View key={rec._id} className='partner-gift-dialog__record-item'>
-											<Text className='partner-gift-dialog__record-text'>
-												第 {idx + 1} 次 · {formatPartnerGiftTime(rec.useTime || rec.createTime)}
-											</Text>
-										</View>
-									))}
-								</View>
-							</ScrollView>
+							<Text className='gift-detail-name'>{selectedPartnerGiftGroup.name}</Text>
+							<Text className='gift-detail-points'>{formatPartnerGiftPoints(selectedPartnerGiftGroup.points)}</Text>
 						</View>
-					)}
-				</Dialog.Content>
-				<Dialog.Actions>
-					<Button onClick={() => setSelectedPartnerGiftGroup(null)}>确认</Button>
-				</Dialog.Actions>
-			</Dialog>
+						<View className='gift-detail-records'>
+							{selectedPartnerGiftGroup.records.map((rec, idx) => (
+								<View key={rec._id} className='gift-detail-record-row'>
+									<Text className='gift-detail-record-index'>第 {idx + 1} 次</Text>
+									<Text className='gift-detail-record-time'>{formatPartnerGiftTime(rec.useTime || rec.createTime)}</Text>
+								</View>
+							))}
+						</View>
+						<View className='gift-detail-actions'>
+							<View className='gift-detail-btn' onClick={() => setSelectedPartnerGiftGroup(null)}>
+								<Text>关闭</Text>
+							</View>
+						</View>
+					</View>
+				</View>
+			)}
 
 			{/* 绑定弹窗 */}
 			<BindingSheet

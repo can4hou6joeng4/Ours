@@ -25,7 +25,7 @@
 
       .search-input {
         flex: 1;
-        font-size: 26rpx;
+        font-size: 28rpx;
         color: $text-main;
       }
     }
@@ -247,7 +247,7 @@
   }
 
   .exchange-history-entry {
-    padding: 32rpx 32rpx 28rpx;
+    padding: 32rpx 28rpx 28rpx;
     display: flex;
     flex-direction: row;
     gap: 16rpx;
@@ -256,7 +256,7 @@
       flex: 1;
       background: #ffffff;
       border-radius: 24rpx;
-      padding: 32rpx 20rpx;
+      padding: 36rpx 24rpx;
       display: flex;
       align-items: center;
       gap: 16rpx;
@@ -264,8 +264,8 @@
       border: 1rpx solid #f0f0f0;
 
       .history-icon {
-        width: 40rpx;
-        height: 40rpx;
+        width: 44rpx;
+        height: 44rpx;
       }
 
       .history-text {
@@ -517,82 +517,7 @@
     }
   }
 
-  .partner-gift-dialog {
-    display: flex;
-    flex-direction: column;
-    gap: 28rpx;
-    text-align: left;
 
-    &__hero {
-      display: flex;
-      align-items: center;
-      gap: 24rpx;
-    }
-
-    &__cover {
-      width: 120rpx;
-      height: 120rpx;
-      border-radius: 24rpx;
-      background: #f4f4f4;
-      flex-shrink: 0;
-      display: block;
-
-      &--placeholder {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: linear-gradient(135deg, rgba($primary-color, 0.24), rgba($primary-color, 0.08));
-      }
-    }
-
-    &__placeholder-icon {
-      width: 56rpx;
-      height: 56rpx;
-    }
-
-    &__meta {
-      flex: 1;
-      min-width: 0;
-      display: flex;
-      flex-direction: column;
-      gap: 10rpx;
-    }
-
-    &__name {
-      font-size: 30rpx;
-      font-weight: 700;
-      color: $text-main;
-      line-height: 1.4;
-    }
-
-    &__points {
-      font-size: 24rpx;
-      font-weight: 600;
-      color: $primary-color;
-    }
-
-    &__records {
-      max-height: 420rpx;
-    }
-
-    &__record-list {
-      display: flex;
-      flex-direction: column;
-      gap: 16rpx;
-    }
-
-    &__record-item {
-      padding: 20rpx 24rpx;
-      background: #f8f8f8;
-      border-radius: 20rpx;
-    }
-
-    &__record-text {
-      font-size: 26rpx;
-      color: $text-main;
-      line-height: 1.6;
-    }
-  }
 }
 
 @keyframes partner-gift-sheet-slide-up {
@@ -604,3 +529,113 @@
     transform: translateY(0);
   }
 }
+
+  .gift-detail-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 3000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .gift-detail-modal {
+    background: #fff;
+    border-radius: 40rpx;
+    width: 600rpx;
+    max-height: 80vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    padding: 48rpx 40rpx;
+    box-sizing: border-box;
+  }
+
+  .gift-detail-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16rpx;
+    margin-bottom: 32rpx;
+  }
+
+  .gift-detail-cover-box {
+    width: 120rpx;
+    height: 120rpx;
+    border-radius: 24rpx;
+    overflow: hidden;
+  }
+
+  .gift-detail-cover {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    background: #f4f4f4;
+  }
+
+  .gift-detail-cover--placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, rgba(212, 177, 133, 0.24), rgba(212, 177, 133, 0.08));
+  }
+
+  .gift-detail-placeholder-icon {
+    width: 56rpx;
+    height: 56rpx;
+  }
+
+  .gift-detail-name {
+    font-size: 34rpx;
+    font-weight: 700;
+    color: #1a1a1a;
+  }
+
+  .gift-detail-points {
+    font-size: 26rpx;
+    color: #D4B185;
+    font-weight: 600;
+  }
+
+  .gift-detail-records {
+    flex: 1;
+    overflow-y: auto;
+    max-height: 320rpx;
+  }
+
+  .gift-detail-record-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 20rpx 0;
+    border-bottom: 1rpx solid #f0f0f0;
+  }
+
+  .gift-detail-record-index {
+    font-size: 26rpx;
+    color: #999;
+  }
+
+  .gift-detail-record-time {
+    font-size: 26rpx;
+    color: #333;
+  }
+
+  .gift-detail-actions {
+    margin-top: 32rpx;
+    display: flex;
+    justify-content: center;
+  }
+
+  .gift-detail-btn {
+    background: #D4B185;
+    color: #fff;
+    border-radius: 100rpx;
+    padding: 20rpx 80rpx;
+    font-size: 28rpx;
+    font-weight: 600;
+  }
+
