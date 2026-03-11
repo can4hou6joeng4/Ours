@@ -31,26 +31,25 @@
     }
   }
 
-.inventory-skeleton-list {
-	display: flex;
-	flex-direction: column;
-	gap: 24rpx;
-	padding: 24rpx 0;
-}
+  .inventory-skeleton-list {
+    display: flex;
+    flex-direction: column;
+    gap: 24rpx;
+    padding: 24rpx 0;
+  }
 
-.inventory-skeleton-item {
-	width: 100%;
-}
+  .inventory-skeleton-item {
+    width: 100%;
+  }
 
-.inventory-skeleton-card {
-	min-height: 140rpx;
-}
+  .inventory-skeleton-card {
+    min-height: 140rpx;
   }
 
   .tabs-header {
     background: transparent;
     display: flex;
-    justify-content: center; // 居中显示胶囊
+    justify-content: center;
     padding: 32rpx;
     position: relative;
 
@@ -58,8 +57,8 @@
       background: #F0F0F0;
       display: flex;
       padding: 8rpx;
-      border-radius: 40rpx; // 大圆角
-      width: 80%; // 限制宽度，更精致
+      border-radius: 40rpx;
+      width: 80%;
 
       .tab-item {
         flex: 1;
@@ -72,7 +71,7 @@
         font-weight: 500;
 
         &.active {
-          background: $secondary-color; // 碳黑
+          background: $secondary-color;
           color: #fff;
           font-weight: bold;
           box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.2);
@@ -80,15 +79,17 @@
       }
     }
 
-    .tab-line { display: none; }
+    .tab-line {
+      display: none;
+    }
   }
 
   .items-scroll {
     flex: 1;
+
     .items-inner {
       padding: 32rpx;
 
-      // 兑换记录板块
       .records-section {
         padding-bottom: 40rpx;
 
@@ -154,6 +155,7 @@
                   font-weight: bold;
                   color: #333;
                 }
+
                 .time {
                   font-size: 22rpx;
                   color: #999;
@@ -171,6 +173,7 @@
                 background: rgba($primary-color, 0.1);
                 color: $primary-color;
               }
+
               &.received {
                 background: rgba(#FF9800, 0.1);
                 color: #FF9800;
@@ -193,6 +196,7 @@
         margin-bottom: 32rpx;
         opacity: 0.2;
       }
+
       .empty-text {
         font-size: 26rpx;
         color: #8e8e93;
@@ -201,13 +205,14 @@
     }
   }
 
-  // 适配 Taroify Dialog 样式
   :global(.taroify-dialog) {
     border-radius: 40rpx;
+
     .taroify-dialog__header {
       font-weight: 800;
       padding-top: 48rpx;
     }
+
     .taroify-dialog__content {
       padding: 40rpx 48rpx;
       color: $text-sub;
@@ -215,19 +220,23 @@
       line-height: 1.6;
       text-align: center;
     }
+
     .taroify-dialog__footer {
       padding: 0 32rpx 32rpx;
       gap: 20rpx;
+
       .taroify-button {
         flex: 1;
         border-radius: 30rpx;
         font-weight: bold;
         height: 80rpx;
+
         &--default {
           background: #F5F5F5;
           color: $text-sub;
           border: none;
         }
+
         &--primary {
           background: linear-gradient(135deg, $primary-color, #E5C59F);
           color: #fff;
@@ -237,39 +246,361 @@
     }
   }
 
-.exchange-history-entry {
-  padding: 32rpx 32rpx 24rpx;
-  display: flex;
-  flex-direction: row;
-  gap: 16rpx;
-
-  .history-btn {
-    flex: 1;
-    background: #ffffff;
-    border-radius: 24rpx;
-    padding: 28rpx 24rpx;
+  .exchange-history-entry {
+    padding: 32rpx 32rpx 28rpx;
     display: flex;
-    align-items: center;
+    flex-direction: row;
     gap: 16rpx;
-    box-shadow: $card-shadow;
-    border: 1rpx solid #f0f0f0;
 
-    .history-icon {
-      width: 40rpx;
-      height: 40rpx;
-    }
-
-    .history-text {
+    .history-btn {
       flex: 1;
-      font-size: 28rpx;
-      font-weight: bold;
-      color: $text-main;
-      letter-spacing: 1rpx;
+      background: #ffffff;
+      border-radius: 24rpx;
+      padding: 32rpx 20rpx;
+      display: flex;
+      align-items: center;
+      gap: 16rpx;
+      box-shadow: $card-shadow;
+      border: 1rpx solid #f0f0f0;
+
+      .history-icon {
+        width: 40rpx;
+        height: 40rpx;
+      }
+
+      .history-text {
+        flex: 1;
+        font-size: 26rpx;
+        font-weight: bold;
+        color: $text-main;
+        letter-spacing: 1rpx;
+      }
+
+      @include active-press;
+    }
+  }
+
+  .partner-gift-sheet-root {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(10rpx);
+    z-index: 2100;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+
+    .partner-gift-sheet-content {
+      width: 100%;
+      background: #fff;
+      border-top-left-radius: 60rpx;
+      border-top-right-radius: 60rpx;
+      display: flex;
+      flex-direction: column;
+      animation: partner-gift-sheet-slide-up 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+      box-shadow: 0 -20rpx 60rpx rgba(0, 0, 0, 0.1);
+      max-height: calc(85vh - env(safe-area-inset-top));
+
+      .sheet-header {
+        padding: 56rpx 48rpx 24rpx;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 24rpx;
+        flex-shrink: 0;
+
+        .title {
+          font-size: 38rpx;
+          font-weight: 900;
+          color: $text-main;
+          line-height: 1.4;
+        }
+
+        .close {
+          font-size: 52rpx;
+          color: #ccc;
+          padding: 10rpx;
+          margin-right: -10rpx;
+          line-height: 1;
+        }
+      }
+
+      .partner-gift-scroll {
+        flex: 1;
+        height: 0;
+        min-height: 420rpx;
+      }
+
+      .partner-gift-inner {
+        padding: 0 32rpx calc(32rpx + env(safe-area-inset-bottom));
+        box-sizing: border-box;
+      }
+
+      .partner-gift-list {
+        display: flex;
+        flex-direction: column;
+        gap: 24rpx;
+      }
+
+      .history-skeleton {
+        width: 100%;
+        display: block;
+
+        .gift-card-skeleton {
+          height: 184rpx;
+          border-radius: $border-radius-lg;
+        }
+      }
+
+      .gift-group-card {
+        position: relative;
+        background: $text-white;
+        border-radius: $border-radius-lg;
+        box-shadow: $card-shadow;
+        border: 1rpx solid #f0f0f0;
+        overflow: visible;
+        z-index: 1;
+        transition: transform 0.12s ease;
+
+        &:active {
+          transform: scale(0.98);
+        }
+
+        &.is-stacked {
+          margin-bottom: 40rpx;
+
+          &::before {
+            content: '';
+            position: absolute;
+            top: 8rpx;
+            left: 12rpx;
+            right: 12rpx;
+            bottom: -8rpx;
+            background: #fff;
+            border-radius: $border-radius-lg;
+            z-index: -1;
+            border: 1rpx solid #f0f0f0;
+            box-shadow: 0 4rpx 10rpx rgba(0, 0, 0, 0.05);
+          }
+
+          &::after {
+            content: '';
+            position: absolute;
+            top: 16rpx;
+            left: 24rpx;
+            right: 24rpx;
+            bottom: -16rpx;
+            background: #fff;
+            border-radius: $border-radius-lg;
+            z-index: -2;
+            border: 1rpx solid #f2f2f2;
+            opacity: 0.6;
+          }
+        }
+
+        .gift-card-row {
+          display: flex;
+          align-items: center;
+          gap: 24rpx;
+          padding: 28rpx;
+
+          .gift-cover-box {
+            position: relative;
+            width: 120rpx;
+            height: 120rpx;
+            flex-shrink: 0;
+          }
+
+          .gift-count-badge {
+            position: absolute;
+            top: -12rpx;
+            right: -12rpx;
+            background: $primary-color;
+            color: #fff;
+            font-size: 18rpx;
+            font-weight: 900;
+            padding: 4rpx 12rpx;
+            border-radius: 20rpx;
+            border: 2rpx solid #fff;
+            box-shadow: 0 4rpx 8rpx rgba($primary-color, 0.3);
+            z-index: 2;
+          }
+
+          .gift-cover {
+            width: 120rpx;
+            height: 120rpx;
+            border-radius: 24rpx;
+            object-fit: cover;
+            flex-shrink: 0;
+            background: #f4f4f4;
+            display: block;
+          }
+
+          .gift-cover-placeholder {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, rgba($primary-color, 0.24), rgba($primary-color, 0.08));
+
+            .gift-placeholder-icon {
+              width: 56rpx;
+              height: 56rpx;
+            }
+          }
+
+          .gift-content {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 8rpx;
+
+            .gift-name {
+              font-size: 30rpx;
+              font-weight: 700;
+              color: $text-main;
+              line-height: 1.4;
+            }
+
+            .gift-points {
+              font-size: 24rpx;
+              font-weight: 600;
+              color: $primary-color;
+            }
+
+            .gift-usage-count {
+              font-size: 22rpx;
+              color: $text-sub;
+              line-height: 1.5;
+            }
+          }
+        }
+      }
+
+      .empty-history {
+        width: 100%;
+        min-height: 420rpx;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 48rpx 48rpx calc(80rpx + env(safe-area-inset-bottom));
+        box-sizing: border-box;
+
+        .empty-icon {
+          font-size: 96rpx;
+          opacity: 0.15;
+          margin-bottom: 32rpx;
+          filter: grayscale(100%);
+        }
+
+        .empty-text {
+          font-size: 28rpx;
+          color: #b0b0b0;
+          letter-spacing: 2rpx;
+          font-weight: 500;
+        }
+      }
+
+      .history-footer {
+        padding: 12rpx 0 24rpx;
+        text-align: center;
+
+        .history-footer-text {
+          font-size: 22rpx;
+          color: $text-sub;
+        }
+      }
+    }
+  }
+
+  .partner-gift-dialog {
+    display: flex;
+    flex-direction: column;
+    gap: 28rpx;
+    text-align: left;
+
+    &__hero {
+      display: flex;
+      align-items: center;
+      gap: 24rpx;
     }
 
-    @include active-press;
+    &__cover {
+      width: 120rpx;
+      height: 120rpx;
+      border-radius: 24rpx;
+      background: #f4f4f4;
+      flex-shrink: 0;
+      display: block;
+
+      &--placeholder {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, rgba($primary-color, 0.24), rgba($primary-color, 0.08));
+      }
+    }
+
+    &__placeholder-icon {
+      width: 56rpx;
+      height: 56rpx;
+    }
+
+    &__meta {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10rpx;
+    }
+
+    &__name {
+      font-size: 30rpx;
+      font-weight: 700;
+      color: $text-main;
+      line-height: 1.4;
+    }
+
+    &__points {
+      font-size: 24rpx;
+      font-weight: 600;
+      color: $primary-color;
+    }
+
+    &__records {
+      max-height: 420rpx;
+    }
+
+    &__record-list {
+      display: flex;
+      flex-direction: column;
+      gap: 16rpx;
+    }
+
+    &__record-item {
+      padding: 20rpx 24rpx;
+      background: #f8f8f8;
+      border-radius: 20rpx;
+    }
+
+    &__record-text {
+      font-size: 26rpx;
+      color: $text-main;
+      line-height: 1.6;
+    }
   }
 }
 
-// 兑换历史底部弹窗
-// 样式已提取至 src/components/ExchangeHistoryModal
+@keyframes partner-gift-sheet-slide-up {
+  from {
+    transform: translateY(100%);
+  }
+
+  to {
+    transform: translateY(0);
+  }
+}
