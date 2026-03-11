@@ -324,21 +324,15 @@ export default function Inventory() {
 				</View>
 			</View>
 
-			{/* 兑换历史 + TA 的礼品 入口按钮（同行两列） */}
+			{/* TA 的礼品入口按钮 */}
 			<View className='exchange-history-entry'>
-				<View
-					className='history-btn'
-					onClick={handleShowExchangeHistory}
-				>
-					<Image src={getIconifyUrl('tabler:history', '#D4B185')} className='history-icon' />
-					<Text className='history-text'>兑换历史</Text>
-				</View>
 				<View
 					className='history-btn'
 					onClick={handleShowPartnerGiftSheet}
 				>
 					<Image src={getIconifyUrl('tabler:heart', '#D4B185')} className='history-icon' />
 					<Text className='history-text'>TA 的礼品</Text>
+					<Text className='history-arrow'>⟩</Text>
 				</View>
 			</View>
 
