@@ -232,20 +232,18 @@
   margin: 0 auto 32rpx;
 }
 
-.item-detail-cover,
+.item-detail-cover-box {
+  display: flex;
+  justify-content: center;
+  margin: 0 auto 20rpx;
+  width: 120rpx;
+}
+
 .item-detail-cover-placeholder {
   width: 120rpx;
   height: 120rpx;
   border-radius: 24rpx;
   margin: 0 auto 20rpx;
-  display: block;
-}
-
-.item-detail-cover {
-  background: #f8f8f8;
-}
-
-.item-detail-cover-placeholder {
   display: flex;
   align-items: center;
   justify-content: center;

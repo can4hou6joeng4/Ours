@@ -126,7 +126,13 @@ const ExchangeHistoryModal: React.FC<ExchangeHistoryModalProps> = ({
           <View className='item-detail-sheet' onClick={e => e.stopPropagation()}>
             <View className='item-detail-drag-bar' />
             {selectedItem.image ? (
-              <Image src={selectedItem.image} className='item-detail-cover' mode='aspectFill' />
+              <View className='item-detail-cover-box'>
+                <Image
+                  src={selectedItem.image}
+                  mode='aspectFill'
+                  style={{ width: '120rpx', height: '120rpx', borderRadius: '24rpx', display: 'block' }}
+                />
+              </View>
             ) : (
               <View className='item-detail-cover-placeholder'>🎁</View>
             )}
