@@ -193,7 +193,7 @@ export default function Inventory() {
 			const requestPage = reset ? 1 : historyPage
 			const { result }: any = await Taro.cloud.callFunction({
 				name: 'getExchangeHistory',
-				data: { page: requestPage, pageSize: EXCHANGE_HISTORY_PAGE_SIZE, filter }
+				data: { page: requestPage, pageSize: EXCHANGE_HISTORY_PAGE_SIZE, filter, targetUserId: Taro.getStorageSync('partnerId') || '' }
 			})
 
 			if (result.success) {
@@ -324,14 +324,14 @@ export default function Inventory() {
 				</View>
 			</View>
 
-			{/* TA 的礼品入口按钮 */}
+			{/* TA 的兑换历史入口按钮 */}
 			<View className='exchange-history-entry'>
 				<View
 					className='history-btn'
-					onClick={handleShowPartnerGiftSheet}
+					onClick={handleShowExchangeHistory}
 				>
-					<Image src={getIconifyUrl('tabler:heart', '#D4B185')} className='history-icon' />
-					<Text className='history-text'>TA 的礼品</Text>
+					<Image src={getIconifyUrl('tabler:history', '#D4B185')} className='history-icon' />
+					<Text className='history-text'>TA 的兑换历史</Text>
 					<Text className='history-arrow'>⟩</Text>
 				</View>
 			</View>
