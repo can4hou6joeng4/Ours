@@ -31,10 +31,21 @@ function normalizeOptionalRequestId(value) {
   return requestId
 }
 
+
+function normalizeLimitedString(value, { fieldName = '字段', maxLength = 200, allowEmpty = false } = {}) {
+  const str = normalizeString(value)
+  if (!str) {
+    if (!allowEmpty) throw new Error(`${fieldName}不能为空`)
+    return ''
+  }
+  if (str.length > maxLength) throw new Error(`${fieldName}不能超过 ${maxLength} 字`)
+  return str
+}
 module.exports = {
   normalizeString,
   ensure,
   ensureEnum,
   parsePositiveInteger,
-  normalizeOptionalRequestId
+  normalizeOptionalRequestId,
+  normalizeLimitedString
 }
