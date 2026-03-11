@@ -10,6 +10,10 @@ exports.main = async (event, context) => {
   const { OPENID } = cloud.getWXContext()
 
   try {
+    // 【云开发控制台索引建议】
+    // 集合：Gifts
+    // 建议索引：{ creatorId: 1, createTime: -1 } 和 { partnerId: 1, createTime: -1 }
+    // 理由：or 查询分别命中两个字段，避免全量扫描
     // 1. 隔离查询：只返回自己创建或伴侣创建的礼品
     const res = await db.collection('Gifts')
       .where(_.or([

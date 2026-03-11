@@ -10,7 +10,10 @@ exports.main = async (event, context) => {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
 
-    // 性能优化点：通过 Promise.all 并行执行“用户信息查询”与“今日流水聚合”
+    // 【云开发控制台索引建议】
+    // 集合：Users — _id 为主键，无需额外索引
+    // 集合：Records — 建议索引 { userId: 1, createTime: -1 }
+    // 性能优化点：通过 Promise.all 并行执行"用户信息查询"与"今日流水聚合"
     // 耗时从 T1 + T2 降至 Max(T1, T2)
     const [userRes, recordsRes] = await Promise.all([
       db.collection('Users').doc(OPENID).get().catch(() => null),

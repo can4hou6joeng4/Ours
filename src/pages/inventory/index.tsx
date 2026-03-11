@@ -212,7 +212,7 @@ export default function Inventory() {
 				</View>
 			</View>
 
-			{/* 兑换历史入口按钮 */}
+			{/* 兑换历史 + TA 的礼品 入口按钮（同行两列） */}
 			<View className='exchange-history-entry'>
 				<View
 					className='history-btn'
@@ -220,7 +220,20 @@ export default function Inventory() {
 				>
 					<Image src={getIconifyUrl('tabler:history', '#D4B185')} className='history-icon' />
 					<Text className='history-text'>兑换历史</Text>
-					<Text className='history-arrow'>⟩</Text>
+				</View>
+				<View
+					className='history-btn'
+					onClick={() => {
+						const pid = Taro.getStorageSync('partnerId') || ''
+						if (!pid) {
+							Taro.showToast({ title: '请先绑定另一半', icon: 'none' })
+							return
+						}
+						Taro.navigateTo({ url: '/pages/partner-gift-history/index' })
+					}}
+				>
+					<Image src={getIconifyUrl('tabler:heart', '#D4B185')} className='history-icon' />
+					<Text className='history-text'>TA 的礼品</Text>
 				</View>
 			</View>
 

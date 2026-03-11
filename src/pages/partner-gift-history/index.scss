@@ -76,29 +76,36 @@
 				}
 			}
 
-			// 数量角标
-			.gift-count-badge {
-				position: absolute;
-				top: 16rpx;
-				right: 16rpx;
-				background: $primary-color;
-				border-radius: 20rpx;
-				padding: 4rpx 14rpx;
-				z-index: 1;
-
-				.gift-count-text {
-					font-size: 22rpx;
-					font-weight: 700;
-					color: #fff;
-				}
-			}
-
 			// 主卡片行
 			.gift-card-row {
 				display: flex;
 				align-items: center;
 				gap: 24rpx;
 				padding: 28rpx 28rpx 28rpx 28rpx;
+
+				// 封面图容器：相对定位，以便角标 absolute 定位
+				.gift-cover-box {
+					position: relative;
+					width: 120rpx;
+					height: 120rpx;
+					flex-shrink: 0;
+				}
+
+				// 数量角标：与 InventoryItemCard 完全一致
+				.gift-count-badge {
+					position: absolute;
+					top: -12rpx;
+					right: -12rpx;
+					background: $primary-color;
+					color: #fff;
+					font-size: 18rpx;
+					font-weight: 900;
+					padding: 4rpx 12rpx;
+					border-radius: 20rpx;
+					border: 2rpx solid #fff;
+					box-shadow: 0 4rpx 8rpx rgba($primary-color, 0.3);
+					z-index: 2;
+				}
 
 				.gift-cover {
 					width: 120rpx;
@@ -124,7 +131,6 @@
 				.gift-content {
 					flex: 1;
 					min-width: 0;
-					padding-right: 48rpx; // 给角标留空间
 					display: flex;
 					flex-direction: column;
 					gap: 8rpx;

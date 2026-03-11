@@ -268,7 +268,12 @@ export default function Store() {
 
       if (result.success) {
         Taro.showToast({ title: '兑换成功', icon: 'success' })
-        fetchData()
+        // buyItem 返回值已含最新积分（balanceAfter），直接更新，无需再发请求
+        if (typeof result.balanceAfter === 'number') {
+          setTotalPoints(result.balanceAfter)
+        } else {
+          fetchData()
+        }
       } else {
         Notify.open({ type: 'danger', message: result.error || '兑换失败' })
       }

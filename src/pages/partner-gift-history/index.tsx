@@ -175,22 +175,21 @@ export default function PartnerGiftHistory() {
 										className={`gift-group-card ${count > 1 ? 'is-stacked' : ''}`}
 										onClick={() => toggleExpand(group.stackKey, count)}
 									>
-										{/* 数量角标 */}
-										{count > 1 && (
-											<View className='gift-count-badge'>
-												<Text className='gift-count-text'>×{count}</Text>
-											</View>
-										)}
-
 										{/* 主卡片内容 */}
 										<View className='gift-card-row'>
-											{group.coverImg ? (
-												<Image src={group.coverImg} mode='aspectFill' className='gift-cover' />
-											) : (
-												<View className='gift-cover gift-cover-placeholder'>
-													<Image src={GIFT_PLACEHOLDER_ICON} className='gift-placeholder-icon' />
-												</View>
-											)}
+											<View className='gift-cover-box'>
+												{group.coverImg ? (
+													<Image src={group.coverImg} mode='aspectFill' className='gift-cover' />
+												) : (
+													<View className='gift-cover gift-cover-placeholder'>
+														<Image src={GIFT_PLACEHOLDER_ICON} className='gift-placeholder-icon' />
+													</View>
+												)}
+												{/* 数量角标：放在封面图容器右上角，与背包页对齐 */}
+												{count > 1 && (
+													<View className='gift-count-badge'>×{count}</View>
+												)}
+											</View>
 
 											<View className='gift-content'>
 												<Text className='gift-name'>{group.name || '未命名礼品'}</Text>

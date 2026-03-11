@@ -3,6 +3,11 @@ cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 const db = cloud.database()
 const QUERY_BATCH_SIZE = 100
 
+// 【云开发控制台索引建议】
+// 集合：Items
+// 建议索引：{ userId: 1, createTime: -1 }
+// 理由：按 userId 过滤后按 createTime 排序，避免全量扫描
+
 async function queryAllItems(userId) {
 	let skip = 0
 	const result = []
