@@ -3,6 +3,7 @@
 .partner-gift-history-page {
 	min-height: 100vh;
 	background: $bg-color;
+	position: relative;
 
 	.history-scroll {
 		height: 100vh;
@@ -30,7 +31,6 @@
 			}
 		}
 
-		// 堆叠卡片容器
 		.gift-group-card {
 			position: relative;
 			background: $text-white;
@@ -45,9 +45,9 @@
 				transform: scale(0.98);
 			}
 
-			// 视觉堆叠伪元素（与背包页一致）
 			&.is-stacked {
 				margin-bottom: 40rpx;
+
 				&::before {
 					content: '';
 					position: absolute;
@@ -59,8 +59,9 @@
 					border-radius: $border-radius-lg;
 					z-index: -1;
 					border: 1rpx solid #f0f0f0;
-					box-shadow: 0 4rpx 10rpx rgba(0,0,0,0.05);
+					box-shadow: 0 4rpx 10rpx rgba(0, 0, 0, 0.05);
 				}
+
 				&::after {
 					content: '';
 					position: absolute;
@@ -76,14 +77,12 @@
 				}
 			}
 
-			// 主卡片行
 			.gift-card-row {
 				display: flex;
 				align-items: center;
 				gap: 24rpx;
-				padding: 28rpx 28rpx 28rpx 28rpx;
+				padding: 28rpx;
 
-				// 封面图容器：相对定位，以便角标 absolute 定位
 				.gift-cover-box {
 					position: relative;
 					width: 120rpx;
@@ -91,7 +90,6 @@
 					flex-shrink: 0;
 				}
 
-				// 数量角标：与 InventoryItemCard 完全一致
 				.gift-count-badge {
 					position: absolute;
 					top: -12rpx;
@@ -113,7 +111,8 @@
 					border-radius: 24rpx;
 					object-fit: cover;
 					flex-shrink: 0;
-					background: #F4F4F4;
+					background: #f4f4f4;
+					display: block;
 				}
 
 				.gift-cover-placeholder {
@@ -148,45 +147,10 @@
 						color: $primary-color;
 					}
 
-					.gift-time {
+					.gift-usage-count {
 						font-size: 22rpx;
 						color: $text-sub;
 						line-height: 1.5;
-					}
-
-					.gift-expand-hint {
-						font-size: 22rpx;
-						color: $primary-color;
-						margin-top: 4rpx;
-					}
-				}
-			}
-
-			// 展开的子记录区域
-			.gift-records-expand {
-				max-height: 0;
-				overflow: hidden;
-				transition: max-height 0.28s ease;
-
-				&.is-expanded {
-					max-height: 800rpx;
-				}
-
-				.gift-record-row {
-					display: flex;
-					align-items: center;
-					justify-content: space-between;
-					padding: 20rpx 28rpx;
-					border-top: 1rpx solid rgba(0, 0, 0, 0.06);
-
-					.gift-record-label {
-						font-size: 24rpx;
-						color: $text-sub;
-					}
-
-					.gift-record-time {
-						font-size: 24rpx;
-						color: $text-main;
 					}
 				}
 			}
@@ -201,5 +165,136 @@
 				color: $text-sub;
 			}
 		}
+	}
+
+	.history-sheet-root {
+		position: fixed;
+		top: 0;
+		left: 0;
+		width: 100vw;
+		height: 100vh;
+		background: rgba(0, 0, 0, 0.4);
+		backdrop-filter: blur(10rpx);
+		z-index: 2100;
+		display: flex;
+		flex-direction: column;
+		justify-content: flex-end;
+
+		.history-sheet-content {
+			width: 100%;
+			background: #fff;
+			border-top-left-radius: 60rpx;
+			border-top-right-radius: 60rpx;
+			display: flex;
+			flex-direction: column;
+			animation: sheet-slide-up 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+			box-shadow: 0 -20rpx 60rpx rgba(0, 0, 0, 0.1);
+			max-height: calc(85vh - env(safe-area-inset-top));
+
+			.sheet-header {
+				padding: 56rpx 48rpx 24rpx;
+				display: flex;
+				justify-content: space-between;
+				align-items: flex-start;
+				gap: 24rpx;
+				flex-shrink: 0;
+
+				.sheet-title-wrap {
+					flex: 1;
+					min-width: 0;
+					display: flex;
+					flex-direction: column;
+					gap: 10rpx;
+
+					.title {
+						font-size: 38rpx;
+						font-weight: 900;
+						color: $text-main;
+						line-height: 1.4;
+					}
+
+					.subtitle {
+						font-size: 26rpx;
+						font-weight: 600;
+						color: $primary-color;
+					}
+				}
+
+				.close {
+					font-size: 52rpx;
+					color: #ccc;
+					padding: 10rpx;
+					margin-right: -10rpx;
+					line-height: 1;
+				}
+			}
+
+			.sheet-scroll {
+				flex: 1;
+				height: 0;
+				width: 100%;
+				min-height: 320rpx;
+
+				.empty-history {
+					width: 100%;
+					min-height: 320rpx;
+					display: flex;
+					flex-direction: column;
+					align-items: center;
+					justify-content: center;
+					padding: 48rpx 48rpx calc(80rpx + env(safe-area-inset-bottom));
+					box-sizing: border-box;
+
+					.empty-icon {
+						font-size: 96rpx;
+						opacity: 0.15;
+						margin-bottom: 32rpx;
+						filter: grayscale(100%);
+					}
+
+					.empty-text {
+						font-size: 28rpx;
+						color: #b0b0b0;
+						letter-spacing: 2rpx;
+						font-weight: 500;
+					}
+				}
+
+				.sheet-record-list {
+					padding: 0 48rpx calc(80rpx + env(safe-area-inset-bottom));
+
+					.sheet-record-item {
+						display: flex;
+						align-items: center;
+						justify-content: space-between;
+						gap: 24rpx;
+						padding: 28rpx 0;
+						border-bottom: 1rpx solid rgba(0, 0, 0, 0.05);
+
+						.sheet-record-label {
+							font-size: 28rpx;
+							font-weight: 600;
+							color: $text-main;
+						}
+
+						.sheet-record-time {
+							font-size: 24rpx;
+							color: $text-sub;
+							text-align: right;
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+@keyframes sheet-slide-up {
+	from {
+		transform: translateY(100%);
+	}
+
+	to {
+		transform: translateY(0);
 	}
 }

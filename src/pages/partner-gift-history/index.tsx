@@ -35,7 +35,7 @@ export default function PartnerGiftHistory() {
 	const [loading, setLoading] = useState(false)
 	const [initialLoading, setInitialLoading] = useState(true)
 	const [hasMore, setHasMore] = useState(false)
-	const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set())
+	const [selectedGroup, setSelectedGroup] = useState<StackedGroup | null>(null)
 
 	const fetchRecords = async (nextPage = 1, reset = false) => {
 		const cachedPartnerId = Taro.getStorageSync('partnerId') || ''
@@ -47,6 +47,7 @@ export default function PartnerGiftHistory() {
 			setHasMore(false)
 			setInitialLoading(false)
 			setLoading(false)
+			setSelectedGroup(null)
 			return
 		}
 
@@ -84,14 +85,12 @@ export default function PartnerGiftHistory() {
 		fetchRecords(1, true)
 	})
 
-	// 堆叠逻辑：按 name 聚合
 	const stackedGroups = useMemo<StackedGroup[]>(() => {
 		return records.reduce((acc: StackedGroup[], record) => {
 			const stackKey = `${record.name}::${record.coverImg || ''}`
 			const existing = acc.find(g => g.stackKey === stackKey)
 			if (existing) {
 				existing.records.push(record)
-				// 取最大积分（非0优先）
 				if (record.points > existing.points) existing.points = record.points
 			} else {
 				acc.push({
@@ -106,26 +105,13 @@ export default function PartnerGiftHistory() {
 		}, [])
 	}, [records])
 
-	const toggleExpand = (stackKey: string, count: number) => {
-		if (count <= 1) return
-		setExpandedKeys(prev => {
-			const next = new Set(prev)
-			if (next.has(stackKey)) {
-				next.delete(stackKey)
-			} else {
-				next.add(stackKey)
-			}
-			return next
-		})
-	}
-
 	const handleLoadMore = () => {
 		if (!partnerId || loading || !hasMore) return
 		fetchRecords(page + 1)
 	}
 
 	const formatPoints = (points: number) =>
-		points > 0 ? `🪙 ${points} 积分` : `🪙 — 积分`
+		points > 0 ? `🪙 ${points} 积分` : '🪙 — 积分'
 
 	const formatTime = (t?: string | Date) =>
 		t ? dayjs(t).format('YYYY.MM.DD HH:mm') : '—'
@@ -165,17 +151,14 @@ export default function PartnerGiftHistory() {
 					) : (
 						<View className='history-list'>
 							{stackedGroups.map(group => {
-								const isExpanded = expandedKeys.has(group.stackKey)
 								const count = group.records.length
-								const latestRecord = group.records[0]
 
 								return (
 									<View
 										key={group.stackKey}
 										className={`gift-group-card ${count > 1 ? 'is-stacked' : ''}`}
-										onClick={() => toggleExpand(group.stackKey, count)}
+										onClick={() => setSelectedGroup(group)}
 									>
-										{/* 主卡片内容 */}
 										<View className='gift-card-row'>
 											<View className='gift-cover-box'>
 												{group.coverImg ? (
@@ -185,7 +168,6 @@ export default function PartnerGiftHistory() {
 														<Image src={GIFT_PLACEHOLDER_ICON} className='gift-placeholder-icon' />
 													</View>
 												)}
-												{/* 数量角标：放在封面图容器右上角，与背包页对齐 */}
 												{count > 1 && (
 													<View className='gift-count-badge'>×{count}</View>
 												)}
@@ -194,32 +176,11 @@ export default function PartnerGiftHistory() {
 											<View className='gift-content'>
 												<Text className='gift-name'>{group.name || '未命名礼品'}</Text>
 												<Text className='gift-points'>{formatPoints(group.points)}</Text>
-												{count === 1 && (
-													<Text className='gift-time'>
-														使用时间：{formatTime(latestRecord.useTime || latestRecord.createTime)}
-													</Text>
-												)}
 												{count > 1 && (
-													<Text className='gift-expand-hint'>
-														{isExpanded ? '▲ 收起' : `▼ 共使用 ${count} 次`}
-													</Text>
+													<Text className='gift-usage-count'>共使用 {count} 次</Text>
 												)}
 											</View>
 										</View>
-
-										{/* 展开子记录 */}
-										{count > 1 && (
-											<View className={`gift-records-expand ${isExpanded ? 'is-expanded' : ''}`}>
-												{group.records.map((rec, idx) => (
-													<View key={rec._id} className='gift-record-row'>
-														<Text className='gift-record-label'>第 {idx + 1} 次</Text>
-														<Text className='gift-record-time'>
-															{formatTime(rec.useTime || rec.createTime)}
-														</Text>
-													</View>
-												))}
-											</View>
-										)}
 									</View>
 								)
 							})}
@@ -239,6 +200,40 @@ export default function PartnerGiftHistory() {
 					)}
 				</View>
 			</ScrollView>
+
+			{selectedGroup && (
+				<View className='history-sheet-root' onClick={() => setSelectedGroup(null)}>
+					<View className='history-sheet-content' onClick={e => e.stopPropagation()}>
+						<View className='sheet-header'>
+							<View className='sheet-title-wrap'>
+								<Text className='title'>{selectedGroup.name || '未命名礼品'}</Text>
+								<Text className='subtitle'>{formatPoints(selectedGroup.points)}</Text>
+							</View>
+							<View className='close' onClick={() => setSelectedGroup(null)}>×</View>
+						</View>
+
+						<ScrollView scrollY className='sheet-scroll'>
+							{selectedGroup.records.length === 0 ? (
+								<View className='empty-history'>
+									<Text className='empty-icon'>📦</Text>
+									<Text className='empty-text'>暂无使用记录</Text>
+								</View>
+							) : (
+								<View className='sheet-record-list'>
+									{selectedGroup.records.map((rec, idx) => (
+										<View key={rec._id} className='sheet-record-item'>
+											<Text className='sheet-record-label'>第 {idx + 1} 次</Text>
+											<Text className='sheet-record-time'>
+												{formatTime(rec.useTime || rec.createTime)}
+											</Text>
+										</View>
+									))}
+								</View>
+							)}
+						</ScrollView>
+					</View>
+				</View>
+			)}
 		</View>
 	)
 }
