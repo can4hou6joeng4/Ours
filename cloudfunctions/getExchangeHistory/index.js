@@ -234,7 +234,25 @@ async function integrateData(userId, purchaseRecords, items, useRecords, notices
     result.push(historyItem)
   }
 
-  return result
+  return await resolveImageUrls(result)
+}
+
+async function resolveImageUrls(historyList) {
+  const fileIds = [...new Set(
+    historyList.map(item => item.image).filter(img => img && img.startsWith('cloud://'))
+  )]
+  if (fileIds.length === 0) return historyList
+
+  const res = await cloud.getTempFileURL({ fileList: fileIds })
+  const urlMap = new Map()
+  ;(Array.isArray(res.fileList) ? res.fileList : []).forEach(f => {
+    if (f.fileID && f.tempFileURL) urlMap.set(f.fileID, f.tempFileURL)
+  })
+
+  return historyList.map(item => ({
+    ...item,
+    image: urlMap.get(item.image) || item.image
+  }))
 }
 
 function resolveItem({

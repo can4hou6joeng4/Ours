@@ -1,5 +1,5 @@
 import { View, Text, ScrollView, Image } from '@tarojs/components'
-import React from 'react'
+import React, { useState } from 'react'
 import './index.scss'
 
 interface ExchangeHistoryModalProps {
@@ -23,7 +23,33 @@ const ExchangeHistoryModal: React.FC<ExchangeHistoryModalProps> = ({
   onFilterChange,
   onLoadMore
 }) => {
+  const [selectedItem, setSelectedItem] = useState<any | null>(null)
+
   if (!visible) return null
+
+  const formatTime = (time?: string) => {
+    if (!time) return '--'
+    const date = new Date(time)
+    if (Number.isNaN(date.getTime())) return '--'
+    const pad = (num: number) => String(num).padStart(2, '0')
+    return `${date.getFullYear()}.${pad(date.getMonth() + 1)}.${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`
+  }
+
+  const renderStatusText = (item: any) => {
+    if (item.isDeleted) {
+      return <Text className='item-detail-row item-detail-row--deleted'>🗑️ 礼品已删除</Text>
+    }
+
+    if (item.status === 'used' && item.useRecord) {
+      return (
+        <Text className='item-detail-row item-detail-row--used'>
+          ✅ 已使用 · {formatTime(item.useRecord.useTime)}
+        </Text>
+      )
+    }
+
+    return <Text className='item-detail-row item-detail-row--unused'>⏳ 待使用</Text>
+  }
 
   return (
     <View className='history-sheet-root' onClick={onClose}>
@@ -63,7 +89,11 @@ const ExchangeHistoryModal: React.FC<ExchangeHistoryModalProps> = ({
           ) : (
             <View className='history-list'>
               {historyList.map((item: any) => (
-                <View key={item._id} className={`history-item ${item.isDeleted ? 'deleted' : ''} ${item.status}`}>
+                <View
+                  key={item._id}
+                  className={`history-item ${item.isDeleted ? 'deleted' : ''} ${item.status}`}
+                  onClick={() => setSelectedItem(item)}
+                >
                   <View className='item-left'>
                     {item.image ? (
                       <Image src={item.image} className='item-image' mode='aspectFill' />
@@ -90,6 +120,24 @@ const ExchangeHistoryModal: React.FC<ExchangeHistoryModalProps> = ({
           )}
         </ScrollView>
       </View>
+
+      {selectedItem && (
+        <View className='item-detail-mask' onClick={() => setSelectedItem(null)}>
+          <View className='item-detail-sheet' onClick={e => e.stopPropagation()}>
+            <View className='item-detail-drag-bar' />
+            {selectedItem.image ? (
+              <Image src={selectedItem.image} className='item-detail-cover' mode='aspectFill' />
+            ) : (
+              <View className='item-detail-cover-placeholder'>🎁</View>
+            )}
+            <Text className='item-detail-name'>{selectedItem.name || '未命名礼品'}</Text>
+            <Text className='item-detail-points'>-{selectedItem.points || 0} 积分</Text>
+            <Text className='item-detail-row'>🕐 兑换于 {formatTime(selectedItem.createTime)}</Text>
+            {renderStatusText(selectedItem)}
+            <View className='item-detail-close' onClick={() => setSelectedItem(null)}>关闭</View>
+          </View>
+        </View>
+      )}
     </View>
   )
 }
