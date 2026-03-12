@@ -368,11 +368,27 @@ async function integrateData(userId, purchaseRecords, items, useRecords, notices
 }
 
 async function resolveImageUrls(historyList) {
-  const allGiftIds = [...new Set(historyList.map(item => item.giftId).filter(Boolean))]
   const startedAt = Date.now()
-  const mark = (extra = {}) => console.log('[perf]', 'getExchangeHistory', 'resolveImageUrls_done', { ms: Date.now() - startedAt, ...extra })
-  const giftCoverMap = new Map()
+  const mark = (label, extra = {}) => console.log('[perf]', 'getExchangeHistory', label, { ms: Date.now() - startedAt, ...extra })
+  const allGiftIds = [...new Set(historyList.map(item => item.giftId).filter(Boolean))]
+  const missingGiftNameList = [...new Set(
+    historyList
+      .filter(item => !item.giftId && item.name)
+      .map(item => item.name)
+  )]
 
+  const hasCloudImageInList = historyList.some(item => {
+    const image = item && item.image
+    return typeof image === 'string' && image.startsWith('cloud://')
+  })
+
+  // 快速路径：没有 giftId、没有名称兜底需求、也没有 cloud:// 图片时，直接返回
+  if (allGiftIds.length === 0 && missingGiftNameList.length === 0 && !hasCloudImageInList) {
+    mark('resolveImageUrls_skipped', { reason: 'no_gift_lookup_and_no_cloud_file' })
+    return historyList
+  }
+
+  const giftCoverMap = new Map()
   if (allGiftIds.length > 0) {
     const batchSize = 20
     for (let i = 0; i < allGiftIds.length; i += batchSize) {
@@ -383,26 +399,21 @@ async function resolveImageUrls(historyList) {
       })
     }
   }
+  mark('resolveImageUrls_gift_query_done', { giftIds: allGiftIds.length, giftCoverHits: giftCoverMap.size })
 
-  const missingGiftNameList = [...new Set(
-    historyList
-      .filter(item => !item.giftId && item.name)
-      .map(item => item.name)
-  )]
   const giftCoverByNameMap = new Map()
-
   if (missingGiftNameList.length > 0) {
     const giftRes = await db.collection('Gifts').where({ name: db.command.in(missingGiftNameList) }).get().catch(() => ({ data: [] }))
     const gifts = Array.isArray(giftRes.data) ? giftRes.data : []
     const bucketByName = new Map()
 
-    gifts.forEach(gift => {
+    for (const gift of gifts) {
       const giftName = normalizeString(gift && gift.name)
-      if (!giftName || !gift.coverImg) return
+      if (!giftName || !gift.coverImg) continue
       const bucket = bucketByName.get(giftName) || []
       bucket.push(gift)
       bucketByName.set(giftName, bucket)
-    })
+    }
 
     bucketByName.forEach((bucket, giftName) => {
       if (bucket.length === 1 && bucket[0].coverImg) {
@@ -410,34 +421,43 @@ async function resolveImageUrls(historyList) {
       }
     })
   }
+  mark('resolveImageUrls_fallback_name_query_done', { names: missingGiftNameList.length, fallbackNameHits: giftCoverByNameMap.size })
 
   const fileIdSet = new Set()
   let giftIdHitCount = 0
   let fallbackNameHitCount = 0
-  historyList.forEach(item => {
+  for (const item of historyList) {
     const coverByGiftId = giftCoverMap.get(item.giftId) || ''
     const coverByName = !coverByGiftId ? (giftCoverByNameMap.get(item.name) || '') : ''
     if (coverByGiftId) giftIdHitCount += 1
     if (coverByName) fallbackNameHitCount += 1
     const src = coverByGiftId || coverByName || item.image || ''
-    if (src.startsWith('cloud://')) fileIdSet.add(src)
-  })
+    if (typeof src === 'string' && src.startsWith('cloud://')) fileIdSet.add(src)
+  }
 
   const urlMap = new Map()
   const fileIds = [...fileIdSet]
-  mark({ giftIdHits: giftIdHitCount, fallbackNameHits: fallbackNameHitCount, fileIds: fileIds.length })
+  mark('resolveImageUrls_collect_fileids_done', {
+    giftIdHits: giftIdHitCount,
+    fallbackNameHits: fallbackNameHitCount,
+    fileIds: fileIds.length
+  })
+
   if (fileIds.length > 0) {
     const res = await cloud.getTempFileURL({ fileList: fileIds })
     ;(Array.isArray(res.fileList) ? res.fileList : []).forEach(f => {
       if (f.fileID && f.tempFileURL) urlMap.set(f.fileID, f.tempFileURL)
     })
   }
+  mark('resolveImageUrls_get_temp_urls_done', { fileIds: fileIds.length, resolved: urlMap.size })
 
-  return historyList.map(item => {
+  const resolvedList = historyList.map(item => {
     const raw = giftCoverMap.get(item.giftId) || giftCoverByNameMap.get(item.name) || item.image || ''
     const resolvedImage = urlMap.get(raw) || (raw.startsWith('cloud://') ? '' : raw)
     return { ...item, image: resolvedImage }
   })
+  mark('resolveImageUrls_done', { count: resolvedList.length })
+  return resolvedList
 }
 
 function resolveItem({
