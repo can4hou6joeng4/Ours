@@ -37,6 +37,9 @@ export default function Inventory() {
 	const [items, setItems] = useState<InventoryItem[]>([])
 	const [currentTab, setCurrentTab] = useState<ItemStatus>('unused')
 	const [loading, setLoading] = useState(false)
+	const [itemsPage, setItemsPage] = useState(1)
+	const [hasMoreItems, setHasMoreItems] = useState(true)
+	const [itemsLoadingMore, setItemsLoadingMore] = useState(false)
 	const [showConfirm, setShowConfirm] = useState(false)
 	const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null)
 	const [using, setUsing] = useState(false)
@@ -71,7 +74,7 @@ export default function Inventory() {
 		if (items.length > 0 && now - lastFetchTime.current < DATA_CACHE_DURATION) {
 			return
 		}
-		fetchItems()
+		resetItemsAndFetch(currentTab)
 	})
 
 	// 加载兑换历史数据
@@ -125,20 +128,60 @@ export default function Inventory() {
 		loadExchangeHistory({ reset: true, filter })
 	}
 
-	const fetchItems = async () => {
-		setLoading(true)
+	const fetchItems = async ({
+		page = 1,
+		status = currentTab,
+		reset = false
+	}: {
+		page?: number
+		status?: ItemStatus
+		reset?: boolean
+	} = {}) => {
+		if (reset) {
+			setLoading(true)
+		} else {
+			if (itemsLoadingMore || !hasMoreItems) return
+			setItemsLoadingMore(true)
+		}
+
 		try {
-			const { result }: any = await Taro.cloud.callFunction({ name: 'getItems' })
+			const { result }: any = await Taro.cloud.callFunction({
+				name: 'getItems',
+				data: { page, pageSize: 20, status }
+			})
 			if (result.success) {
 				const nextItems = Array.isArray(result.data) ? result.data : []
-				setItems(nextItems)
+				setItems(prev => (reset ? nextItems : [...prev, ...nextItems]))
+				setItemsPage(page + 1)
+				setHasMoreItems(!!result.hasMore)
 				lastFetchTime.current = Date.now()
 			}
 		} catch (e) {
 			Notify.open({ type: 'danger', message: '获取背包失败' })
 		} finally {
 			setLoading(false)
+			setItemsLoadingMore(false)
 		}
+	}
+
+	const resetItemsAndFetch = (status: ItemStatus) => {
+		setItems([])
+		setItemsPage(1)
+		setHasMoreItems(true)
+		lastFetchTime.current = 0
+		fetchItems({ page: 1, status, reset: true })
+	}
+
+	const handleTabChange = (tab: ItemStatus) => {
+		if (tab === currentTab) return
+		setCurrentTab(tab)
+		setSearchTerm('')
+		resetItemsAndFetch(tab)
+	}
+
+	const handleLoadMoreItems = () => {
+		if (!hasPartner || loading || itemsLoadingMore || !hasMoreItems) return
+		fetchItems({ page: itemsPage, status: currentTab, reset: false })
 	}
 
 	const openUseConfirm = (item: InventoryItem) => {
@@ -159,7 +202,7 @@ export default function Inventory() {
 			if (result.success) {
 				Taro.showToast({ title: '兑换申请已发出', icon: 'success' })
 				setShowConfirm(false)
-				fetchItems()
+				resetItemsAndFetch(currentTab)
 				// 成功后引导订阅
 				requestSubscribe(['GIFT_USED'])
 			} else {
@@ -229,20 +272,20 @@ export default function Inventory() {
 				<View className='tabs-capsule'>
 					<View
 						className={`tab-item ${currentTab === 'unused' ? 'active' : ''}`}
-						onClick={() => setCurrentTab('unused')}
+						onClick={() => handleTabChange('unused')}
 					>
 						待使用
 					</View>
 					<View
 						className={`tab-item ${currentTab === 'used' ? 'active' : ''}`}
-						onClick={() => setCurrentTab('used')}
+						onClick={() => handleTabChange('used')}
 					>
 						已使用
 					</View>
 				</View>
 			</View>
 
-			<ScrollView scrollY className='items-scroll'>
+			<ScrollView scrollY className='items-scroll' onScrollToLower={handleLoadMoreItems} lowerThreshold={120}>
 				<View className='items-inner'>
 					{!hasPartner ? (
 						<EmptyState
@@ -272,16 +315,24 @@ export default function Inventory() {
 							<Text className='empty-text'>{searchTerm ? '没有匹配的礼品' : '背包空空如也'}</Text>
 						</View>
 					) : (
-						<View className='items-grid'>
-							{stackedItems.map(item => (
-								<InventoryItemCard
-									key={item.stackedKey || item._id}
-									item={item}
-									currentTab={currentTab}
-									onUse={openUseConfirm}
-								/>
-							))}
-						</View>
+						<>
+							<View className='items-grid'>
+								{stackedItems.map(item => (
+									<InventoryItemCard
+										key={item.stackedKey || item._id}
+										item={item}
+										currentTab={currentTab}
+										onUse={openUseConfirm}
+									/>
+								))}
+							</View>
+							{filteredItems.length > 0 && itemsLoadingMore && (
+								<View className='loading-more'>加载更多中...</View>
+							)}
+							{filteredItems.length > 0 && !hasMoreItems && (
+								<View className='loading-more'>没有更多了</View>
+							)}
+						</>
 					)}
 				</View>
 			</ScrollView>
@@ -319,7 +370,7 @@ export default function Inventory() {
 				onSuccess={() => {
 					setShowBindingSheet(false)
 					setHasPartner(true)
-					fetchItems()
+					resetItemsAndFetch(currentTab)
 				}}
 			/>
 		</View>

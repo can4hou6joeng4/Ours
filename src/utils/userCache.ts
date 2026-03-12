@@ -6,6 +6,7 @@ import Taro from '@tarojs/taro'
 
 const CACHE_KEY = 'userInfoCache'
 const CACHE_DURATION = 5 * 60 * 1000 // 5 分钟缓存有效期
+let pendingUserPromise: Promise<any> | null = null
 
 interface CachedUserInfo {
   user: any
@@ -84,17 +85,27 @@ export const smartFetchUser = async (options?: {
  * 从云端获取用户信息
  */
 const fetchUserFromCloud = async (onFresh?: (result: any) => void): Promise<any> => {
-  try {
-    const { result }: any = await Taro.cloud.callFunction({ name: 'initUser' })
-    if (result?.success) {
-      setCachedUser(result.user, result.todayChange)
-      onFresh?.(result)
-    }
-    return result
-  } catch (e) {
-    console.error('获取用户信息失败', e)
-    return { success: false }
+  if (pendingUserPromise) {
+    return pendingUserPromise
   }
+
+  pendingUserPromise = (async () => {
+    try {
+      const { result }: any = await Taro.cloud.callFunction({ name: 'initUser' })
+      if (result?.success) {
+        setCachedUser(result.user, result.todayChange)
+        onFresh?.(result)
+      }
+      return result
+    } catch (e) {
+      console.error('获取用户信息失败', e)
+      return { success: false }
+    } finally {
+      pendingUserPromise = null
+    }
+  })()
+
+  return pendingUserPromise
 }
 
 /**

@@ -5,16 +5,19 @@ const { getAllowedUserIds, resolveAccessibleUserId } = require('./shared/authz')
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 const db = cloud.database()
 const _ = db.command
-const QUERY_BATCH_SIZE = 100
+const MAX_RELATED_LIMIT = 100
 
 /**
  * 获取兑换历史记录
- * event: { page, pageSize, filter }
+ * event: { page, pageSize, filter, targetUserId }
  * filter: 'all' | 'unused' | 'used'
  */
 exports.main = async (event, context) => {
 	const { OPENID } = cloud.getWXContext()
-	const { page = 1, pageSize = 20 } = event || {}
+	const rawPage = Number(event && event.page)
+	const rawPageSize = Number(event && event.pageSize)
+	const page = Number.isFinite(rawPage) && rawPage > 0 ? Math.floor(rawPage) : 1
+	const pageSize = Number.isFinite(rawPageSize) && rawPageSize > 0 ? Math.min(Math.floor(rawPageSize), 100) : 20
 	const filterInput = normalizeString(event && event.filter) || 'all'
 	const allowedFilters = ['all', 'unused', 'used']
 	if (!allowedFilters.includes(filterInput)) {
@@ -29,11 +32,32 @@ exports.main = async (event, context) => {
 		const allowedUserIds = getAllowedUserIds(currentUser, OPENID)
 		const targetUserId = resolveAccessibleUserId(currentUser, OPENID, targetUserInput)
 
-		const [purchaseRecords, items, useRecords, notices] = await Promise.all([
-			getPurchaseRecords(targetUserId),
-			getItems(targetUserId),
-			getUseRecords(targetUserId),
-			getUseNotices(targetUserId, allowedUserIds)
+		const purchaseQuery = buildPurchaseQuery(targetUserId)
+		const [purchaseRes, totalRes] = await Promise.all([
+			purchaseQuery
+				.orderBy('createTime', 'desc')
+				.skip((page - 1) * pageSize)
+				.limit(pageSize)
+				.get(),
+			typeof purchaseQuery.count === 'function' ? purchaseQuery.count().catch(() => null) : Promise.resolve(null)
+		])
+
+		const purchaseRecords = Array.isArray(purchaseRes.data) ? purchaseRes.data : []
+		if (purchaseRecords.length === 0) {
+			return {
+				success: true,
+				data: [],
+				total: totalRes && typeof totalRes.total === 'number' ? totalRes.total : 0,
+				page,
+				pageSize
+			}
+		}
+
+		const relatedContext = buildRelatedContext(purchaseRecords, pageSize)
+		const [items, useRecords, notices] = await Promise.all([
+			getRelatedItems(targetUserId, relatedContext),
+			getRelatedUseRecords(targetUserId, relatedContext),
+			getRelatedUseNotices(targetUserId, allowedUserIds, relatedContext)
 		])
 
 		const historyList = await integrateData(
@@ -45,12 +69,11 @@ exports.main = async (event, context) => {
 		)
 
 		const filteredList = filterHistoryList(historyList, filterInput)
-		const paginatedList = paginateList(filteredList, page, pageSize)
 
 		return {
 			success: true,
-			data: paginatedList,
-			total: filteredList.length,
+			data: filteredList,
+			total: totalRes && typeof totalRes.total === 'number' ? totalRes.total : (page - 1) * pageSize + filteredList.length,
 			page,
 			pageSize
 		}
@@ -63,63 +86,129 @@ exports.main = async (event, context) => {
 	}
 }
 
-async function getPurchaseRecords(userId) {
-	return queryAllByCreateTimeDesc('Records', {
+function buildPurchaseQuery(userId) {
+	return db.collection('Records').where({
 		userId,
 		type: 'outcome',
-		reason: db.RegExp({
-			regexp: '^兑换:'
-		})
+		reason: db.RegExp({ regexp: '^兑换:' })
 	})
 }
 
-async function getItems(userId) {
-	return queryAllByCreateTimeDesc('Items', { userId })
+function buildRelatedContext(purchaseRecords, pageSize) {
+	const itemIds = [...new Set(purchaseRecords.map(record => normalizeString(record.itemId)).filter(Boolean))]
+	const itemNames = [...new Set(purchaseRecords.map(record => extractPurchaseItemName(record.reason)).filter(Boolean))]
+	const timestamps = purchaseRecords
+		.map(record => toTimestamp(record.createTime))
+		.filter(ts => ts > 0)
+	const minTs = timestamps.length ? Math.min(...timestamps) : 0
+	const maxTs = timestamps.length ? Math.max(...timestamps) : 0
+	const rangePadding = 30 * 24 * 60 * 60 * 1000
+
+	return {
+		itemIds,
+		itemNames,
+		startTime: minTs ? new Date(minTs - rangePadding) : null,
+		endTime: maxTs ? new Date(maxTs + rangePadding) : null,
+		relatedLimit: Math.min(Math.max(pageSize * 5, 20), MAX_RELATED_LIMIT)
+	}
 }
 
-async function getUseRecords(userId) {
-	return queryAllByCreateTimeDesc('Records', {
+async function getRelatedItems(userId, context) {
+	const where = { userId }
+	if (context.startTime && context.endTime) {
+		where.createTime = _.and(_.gte(context.startTime), _.lte(context.endTime))
+	}
+	let query = db.collection('Items').where(where)
+
+	const res = await query
+		.orderBy('createTime', 'desc')
+		.limit(context.relatedLimit)
+		.get()
+	let items = Array.isArray(res.data) ? res.data : []
+	if (context.itemIds.length > 0) {
+		const itemIdSet = new Set(context.itemIds)
+		items = prioritizeRelated(items, item => itemIdSet.has(item._id))
+	}
+	if (context.itemNames.length > 0) {
+		const itemNameSet = new Set(context.itemNames)
+		items = prioritizeRelated(items, item => itemNameSet.has(item.name))
+	}
+	return items
+}
+
+async function getRelatedUseRecords(userId, context) {
+	const where = {
 		userId,
 		type: 'gift_use'
-	})
+	}
+	if (context.startTime && context.endTime) {
+		where.createTime = _.and(_.gte(context.startTime), _.lte(context.endTime))
+	}
+	let query = db.collection('Records').where(where)
+
+	const res = await query
+		.orderBy('createTime', 'desc')
+		.limit(context.relatedLimit)
+		.get()
+	let records = Array.isArray(res.data) ? res.data : []
+	if (context.itemIds.length > 0) {
+		const itemIdSet = new Set(context.itemIds)
+		records = prioritizeRelated(records, record => {
+			const itemId = normalizeString(record.itemId || record.giftId)
+			return itemIdSet.has(itemId)
+		})
+	}
+	if (context.itemNames.length > 0) {
+		const itemNameSet = new Set(context.itemNames)
+		records = prioritizeRelated(records, record => itemNameSet.has(extractUseItemName(record.reason)))
+	}
+	return records
 }
 
-async function getUseNotices(userId, allowedUserIds) {
-	const notices = await queryAllByCreateTimeDesc(
-		'Notices',
+async function getRelatedUseNotices(userId, allowedUserIds, context) {
+	let query = db.collection('Notices').where(
 		_.or([
 			{ type: 'GIFT_USED', senderId: userId },
 			{ type: 'GIFT_USED', receiverId: userId }
 		])
 	)
+	const res = await query
+		.orderBy('createTime', 'desc')
+		.limit(context.relatedLimit)
+		.get()
+	let notices = Array.isArray(res.data) ? res.data : []
 	const allowedSet = new Set(Array.isArray(allowedUserIds) ? allowedUserIds : [])
-	return notices.filter(notice => {
+	notices = notices.filter(notice => {
 		const senderAllowed = allowedSet.has(notice.senderId)
 		const receiverAllowed = !notice.receiverId || allowedSet.has(notice.receiverId)
-		return senderAllowed && receiverAllowed
+		if (!senderAllowed || !receiverAllowed) return false
+		if (context.startTime && context.endTime) {
+			const ts = toTimestamp(notice.createTime)
+			if (ts < toTimestamp(context.startTime) || ts > toTimestamp(context.endTime)) {
+				return false
+			}
+		}
+		return true
 	})
+	if (context.itemIds.length > 0) {
+		const itemIdSet = new Set(context.itemIds)
+		notices = prioritizeRelated(notices, notice => itemIdSet.has(normalizeString(notice.itemId || notice.giftId)))
+	}
+	if (context.itemNames.length > 0) {
+		const itemNameSet = new Set(context.itemNames)
+		notices = prioritizeRelated(notices, notice => itemNameSet.has(extractNoticeItemName(notice.message)))
+	}
+	return notices
 }
 
-async function queryAllByCreateTimeDesc(collectionName, whereCondition) {
-	let skip = 0
-	const merged = []
-
-	while (true) {
-		const res = await db.collection(collectionName)
-			.where(whereCondition)
-			.orderBy('createTime', 'desc')
-			.skip(skip)
-			.limit(QUERY_BATCH_SIZE)
-			.get()
-
-		const batch = Array.isArray(res.data) ? res.data : []
-		merged.push(...batch)
-
-		if (batch.length < QUERY_BATCH_SIZE) break
-		skip += QUERY_BATCH_SIZE
+function prioritizeRelated(list, matcher) {
+	const matched = []
+	const others = []
+	for (const item of list) {
+		if (matcher(item)) matched.push(item)
+		else others.push(item)
 	}
-
-	return merged
+	return [...matched, ...others]
 }
 
 async function integrateData(userId, purchaseRecords, items, useRecords, notices) {
@@ -158,12 +247,10 @@ async function integrateData(userId, purchaseRecords, items, useRecords, notices
 		pushToGroup(noticesByName, extractNoticeItemName(notice.message), notice)
 	})
 
-  // 预排序，保证兜底匹配稳定
   sortGroupedByCreateTime(itemsByName)
   sortGroupedByCreateTime(useRecordsByName)
   sortGroupedByCreateTime(noticesByName)
 
-  // 收集需要查询的用户 ID
   const userIds = new Set()
   purchaseRecords.forEach(record => userIds.add(record.userId))
   useRecords.forEach(record => userIds.add(record.userId))
@@ -239,7 +326,6 @@ async function integrateData(userId, purchaseRecords, items, useRecords, notices
 }
 
 async function resolveImageUrls(historyList) {
-  // 1) giftId 命中时，优先从 Gifts 重新取 coverImg
   const allGiftIds = [...new Set(historyList.map(item => item.giftId).filter(Boolean))]
   const giftCoverMap = new Map()
 
@@ -254,7 +340,6 @@ async function resolveImageUrls(historyList) {
     }
   }
 
-  // 2) giftId 为空时，按名称兜底查 Gifts；仅唯一命中时才补图，避免同名误匹配
   const missingGiftNameList = [...new Set(
     historyList
       .filter(item => !item.giftId && item.name)
@@ -282,7 +367,6 @@ async function resolveImageUrls(historyList) {
     })
   }
 
-  // 3) 收集所有 cloud:// 待换签文件
   const fileIdSet = new Set()
   historyList.forEach(item => {
     const src = giftCoverMap.get(item.giftId) || giftCoverByNameMap.get(item.name) || item.image || ''
@@ -375,8 +459,6 @@ function resolveNotice({
 function resolveItemIdFromRecord(record, itemById) {
 	if (!record) return ''
 	if (record.itemId) return String(record.itemId)
-
-	// 兼容历史数据：旧版 giftId 可能直接存储的是 itemId
 	if (record.giftId && itemById.has(record.giftId)) {
 		return String(record.giftId)
 	}
@@ -386,8 +468,6 @@ function resolveItemIdFromRecord(record, itemById) {
 function resolveItemIdFromNotice(notice, itemById) {
 	if (!notice) return ''
 	if (notice.itemId) return String(notice.itemId)
-
-	// 兼容历史数据：旧版 giftId 可能直接存储的是 itemId
 	if (notice.giftId && itemById.has(notice.giftId)) {
 		return String(notice.giftId)
 	}
@@ -443,12 +523,6 @@ function filterHistoryList(list, filter) {
     default:
       return list
   }
-}
-
-function paginateList(list, page, pageSize) {
-  const start = (page - 1) * pageSize
-  const end = start + pageSize
-  return list.slice(start, end)
 }
 
 function extractPurchaseItemName(reason) {

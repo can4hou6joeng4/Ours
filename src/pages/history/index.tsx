@@ -3,6 +3,7 @@ import Taro, { useDidShow } from '@tarojs/taro'
 import { useState } from 'react'
 import dayjs from 'dayjs'
 import './index.scss'
+import { smartFetchUser } from '../../utils/userCache'
 
 export default function History() {
   const [records, setRecords] = useState<any[]>([])
@@ -31,9 +32,14 @@ export default function History() {
 
   const fetchUserInfo = async () => {
     try {
-      const { result }: any = await Taro.cloud.callFunction({ name: 'initUser' })
-      if (result.success) {
-        setTotalPoints(result.user.totalPoints)
+      const result: any = await smartFetchUser({
+        onCacheHit: (cached) => {
+          setTotalPoints(cached.user?.totalPoints || 0)
+        }
+      })
+
+      if (result?.success) {
+        setTotalPoints(result.user?.totalPoints || 0)
       }
     } catch (e) {
       console.error('获取用户信息失败', e)

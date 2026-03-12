@@ -10,21 +10,29 @@ exports.main = async (event, context) => {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
 
-    // 【云开发控制台索引建议】
-    // 集合：Users — _id 为主键，无需额外索引
-    // 集合：Records — 建议索引 { userId: 1, createTime: -1 }
-    // 性能优化点：通过 Promise.all 并行执行"用户信息查询"与"今日流水聚合"
-    // 耗时从 T1 + T2 降至 Max(T1, T2)
-    const [userRes, recordsRes] = await Promise.all([
-      db.collection('Users').doc(OPENID).get().catch(() => null),
-      db.collection('Records').where({
-        userId: OPENID,
-        createTime: _.gte(today)
-      }).get().catch(() => ({ data: [] }))
-    ])
+    // 高频入口：首页、历史页、背包页都会触发该接口。
+    // 索引建议：Records 集合建立 { userId: 1, createTime: -1 }，降低今日流水查询成本。
+    const userPromise = db.collection('Users').doc(OPENID).get().catch(() => null)
 
-    if (userRes) {
-      const todayChange = recordsRes.data.reduce((sum, record) => sum + (record.amount || 0), 0)
+    let todayRecordsQuery = db.collection('Records').where({
+      userId: OPENID,
+      createTime: _.gte(today)
+    })
+
+    // 微信云开发支持 field 精简时，仅拉取 amount 字段，避免高频接口搬运无关字段。
+    if (typeof todayRecordsQuery.field === 'function') {
+      todayRecordsQuery = todayRecordsQuery.field({ amount: true })
+    }
+
+    const todayRecordsPromise = todayRecordsQuery.get().catch(() => ({ data: [] }))
+
+    const [userRes, recordsRes] = await Promise.all([userPromise, todayRecordsPromise])
+
+    if (userRes && userRes.data) {
+      const todayChange = (Array.isArray(recordsRes.data) ? recordsRes.data : []).reduce(
+        (sum, record) => sum + (record.amount || 0),
+        0
+      )
 
       return {
         success: true,
@@ -33,7 +41,6 @@ exports.main = async (event, context) => {
       }
     }
 
-    // 如果不存在，则创建新用户
     const newUser = {
       _id: OPENID,
       totalPoints: 0,
