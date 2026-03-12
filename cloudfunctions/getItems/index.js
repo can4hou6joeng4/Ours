@@ -9,6 +9,8 @@ const db = cloud.database()
 
 exports.main = async (event, context) => {
 	const { OPENID } = cloud.getWXContext()
+	const startedAt = Date.now()
+	const mark = (label, extra = {}) => console.log('[perf]', 'getItems', label, { ms: Date.now() - startedAt, ...extra })
 	const rawPage = Number(event && event.page)
 	const rawPageSize = Number(event && event.pageSize)
 	const status = event && event.status
@@ -16,10 +18,12 @@ exports.main = async (event, context) => {
 	const pageSize = Number.isFinite(rawPageSize) && rawPageSize > 0 ? Math.min(Math.floor(rawPageSize), 100) : 20
 
 	try {
+		mark('start', { page, pageSize, status: status || 'all' })
 		const where = { userId: OPENID }
 		if (status === 'unused' || status === 'used') {
 			where.status = status
 		}
+		mark('where_ready', { hasStatusFilter: !!where.status })
 
 		const res = await db.collection('Items')
 			.where(where)
@@ -29,6 +33,8 @@ exports.main = async (event, context) => {
 			.get()
 
 		const data = Array.isArray(res.data) ? res.data : []
+		mark('query_done', { count: data.length })
+		mark('total_done', { count: data.length, hasMore: data.length >= pageSize })
 		return {
 			success: true,
 			data,
