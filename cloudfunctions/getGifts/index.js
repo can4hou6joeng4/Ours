@@ -5,16 +5,18 @@ const _ = db.command
 
 /**
  * 获取礼品列表（按伴侣关系隔离）
+ *
+ * 索引依赖（云开发控制台建议建立）：
+ * - Gifts: { creatorId: 1, createTime: -1 }
+ * - Gifts: { partnerId: 1, createTime: -1 }
+ *
+ * 说明：当前 where(_.or([...])) 会分别命中 creatorId / partnerId 条件，
+ * 依赖上述索引避免全表扫描。
  */
 exports.main = async (event, context) => {
   const { OPENID } = cloud.getWXContext()
 
   try {
-    // 【云开发控制台索引建议】
-    // 集合：Gifts
-    // 建议索引：{ creatorId: 1, createTime: -1 } 和 { partnerId: 1, createTime: -1 }
-    // 理由：or 查询分别命中两个字段，避免全量扫描
-    // 1. 隔离查询：只返回自己创建或伴侣创建的礼品
     const res = await db.collection('Gifts')
       .where(_.or([
         { creatorId: OPENID },
@@ -24,29 +26,44 @@ exports.main = async (event, context) => {
       .limit(100)
       .get()
 
-    // 2. 图片可见性：将 cloud:// fileID 转为临时 HTTPS URL
-    const gifts = res.data
-    const fileIDs = gifts
-      .map(g => g.coverImg)
-      .filter(id => id && id.startsWith('cloud://'))
+    const gifts = Array.isArray(res.data) ? res.data : []
+    const fileIDs = []
+    const seenFileIDs = new Set()
 
-    let fileUrlMap = {}
-    if (fileIDs.length > 0) {
-      const urlRes = await cloud.getTempFileURL({ fileList: fileIDs })
-      urlRes.fileList.forEach(item => {
-        if (item.tempFileURL) {
-          fileUrlMap[item.fileID] = item.tempFileURL
-        }
-      })
+    for (let i = 0; i < gifts.length; i += 1) {
+      const coverImg = gifts[i] && gifts[i].coverImg
+      if (!coverImg || typeof coverImg !== 'string') continue
+      if (coverImg.startsWith('https://')) continue
+      if (!coverImg.startsWith('cloud://')) continue
+      if (seenFileIDs.has(coverImg)) continue
+      seenFileIDs.add(coverImg)
+      fileIDs.push(coverImg)
     }
 
-    // 3. 替换 coverImg 为临时 URL
-    const giftsWithUrls = gifts.map(g => ({
-      ...g,
-      coverImg: fileUrlMap[g.coverImg] || g.coverImg
-    }))
+    const fileUrlMap = Object.create(null)
+    if (fileIDs.length > 0) {
+      const urlRes = await cloud.getTempFileURL({ fileList: fileIDs })
+      const tempFileList = Array.isArray(urlRes.fileList) ? urlRes.fileList : []
+      for (let i = 0; i < tempFileList.length; i += 1) {
+        const item = tempFileList[i]
+        if (item && item.fileID && item.tempFileURL) {
+          fileUrlMap[item.fileID] = item.tempFileURL
+        }
+      }
+    }
 
-    return { success: true, gifts: giftsWithUrls }
+    for (let i = 0; i < gifts.length; i += 1) {
+      const gift = gifts[i]
+      const coverImg = gift && gift.coverImg
+      if (!coverImg || typeof coverImg !== 'string') continue
+      if (coverImg.startsWith('https://')) continue
+      if (!coverImg.startsWith('cloud://')) continue
+      if (fileUrlMap[coverImg]) {
+        gift.coverImg = fileUrlMap[coverImg]
+      }
+    }
+
+    return { success: true, gifts }
   } catch (e) {
     console.error('获取礼品失败', e)
     return { success: false, message: '操作失败，请重试' }

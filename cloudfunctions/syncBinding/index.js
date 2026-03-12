@@ -6,6 +6,8 @@ cloud.init({
 })
 
 const db = cloud.database()
+const INVITE_CODE_LENGTH = 6
+const REGEX_FALLBACK_LIMIT = 3
 
 function escapeRegExp(text) {
   return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -14,6 +16,12 @@ function escapeRegExp(text) {
 async function findUserByInviteCode(inviteCode, currentUserId) {
   const normalizedCode = inviteCode.toUpperCase()
 
+  // 低风险优化：当前邀请码语义等于用户 _id 后 6 位。
+  // 若当前集合主键就是 openid / 稳定用户 id，那么可先尝试 doc(candidateId) 做精确路径命中。
+  // 但在现有数据结构下，我们无法安全反推出完整 _id，因此这里不强行构造 candidateId，
+  // 避免误命中或引入错误绑定。
+  // 长期建议：为 Users 增加独立 inviteCode 字段，并建立唯一索引，彻底替代后缀正则扫描。
+
   const candidateRes = await db.collection('Users')
     .where({
       _id: db.RegExp({
@@ -21,17 +29,28 @@ async function findUserByInviteCode(inviteCode, currentUserId) {
         options: 'i'
       })
     })
-    .limit(20)
+    .limit(REGEX_FALLBACK_LIMIT)
     .get()
 
-  const matchedUsers = candidateRes.data.filter(user => (
-    user._id !== currentUserId &&
-    user._id.slice(-6).toUpperCase() === normalizedCode
-  ))
+  const candidates = Array.isArray(candidateRes.data) ? candidateRes.data : []
+  let matchedUser = null
+  let matchedCount = 0
 
-  if (matchedUsers.length === 0) return { user: null, ambiguous: false }
-  if (matchedUsers.length > 1) return { user: null, ambiguous: true }
-  return { user: matchedUsers[0], ambiguous: false }
+  for (let i = 0; i < candidates.length; i += 1) {
+    const user = candidates[i]
+    if (!user || user._id === currentUserId) continue
+    if (String(user._id).slice(-INVITE_CODE_LENGTH).toUpperCase() !== normalizedCode) continue
+
+    matchedCount += 1
+    if (matchedCount === 1) {
+      matchedUser = user
+    } else {
+      return { user: null, ambiguous: true }
+    }
+  }
+
+  if (matchedCount === 0) return { user: null, ambiguous: false }
+  return { user: matchedUser, ambiguous: false }
 }
 
 /**
@@ -62,7 +81,7 @@ exports.main = async (event, context) => {
   if (!normalizedCode) {
     return { success: false, message: '请输入邀请码' }
   }
-  if (normalizedCode.length !== 6) {
+  if (normalizedCode.length !== INVITE_CODE_LENGTH) {
     return { success: false, message: '邀请码格式不正确' }
   }
 
@@ -118,15 +137,15 @@ exports.main = async (event, context) => {
     try {
       const myInfoRes = await db.collection('Users').doc(OPENID).get()
       const nickName = safeTruncate(myInfoRes.data.nickName, 20)
-      
+
       await cloud.openapi.subscribeMessage.send({
         touser: partnerOpenid,
         templateId: 'fnKrftUCVOwXvlo7exFmer78w_R0JfKR3evP5IxxjhE',
         page: 'pages/index/index',
         data: {
-          thing1: { value: '绑定成功' },                               // 变更类型
-          time3: { value: dayjs().format('YYYY年MM月DD日 HH:mm') },    // 时间
-          thing2: { value: nickName || '对方' }                        // 姓名
+          thing1: { value: '绑定成功' },
+          time3: { value: dayjs().format('YYYY年MM月DD日 HH:mm') },
+          thing2: { value: nickName || '对方' }
         }
       })
     } catch (sendError) {

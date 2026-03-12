@@ -47,6 +47,7 @@ export default function Store() {
 
   // 性能优化：记录上次数据获取时间
   const lastFetchTime = useRef<number>(0)
+  const dataLoadingRef = useRef(false)
 
   useDidShow(() => {
     // 性能优化：如果距离上次获取不足缓存时间且有数据，跳过请求
@@ -122,6 +123,9 @@ export default function Store() {
   // })
 
   const fetchData = async () => {
+    if (dataLoadingRef.current) return
+
+    dataLoadingRef.current = true
     setLoading(true)
     try {
       // 优化：用户信息使用缓存，礼品列表并行请求
@@ -152,6 +156,7 @@ export default function Store() {
     } catch (e) {
       console.error('获取数据失败', e)
     } finally {
+      dataLoadingRef.current = false
       setLoading(false)
     }
   }

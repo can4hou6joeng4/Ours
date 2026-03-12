@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import Taro, { useDidShow } from '@tarojs/taro'
 import { View, Text, Image } from '@tarojs/components'
 import { Button, Notify } from '@taroify/core'
@@ -17,8 +17,15 @@ export default function Me() {
   const [tempAvatar, setTempAvatar] = useState('')
   const [saving, setSaving] = useState(false)
   const [showBindingSheet, setShowBindingSheet] = useState(false)
+  const isRefreshingRef = useRef(false)
+  const lastRefreshTimeRef = useRef(0)
 
   useDidShow(() => {
+    const now = Date.now()
+    if (isRefreshingRef.current) return
+    if (userInfo && now - lastRefreshTimeRef.current < 30 * 1000) return
+
+    isRefreshingRef.current = true
     // 使用智能缓存：优先显示缓存数据，后台刷新
     smartFetchUser({
       onCacheHit: (cached) => {
@@ -35,6 +42,11 @@ export default function Me() {
         setUserInfo(res.user)
         setLoading(false)
       }
+      if (res?.success) {
+        lastRefreshTimeRef.current = Date.now()
+      }
+    }).finally(() => {
+      isRefreshingRef.current = false
     })
   })
 

@@ -1,9 +1,11 @@
 import { View, Text, ScrollView, Button } from '@tarojs/components'
 import Taro, { useDidShow } from '@tarojs/taro'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import dayjs from 'dayjs'
 import './index.scss'
 import { smartFetchUser } from '../../utils/userCache'
+
+const DATA_CACHE_DURATION = 30 * 1000
 
 export default function History() {
   const [records, setRecords] = useState<any[]>([])
@@ -12,6 +14,8 @@ export default function History() {
   const [showDetailModal, setShowDetailModal] = useState(false)
   const [selectedRecord, setSelectedRecord] = useState<any>(null)
   const [filterActive, setFilterActive] = useState('all')
+  const recordsLoadingRef = useRef(false)
+  const lastFetchTimeRef = useRef(0)
 
   const filterTabs = [
     { label: '全部', value: 'all' },
@@ -21,7 +25,14 @@ export default function History() {
   ]
 
   useDidShow(() => {
-    // 性能优化：通过 Promise.all 并发请求，消除串行 RTT 等待开销
+    const now = Date.now()
+    const shouldSkipRecordsFetch = records.length > 0 && now - lastFetchTimeRef.current < DATA_CACHE_DURATION
+
+    if (shouldSkipRecordsFetch) {
+      fetchUserInfo()
+      return
+    }
+
     Promise.all([fetchRecords(), fetchUserInfo()])
   })
 
@@ -47,26 +58,30 @@ export default function History() {
   }
 
   const fetchRecords = async () => {
+    if (recordsLoadingRef.current) return
+
+    recordsLoadingRef.current = true
     setLoading(true)
     try {
       const { result }: any = await Taro.cloud.callFunction({
         name: 'getRecords',
-        data: { page: 1, pageSize: 50 }
+        data: { page: 1, pageSize: 50, summaryOnly: true }
       })
 
       if (result.success) {
-        setRecords(result.data)
+        setRecords(Array.isArray(result.data) ? result.data : [])
+        lastFetchTimeRef.current = Date.now()
       }
     } catch (e) {
       Taro.showToast({ title: '加载失败', icon: 'none' })
     } finally {
+      recordsLoadingRef.current = false
       setLoading(false)
     }
   }
 
   return (
     <View className='history-container'>
-      {/* 沉浸式资产卡片 - 与兑换页一致 */}
       <View className='asset-summary-card'>
         <View className='asset-info'>
           <Text className='asset-label'>TOTAL ASSETS / 当前总积分</Text>
@@ -100,8 +115,6 @@ export default function History() {
             .filter(record => {
               const amount = record.amount || record.points || 0
               const rawTitle = record.reason || record.title || ''
-
-              // 统一判定逻辑
               const isExchange = rawTitle.includes('兑换') || record.type === 'exchange' || record.type === 'gift'
               const isOutcome = record.type === 'outcome' || amount < 0 || isExchange
               const isIncome = !isOutcome
@@ -115,39 +128,34 @@ export default function History() {
             .map(record => {
               const amount = record.amount || record.points || 0
               const rawTitle = record.reason || record.title || ''
-
-              // 判定逻辑与 filter 保持高度一致
               const isExchange = rawTitle.includes('兑换') || record.type === 'exchange' || record.type === 'gift'
               const isOutcome = record.type === 'outcome' || amount < 0 || isExchange
               const isIncome = !isOutcome
-
               const displayAmount = Math.abs(amount)
-              // 净化标题：移除 [惩罚]、[奖赏] 等前缀，以及 "兑换：" 前缀
               const cleanTitle = rawTitle
                 .replace(/^\[.*?\]\s*/, '')
                 .replace(/^兑换[：:]\s*/, '')
 
               return (
-              <View
-                key={record._id}
-                className='record-item'
-                onClick={() => handleShowDetail({ ...record, cleanTitle })}
-              >
-                <View className='left'>
-                  <Text className='record-title'>{cleanTitle}</Text>
+                <View
+                  key={record._id}
+                  className='record-item'
+                  onClick={() => handleShowDetail({ ...record, cleanTitle })}
+                >
+                  <View className='left'>
+                    <Text className='record-title'>{cleanTitle}</Text>
+                  </View>
+                  <View className={`right ${isIncome ? 'income' : 'outcome'}`}>
+                    <Text className='points-val'>
+                      {isIncome ? '+' : '-'}{displayAmount}
+                    </Text>
+                  </View>
                 </View>
-                <View className={`right ${isIncome ? 'income' : 'outcome'}`}>
-                  <Text className='points-val'>
-                    {isIncome ? '+' : '-'}{displayAmount}
-                  </Text>
-                </View>
-              </View>
-            )
-          })
+              )
+            })
         )}
       </ScrollView>
 
-      {/* 积分详情弹窗 (与任务详情风格一致) */}
       {showDetailModal && selectedRecord && (
         <View
           className='modal-overlay detail-modal-root'
