@@ -6,6 +6,8 @@ cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 const db = cloud.database()
 const _ = db.command
 const MAX_RELATED_LIMIT = 100
+const TEMP_URL_CACHE_TTL_MS = 10 * 60 * 1000
+const tempUrlCache = new Map()
 
 /**
  * 获取兑换历史记录
@@ -437,19 +439,46 @@ async function resolveImageUrls(historyList) {
 
   const urlMap = new Map()
   const fileIds = [...fileIdSet]
+  const now = Date.now()
+  const pendingFileIds = []
+  let cacheHits = 0
+
+  for (const fileId of fileIds) {
+    const cached = tempUrlCache.get(fileId)
+    if (cached && cached.url && cached.expireAt > now) {
+      urlMap.set(fileId, cached.url)
+      cacheHits += 1
+    } else {
+      pendingFileIds.push(fileId)
+    }
+  }
+
   mark('resolveImageUrls_collect_fileids_done', {
     giftIdHits: giftIdHitCount,
     fallbackNameHits: fallbackNameHitCount,
-    fileIds: fileIds.length
+    fileIds: fileIds.length,
+    cacheHits,
+    pendingFileIds: pendingFileIds.length
   })
 
-  if (fileIds.length > 0) {
-    const res = await cloud.getTempFileURL({ fileList: fileIds })
+  if (pendingFileIds.length > 0) {
+    const res = await cloud.getTempFileURL({ fileList: pendingFileIds })
     ;(Array.isArray(res.fileList) ? res.fileList : []).forEach(f => {
-      if (f.fileID && f.tempFileURL) urlMap.set(f.fileID, f.tempFileURL)
+      if (f.fileID && f.tempFileURL) {
+        urlMap.set(f.fileID, f.tempFileURL)
+        tempUrlCache.set(f.fileID, {
+          url: f.tempFileURL,
+          expireAt: Date.now() + TEMP_URL_CACHE_TTL_MS
+        })
+      }
     })
   }
-  mark('resolveImageUrls_get_temp_urls_done', { fileIds: fileIds.length, resolved: urlMap.size })
+  mark('resolveImageUrls_get_temp_urls_done', {
+    fileIds: fileIds.length,
+    cacheHits,
+    fetched: pendingFileIds.length,
+    resolved: urlMap.size
+  })
 
   const resolvedList = historyList.map(item => {
     const raw = giftCoverMap.get(item.giftId) || giftCoverByNameMap.get(item.name) || item.image || ''
