@@ -102,14 +102,16 @@ function buildRelatedContext(purchaseRecords, pageSize) {
 		.filter(ts => ts > 0)
 	const minTs = timestamps.length ? Math.min(...timestamps) : 0
 	const maxTs = timestamps.length ? Math.max(...timestamps) : 0
-	const rangePadding = 30 * 24 * 60 * 60 * 1000
+	// 精修：将页内关联查询时间窗口从 30 天收紧到 7 天，减少无关 Items / Records / Notices 扫描
+	const rangePadding = 7 * 24 * 60 * 60 * 1000
 
 	return {
 		itemIds,
 		itemNames,
 		startTime: minTs ? new Date(minTs - rangePadding) : null,
 		endTime: maxTs ? new Date(maxTs + rangePadding) : null,
-		relatedLimit: Math.min(Math.max(pageSize * 5, 20), MAX_RELATED_LIMIT)
+		// 精修：进一步收紧页内关联查询上限，优先命中本页附近数据
+		relatedLimit: Math.min(Math.max(pageSize * 3, 20), 60)
 	}
 }
 

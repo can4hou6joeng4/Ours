@@ -40,6 +40,7 @@ export default function Inventory() {
 	const [itemsPage, setItemsPage] = useState(1)
 	const [hasMoreItems, setHasMoreItems] = useState(true)
 	const [itemsLoadingMore, setItemsLoadingMore] = useState(false)
+	const [hasTriggeredLoadMore, setHasTriggeredLoadMore] = useState(false)
 	const [showConfirm, setShowConfirm] = useState(false)
 	const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null)
 	const [using, setUsing] = useState(false)
@@ -55,6 +56,7 @@ export default function Inventory() {
 
 	// 性能优化：记录上次数据获取时间
 	const lastFetchTime = useRef<number>(0)
+	const itemsRefreshingRef = useRef(false)
 
 	useDidShow(() => {
 		// 获取用户绑定状态
@@ -71,10 +73,15 @@ export default function Inventory() {
 
 		// 性能优化：如果距离上次获取不足缓存时间且有数据，跳过请求
 		const now = Date.now()
+		if (itemsRefreshingRef.current) return
 		if (items.length > 0 && now - lastFetchTime.current < DATA_CACHE_DURATION) {
 			return
 		}
+		itemsRefreshingRef.current = true
 		resetItemsAndFetch(currentTab)
+		setTimeout(() => {
+			itemsRefreshingRef.current = false
+		}, 300)
 	})
 
 	// 加载兑换历史数据
@@ -168,6 +175,7 @@ export default function Inventory() {
 		setItems([])
 		setItemsPage(1)
 		setHasMoreItems(true)
+		setHasTriggeredLoadMore(false)
 		lastFetchTime.current = 0
 		fetchItems({ page: 1, status, reset: true })
 	}
@@ -181,6 +189,7 @@ export default function Inventory() {
 
 	const handleLoadMoreItems = () => {
 		if (!hasPartner || loading || itemsLoadingMore || !hasMoreItems) return
+		setHasTriggeredLoadMore(true)
 		fetchItems({ page: itemsPage, status: currentTab, reset: false })
 	}
 
@@ -329,7 +338,7 @@ export default function Inventory() {
 							{filteredItems.length > 0 && itemsLoadingMore && (
 								<View className='loading-more'>加载更多中...</View>
 							)}
-							{filteredItems.length > 0 && !hasMoreItems && (
+							{filteredItems.length > 0 && !hasMoreItems && hasTriggeredLoadMore && (
 								<View className='loading-more'>没有更多了</View>
 							)}
 						</>
