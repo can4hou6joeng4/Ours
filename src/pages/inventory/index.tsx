@@ -2,7 +2,6 @@ import { View, Text, ScrollView, Image, Input } from '@tarojs/components'
 import Taro, { useDidShow } from '@tarojs/taro'
 import { useState, useMemo, useRef } from 'react'
 import { Dialog, Button, Notify } from '@taroify/core'
-import dayjs from 'dayjs'
 import InventoryItemCard from '../../components/InventoryItemCard'
 import ExchangeHistoryModal from '../../components/ExchangeHistoryModal'
 import BindingSheet from '../../components/BindingSheet'
@@ -16,8 +15,6 @@ import './index.scss'
 // 数据缓存有效期（毫秒）
 const DATA_CACHE_DURATION = 30 * 1000 // 30秒
 const EXCHANGE_HISTORY_PAGE_SIZE = 20
-const PARTNER_GIFT_PAGE_SIZE = 20
-const GIFT_PLACEHOLDER_ICON = getIconifyUrl('tabler:gift', '#D4B185')
 type ItemStatus = 'unused' | 'used'
 type HistoryFilter = 'all' | 'unused' | 'used'
 
@@ -36,24 +33,6 @@ interface InventoryItem {
 	stackedKey?: string
 }
 
-interface GiftUsageRecord {
-	_id: string
-	name: string
-	coverImg?: string
-	desc?: string
-	points: number
-	useTime?: string | Date
-	createTime?: string | Date
-}
-
-interface StackedGroup {
-	stackKey: string
-	name: string
-	coverImg?: string
-	points: number
-	records: GiftUsageRecord[]
-}
-
 export default function Inventory() {
 	const [items, setItems] = useState<InventoryItem[]>([])
 	const [currentTab, setCurrentTab] = useState<ItemStatus>('unused')
@@ -70,14 +49,6 @@ export default function Inventory() {
 	const [historyFilter, setHistoryFilter] = useState<HistoryFilter>('all')
 	const [hasPartner, setHasPartner] = useState(false)
 	const [showBindingSheet, setShowBindingSheet] = useState(false)
-	const [showPartnerGiftSheet, setShowPartnerGiftSheet] = useState(false)
-	const [partnerGiftRecords, setPartnerGiftRecords] = useState<GiftUsageRecord[]>([])
-	const [partnerGiftGroups, setPartnerGiftGroups] = useState<StackedGroup[]>([])
-	const [partnerGiftLoading, setPartnerGiftLoading] = useState(false)
-	const [partnerGiftInitialLoading, setPartnerGiftInitialLoading] = useState(false)
-	const [partnerGiftPage, setPartnerGiftPage] = useState(1)
-	const [partnerGiftHasMore, setPartnerGiftHasMore] = useState(false)
-	const [selectedPartnerGiftGroup, setSelectedPartnerGiftGroup] = useState<StackedGroup | null>(null)
 
 	// 性能优化：记录上次数据获取时间
 	const lastFetchTime = useRef<number>(0)
@@ -102,80 +73,6 @@ export default function Inventory() {
 		}
 		fetchItems()
 	})
-
-	const buildPartnerGiftGroups = (list: GiftUsageRecord[]): StackedGroup[] => {
-		return list.reduce((acc: StackedGroup[], record) => {
-			const stackKey = `${record.name}::${record.coverImg || ''}`
-			const existing = acc.find(g => g.stackKey === stackKey)
-			if (existing) {
-				existing.records.push(record)
-				if (record.points > existing.points) existing.points = record.points
-			} else {
-				acc.push({
-					stackKey,
-					name: record.name,
-					coverImg: record.coverImg,
-					points: record.points,
-					records: [record]
-				})
-			}
-			return acc
-		}, [])
-	}
-
-	const formatPartnerGiftPoints = (points: number) =>
-		points > 0 ? `🪙 ${points} 积分` : '🪙 积分未知'
-
-	const formatPartnerGiftTime = (t?: string | Date) =>
-		t ? dayjs(t).format('YYYY.MM.DD HH:mm') : '—'
-
-	const loadPartnerGiftRecords = async ({ reset = false }: { reset?: boolean } = {}) => {
-		if (partnerGiftLoading) return
-		if (!partnerGiftHasMore && !reset && partnerGiftRecords.length > 0) return
-
-		const partnerId = Taro.getStorageSync('partnerId') || ''
-		if (!partnerId) {
-			setPartnerGiftRecords([])
-			setPartnerGiftGroups([])
-			setPartnerGiftPage(1)
-			setPartnerGiftHasMore(false)
-			setPartnerGiftInitialLoading(false)
-			setPartnerGiftLoading(false)
-			return
-		}
-
-		setPartnerGiftLoading(true)
-		if (reset) setPartnerGiftInitialLoading(true)
-
-		try {
-			const requestPage = reset ? 1 : partnerGiftPage
-			const { result }: any = await Taro.cloud.callFunction({
-				name: 'getGiftUsageRecords',
-				data: {
-					targetUserId: partnerId,
-					page: requestPage,
-					pageSize: PARTNER_GIFT_PAGE_SIZE
-				}
-			})
-
-			if (!result?.success) {
-				throw new Error(result?.message || '加载失败')
-			}
-
-			const nextRecords = Array.isArray(result.data) ? result.data : []
-			const mergedRecords = reset ? nextRecords : [...partnerGiftRecords, ...nextRecords]
-			setPartnerGiftRecords(mergedRecords)
-			setPartnerGiftGroups(buildPartnerGiftGroups(mergedRecords))
-			setPartnerGiftPage(requestPage + 1)
-			setPartnerGiftHasMore(nextRecords.length >= PARTNER_GIFT_PAGE_SIZE)
-		} catch (error) {
-			console.error('获取伴侣礼品使用记录失败', error)
-			Taro.showToast({ title: '加载失败，请稍后重试', icon: 'none' })
-		} finally {
-			setPartnerGiftLoading(false)
-			setPartnerGiftInitialLoading(false)
-		}
-	}
 
 	// 加载兑换历史数据
 	const loadExchangeHistory = async ({
@@ -219,14 +116,6 @@ export default function Inventory() {
 		loadExchangeHistory({ reset: true, filter: historyFilter })
 	}
 
-	const handleShowPartnerGiftSheet = () => {
-		if (!hasPartner) {
-			setShowBindingSheet(true)
-			return
-		}
-		setShowPartnerGiftSheet(true)
-		loadPartnerGiftRecords({ reset: true })
-	}
 
 	// 切换历史筛选
 	const handleHistoryFilterChange = (filter: HistoryFilter) => {
@@ -422,137 +311,6 @@ export default function Inventory() {
 				onLoadMore={() => loadExchangeHistory()}
 			/>
 
-			{/* TA 的礼品底部弹窗 */}
-			{showPartnerGiftSheet && (
-				<View
-					className='partner-gift-sheet-root'
-					onClick={() => {
-						setShowPartnerGiftSheet(false)
-						setSelectedPartnerGiftGroup(null)
-					}}
-				>
-					<View className='partner-gift-sheet-content' onClick={e => e.stopPropagation()}>
-						<View className='sheet-header'>
-							<Text className='title'>TA 使用过的礼品</Text>
-							<View
-								className='close'
-								onClick={() => {
-									setShowPartnerGiftSheet(false)
-									setSelectedPartnerGiftGroup(null)
-								}}
-							>
-								×
-							</View>
-						</View>
-
-						<ScrollView
-							scrollY
-							className='partner-gift-scroll'
-							lowerThreshold={120}
-							onScrollToLower={() => loadPartnerGiftRecords()}
-						>
-							<View className='partner-gift-inner'>
-								{partnerGiftInitialLoading ? (
-									<View className='partner-gift-list'>
-										{Array.from({ length: 3 }).map((_, index) => (
-											<SkeletonCard key={`partner-gift-skeleton-${index}`} loading row={3} className='history-skeleton'>
-												<View className='gift-card gift-card-skeleton' />
-											</SkeletonCard>
-										))}
-									</View>
-								) : partnerGiftGroups.length === 0 ? (
-									<View className='empty-history'>
-										<Text className='empty-icon'>📦</Text>
-										<Text className='empty-text'>TA 还没有使用过礼品</Text>
-									</View>
-								) : (
-									<View className='partner-gift-list'>
-										{partnerGiftGroups.map(group => {
-											const count = group.records.length
-
-											return (
-												<View
-													key={group.stackKey}
-													className={`gift-group-card ${count > 1 ? 'is-stacked' : ''}`}
-													onClick={() => setSelectedPartnerGiftGroup(group)}
-												>
-													<View className='gift-card-row'>
-														<View className='gift-cover-box'>
-															{group.coverImg ? (
-																<Image src={group.coverImg} mode='aspectFill' className='gift-cover' />
-															) : (
-																<View className='gift-cover gift-cover-placeholder'>
-																	<Image src={GIFT_PLACEHOLDER_ICON} className='gift-placeholder-icon' />
-																</View>
-															)}
-															{count > 1 && (
-																<View className='gift-count-badge'>×{count}</View>
-															)}
-														</View>
-
-														<View className='gift-content'>
-															<Text className='gift-name'>{group.name || '未命名礼品'}</Text>
-															<Text className='gift-points'>{formatPartnerGiftPoints(group.points)}</Text>
-															{count > 1 && (
-																<Text className='gift-usage-count'>共使用 {count} 次</Text>
-															)}
-														</View>
-													</View>
-												</View>
-											)
-										})}
-
-										{partnerGiftLoading && partnerGiftHasMore && (
-											<View className='history-footer'>
-												<Text className='history-footer-text'>加载中...</Text>
-											</View>
-										)}
-
-										{!partnerGiftHasMore && partnerGiftGroups.length > 0 && (
-											<View className='history-footer'>
-												<Text className='history-footer-text'>没有更多记录了</Text>
-											</View>
-										)}
-									</View>
-								)}
-							</View>
-						</ScrollView>
-					</View>
-				</View>
-			)}
-
-			{selectedPartnerGiftGroup && (
-				<View className='gift-detail-overlay' onClick={() => setSelectedPartnerGiftGroup(null)}>
-					<View className='gift-detail-modal' onClick={e => e.stopPropagation()}>
-						<View className='gift-detail-header'>
-							<View className='gift-detail-cover-box'>
-								{selectedPartnerGiftGroup.coverImg ? (
-									<Image src={selectedPartnerGiftGroup.coverImg} mode='aspectFill' className='gift-detail-cover' />
-								) : (
-									<View className='gift-detail-cover gift-detail-cover--placeholder'>
-										<Image src={GIFT_PLACEHOLDER_ICON} className='gift-detail-placeholder-icon' />
-									</View>
-								)}
-							</View>
-							<Text className='gift-detail-name'>{selectedPartnerGiftGroup.name}</Text>
-							<Text className='gift-detail-points'>{formatPartnerGiftPoints(selectedPartnerGiftGroup.points)}</Text>
-						</View>
-						<View className='gift-detail-records'>
-							{selectedPartnerGiftGroup.records.map((rec, idx) => (
-								<View key={rec._id} className='gift-detail-record-row'>
-									<Text className='gift-detail-record-index'>第 {idx + 1} 次</Text>
-									<Text className='gift-detail-record-time'>{formatPartnerGiftTime(rec.useTime || rec.createTime)}</Text>
-								</View>
-							))}
-						</View>
-						<View className='gift-detail-actions'>
-							<View className='gift-detail-btn' onClick={() => setSelectedPartnerGiftGroup(null)}>
-								<Text>关闭</Text>
-							</View>
-						</View>
-					</View>
-				</View>
-			)}
 
 			{/* 绑定弹窗 */}
 			<BindingSheet

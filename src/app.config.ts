@@ -6,8 +6,7 @@ export default defineAppConfig({
     'pages/me/index',
     'pages/inventory/index',
     'pages/gift-edit/index',
-    'pages/exchange-history/index',
-    'pages/partner-gift-history/index'
+    'pages/exchange-history/index'
   ],
   window: {
     backgroundTextStyle: 'light',
