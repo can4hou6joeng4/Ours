@@ -436,9 +436,9 @@ function getUserName(usersMap, targetId, currentUserId) {
 function filterHistoryList(list, filter) {
   switch (filter) {
     case 'unused':
-      return list.filter(item => item.status === 'unused')
+      return list.filter(item => item.status === 'unused' && !item.useRecord)
     case 'used':
-      return list.filter(item => item.status === 'used' || item.isDeleted)
+      return list.filter(item => item.status === 'used' || !!item.useRecord)
     case 'all':
     default:
       return list
