@@ -15,8 +15,11 @@ const _ = db.command
  */
 exports.main = async (event, context) => {
   const { OPENID } = cloud.getWXContext()
+  const startedAt = Date.now()
+  const mark = (label, extra = {}) => console.log('[perf]', 'getGifts', label, { ms: Date.now() - startedAt, ...extra })
 
   try {
+    mark('start')
     const res = await db.collection('Gifts')
       .where(_.or([
         { creatorId: OPENID },
@@ -27,6 +30,8 @@ exports.main = async (event, context) => {
       .get()
 
     const gifts = Array.isArray(res.data) ? res.data : []
+    mark('query_done', { count: gifts.length })
+
     const fileIDs = []
     const seenFileIDs = new Set()
 
@@ -39,6 +44,7 @@ exports.main = async (event, context) => {
       seenFileIDs.add(coverImg)
       fileIDs.push(coverImg)
     }
+    mark('collect_fileids_done', { count: fileIDs.length })
 
     const fileUrlMap = Object.create(null)
     if (fileIDs.length > 0) {
@@ -50,6 +56,9 @@ exports.main = async (event, context) => {
           fileUrlMap[item.fileID] = item.tempFileURL
         }
       }
+      mark('get_temp_urls_done', { count: tempFileList.length })
+    } else {
+      mark('get_temp_urls_done', { count: 0 })
     }
 
     for (let i = 0; i < gifts.length; i += 1) {
@@ -62,6 +71,8 @@ exports.main = async (event, context) => {
         gift.coverImg = fileUrlMap[coverImg]
       }
     }
+    mark('replace_urls_done', { count: gifts.length })
+    mark('total_done', { count: gifts.length })
 
     return { success: true, gifts }
   } catch (e) {

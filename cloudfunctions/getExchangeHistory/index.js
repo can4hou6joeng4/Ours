@@ -14,6 +14,8 @@ const MAX_RELATED_LIMIT = 100
  */
 exports.main = async (event, context) => {
 	const { OPENID } = cloud.getWXContext()
+	const startedAt = Date.now()
+	const mark = (label, extra = {}) => console.log('[perf]', 'getExchangeHistory', label, { ms: Date.now() - startedAt, ...extra })
 	const rawPage = Number(event && event.page)
 	const rawPageSize = Number(event && event.pageSize)
 	const page = Number.isFinite(rawPage) && rawPage > 0 ? Math.floor(rawPage) : 1
@@ -27,10 +29,12 @@ exports.main = async (event, context) => {
 	const targetUserInput = normalizeString(event && (event.userId || event.targetUserId))
 
 	try {
+		mark('start', { page, pageSize, filter: filterInput })
 		const userRes = await db.collection('Users').doc(OPENID).get().catch(() => null)
 		const currentUser = userRes && userRes.data ? userRes.data : null
 		const allowedUserIds = getAllowedUserIds(currentUser, OPENID)
 		const targetUserId = resolveAccessibleUserId(currentUser, OPENID, targetUserInput)
+		mark('auth_done', { hasUser: !!currentUser, targetUserId, allowedUserCount: allowedUserIds.length })
 
 		const purchaseQuery = buildPurchaseQuery(targetUserId)
 		const [purchaseRes, totalRes] = await Promise.all([
@@ -43,7 +47,10 @@ exports.main = async (event, context) => {
 		])
 
 		const purchaseRecords = Array.isArray(purchaseRes.data) ? purchaseRes.data : []
+		const total = totalRes && typeof totalRes.total === 'number' ? totalRes.total : null
+		mark('purchase_query_done', { count: purchaseRecords.length, total })
 		if (purchaseRecords.length === 0) {
+			mark('total_done', { count: 0, total: total || 0 })
 			return {
 				success: true,
 				data: [],
@@ -54,11 +61,13 @@ exports.main = async (event, context) => {
 		}
 
 		const relatedContext = buildRelatedContext(purchaseRecords, pageSize)
+		mark('related_context_done', { itemIds: relatedContext.itemIds.length, itemNames: relatedContext.itemNames.length, relatedLimit: relatedContext.relatedLimit })
 		const [items, useRecords, notices] = await Promise.all([
 			getRelatedItems(targetUserId, relatedContext),
 			getRelatedUseRecords(targetUserId, relatedContext),
 			getRelatedUseNotices(targetUserId, allowedUserIds, relatedContext)
 		])
+		mark('related_query_done', { items: items.length, useRecords: useRecords.length, notices: notices.length })
 
 		const historyList = await integrateData(
 			OPENID,
@@ -67,13 +76,18 @@ exports.main = async (event, context) => {
 			useRecords,
 			notices
 		)
+		mark('integrate_done', { count: historyList.length })
 
 		const filteredList = filterHistoryList(historyList, filterInput)
+		mark('filter_done', { count: filteredList.length })
+		mark('image_resolve_done', { count: historyList.length })
 
+		const finalTotal = totalRes && typeof totalRes.total === 'number' ? totalRes.total : (page - 1) * pageSize + filteredList.length
+		mark('total_done', { count: filteredList.length, total: finalTotal })
 		return {
 			success: true,
 			data: filteredList,
-			total: totalRes && typeof totalRes.total === 'number' ? totalRes.total : (page - 1) * pageSize + filteredList.length,
+			total: finalTotal,
 			page,
 			pageSize
 		}
@@ -329,6 +343,8 @@ async function integrateData(userId, purchaseRecords, items, useRecords, notices
 
 async function resolveImageUrls(historyList) {
   const allGiftIds = [...new Set(historyList.map(item => item.giftId).filter(Boolean))]
+  const startedAt = Date.now()
+  const mark = (extra = {}) => console.log('[perf]', 'getExchangeHistory', 'resolveImageUrls_done', { ms: Date.now() - startedAt, ...extra })
   const giftCoverMap = new Map()
 
   if (allGiftIds.length > 0) {
@@ -370,13 +386,20 @@ async function resolveImageUrls(historyList) {
   }
 
   const fileIdSet = new Set()
+  let giftIdHitCount = 0
+  let fallbackNameHitCount = 0
   historyList.forEach(item => {
-    const src = giftCoverMap.get(item.giftId) || giftCoverByNameMap.get(item.name) || item.image || ''
+    const coverByGiftId = giftCoverMap.get(item.giftId) || ''
+    const coverByName = !coverByGiftId ? (giftCoverByNameMap.get(item.name) || '') : ''
+    if (coverByGiftId) giftIdHitCount += 1
+    if (coverByName) fallbackNameHitCount += 1
+    const src = coverByGiftId || coverByName || item.image || ''
     if (src.startsWith('cloud://')) fileIdSet.add(src)
   })
 
   const urlMap = new Map()
   const fileIds = [...fileIdSet]
+  mark({ giftIdHits: giftIdHitCount, fallbackNameHits: fallbackNameHitCount, fileIds: fileIds.length })
   if (fileIds.length > 0) {
     const res = await cloud.getTempFileURL({ fileList: fileIds })
     ;(Array.isArray(res.fileList) ? res.fileList : []).forEach(f => {

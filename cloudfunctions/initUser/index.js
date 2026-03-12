@@ -5,8 +5,11 @@ const _ = db.command
 
 exports.main = async (event, context) => {
   const { OPENID } = cloud.getWXContext()
+  const startedAt = Date.now()
+  const mark = (label, extra = {}) => console.log('[perf]', 'initUser', label, { ms: Date.now() - startedAt, ...extra })
 
   try {
+    mark('start')
     const today = new Date()
     today.setHours(0, 0, 0, 0)
 
@@ -27,13 +30,19 @@ exports.main = async (event, context) => {
     const todayRecordsPromise = todayRecordsQuery.get().catch(() => ({ data: [] }))
 
     const [userRes, recordsRes] = await Promise.all([userPromise, todayRecordsPromise])
+    const todayRecords = Array.isArray(recordsRes.data) ? recordsRes.data : []
+    const hasUser = !!(userRes && userRes.data)
+    mark('user_query_done', { hasUser })
+    mark('today_records_done', { count: todayRecords.length })
 
-    if (userRes && userRes.data) {
-      const todayChange = (Array.isArray(recordsRes.data) ? recordsRes.data : []).reduce(
+    if (hasUser) {
+      const todayChange = todayRecords.reduce(
         (sum, record) => sum + (record.amount || 0),
         0
       )
 
+      mark('reduce_done', { todayChange })
+      mark('total_done', { hasUser, count: todayRecords.length })
       return {
         success: true,
         user: userRes.data,
@@ -49,6 +58,8 @@ exports.main = async (event, context) => {
     }
 
     await db.collection('Users').add({ data: newUser })
+    mark('create_user_done', { hasUser: false })
+    mark('total_done', { hasUser: false, count: todayRecords.length })
     return { success: true, user: newUser, todayChange: 0 }
   } catch (e) {
     console.error('初始化用户失败', e)
