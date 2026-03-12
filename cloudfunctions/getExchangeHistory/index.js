@@ -69,18 +69,19 @@ exports.main = async (event, context) => {
 		])
 		mark('related_query_done', { items: items.length, useRecords: useRecords.length, notices: notices.length })
 
-		const historyList = await integrateData(
+		const integratedResult = await integrateData(
 			OPENID,
 			purchaseRecords,
 			items,
 			useRecords,
 			notices
 		)
-		mark('integrate_done', { count: historyList.length })
+		const historyList = Array.isArray(integratedResult?.historyList) ? integratedResult.historyList : []
+		mark('integrate_done', { count: historyList.length, pureIntegrateMs: integratedResult?.pureIntegrateMs || 0 })
+		mark('image_resolve_done', { count: historyList.length, imageResolveMs: integratedResult?.imageResolveMs || 0 })
 
 		const filteredList = filterHistoryList(historyList, filterInput)
 		mark('filter_done', { count: filteredList.length })
-		mark('image_resolve_done', { count: historyList.length })
 
 		const finalTotal = totalRes && typeof totalRes.total === 'number' ? totalRes.total : (page - 1) * pageSize + filteredList.length
 		mark('total_done', { count: filteredList.length, total: finalTotal })
@@ -228,54 +229,68 @@ function prioritizeRelated(list, matcher) {
 }
 
 async function integrateData(userId, purchaseRecords, items, useRecords, notices) {
+  const startedAt = Date.now()
+  const mark = (label, extra = {}) => console.log('[perf]', 'getExchangeHistory', label, { ms: Date.now() - startedAt, ...extra })
   const result = []
 
   const itemById = new Map()
   const itemsByName = new Map()
   const usedItemIds = new Set()
 
-  items.forEach(item => {
+  for (const item of items) {
     itemById.set(item._id, item)
     pushToGroup(itemsByName, item.name, item)
-  })
+  }
 
   const useRecordByItemId = new Map()
   const useRecordsByName = new Map()
   const usedUseRecordIds = new Set()
 
-	useRecords.forEach(record => {
+	for (const record of useRecords) {
 		const directItemId = resolveItemIdFromRecord(record, itemById)
 		if (directItemId && !useRecordByItemId.has(directItemId)) {
 			useRecordByItemId.set(directItemId, record)
 		}
 		pushToGroup(useRecordsByName, extractUseItemName(record.reason), record)
-	})
+	}
 
   const noticeByItemId = new Map()
   const noticesByName = new Map()
   const usedNoticeIds = new Set()
 
-	notices.forEach(notice => {
+	for (const notice of notices) {
 		const noticeItemId = resolveItemIdFromNotice(notice, itemById)
 		if (noticeItemId && !noticeByItemId.has(noticeItemId)) {
 			noticeByItemId.set(noticeItemId, notice)
 		}
 		pushToGroup(noticesByName, extractNoticeItemName(notice.message), notice)
-	})
+	}
 
-  sortGroupedByCreateTime(itemsByName)
-  sortGroupedByCreateTime(useRecordsByName)
-  sortGroupedByCreateTime(noticesByName)
-
-  const userIds = new Set()
-  purchaseRecords.forEach(record => userIds.add(record.userId))
-  useRecords.forEach(record => userIds.add(record.userId))
-  notices.forEach(notice => {
-    userIds.add(notice.senderId)
-    userIds.add(notice.receiverId)
+  mark('integrate_build_maps_done', {
+    purchaseRecords: purchaseRecords.length,
+    items: items.length,
+    useRecords: useRecords.length,
+    notices: notices.length,
+    itemBuckets: itemsByName.size,
+    useRecordBuckets: useRecordsByName.size,
+    noticeBuckets: noticesByName.size
   })
 
+  if (itemsByName.size > 0) sortGroupedByCreateTime(itemsByName)
+  if (useRecordsByName.size > 0) sortGroupedByCreateTime(useRecordsByName)
+  if (noticesByName.size > 0) sortGroupedByCreateTime(noticesByName)
+
+  const userIds = new Set()
+  for (const record of purchaseRecords) userIds.add(record.userId)
+  for (const record of useRecords) userIds.add(record.userId)
+  for (const notice of notices) {
+    userIds.add(notice.senderId)
+    userIds.add(notice.receiverId)
+  }
+
   const usersMap = await getUsersInfo(Array.from(userIds))
+  mark('integrate_users_done', { users: usersMap.size })
+  mark('integrate_loop_start', { purchaseRecords: purchaseRecords.length })
 
   for (const purchaseRecord of purchaseRecords) {
     const itemName = extractPurchaseItemName(purchaseRecord.reason)
@@ -338,7 +353,18 @@ async function integrateData(userId, purchaseRecords, items, useRecords, notices
     result.push(historyItem)
   }
 
-  return await resolveImageUrls(result)
+  const pureIntegrateMs = Date.now() - startedAt
+  mark('integrate_loop_done', { resultCount: result.length, pureIntegrateMs })
+  const imageStartedAt = Date.now()
+  const historyList = await resolveImageUrls(result)
+  const imageResolveMs = Date.now() - imageStartedAt
+  mark('integrate_resolve_images_done', { resultCount: historyList.length, imageResolveMs })
+
+  return {
+    historyList,
+    pureIntegrateMs,
+    imageResolveMs
+  }
 }
 
 async function resolveImageUrls(historyList) {
