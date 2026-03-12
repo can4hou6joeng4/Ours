@@ -239,7 +239,7 @@ async function integrateData(userId, purchaseRecords, items, useRecords, notices
 }
 
 async function resolveImageUrls(historyList) {
-  // 有 giftId 的记录，始终从 Gifts 集合重新拉 coverImg（避免 Items.image 是过期临时URL）
+  // 1) giftId 命中时，优先从 Gifts 重新取 coverImg
   const allGiftIds = [...new Set(historyList.map(item => item.giftId).filter(Boolean))]
   const giftCoverMap = new Map()
 
@@ -254,10 +254,38 @@ async function resolveImageUrls(historyList) {
     }
   }
 
-  // 收集所有需要转换的 cloud:// 文件ID（优先用 Gift 的 coverImg，其次用 Items.image）
+  // 2) giftId 为空时，按名称兜底查 Gifts；仅唯一命中时才补图，避免同名误匹配
+  const missingGiftNameList = [...new Set(
+    historyList
+      .filter(item => !item.giftId && item.name)
+      .map(item => item.name)
+  )]
+  const giftCoverByNameMap = new Map()
+
+  if (missingGiftNameList.length > 0) {
+    const giftRes = await db.collection('Gifts').where({ name: db.command.in(missingGiftNameList) }).get().catch(() => ({ data: [] }))
+    const gifts = Array.isArray(giftRes.data) ? giftRes.data : []
+    const bucketByName = new Map()
+
+    gifts.forEach(gift => {
+      const giftName = normalizeString(gift && gift.name)
+      if (!giftName || !gift.coverImg) return
+      const bucket = bucketByName.get(giftName) || []
+      bucket.push(gift)
+      bucketByName.set(giftName, bucket)
+    })
+
+    bucketByName.forEach((bucket, giftName) => {
+      if (bucket.length === 1 && bucket[0].coverImg) {
+        giftCoverByNameMap.set(giftName, bucket[0].coverImg)
+      }
+    })
+  }
+
+  // 3) 收集所有 cloud:// 待换签文件
   const fileIdSet = new Set()
   historyList.forEach(item => {
-    const src = giftCoverMap.get(item.giftId) || item.image || ''
+    const src = giftCoverMap.get(item.giftId) || giftCoverByNameMap.get(item.name) || item.image || ''
     if (src.startsWith('cloud://')) fileIdSet.add(src)
   })
 
@@ -271,7 +299,7 @@ async function resolveImageUrls(historyList) {
   }
 
   return historyList.map(item => {
-    const raw = giftCoverMap.get(item.giftId) || item.image || ''
+    const raw = giftCoverMap.get(item.giftId) || giftCoverByNameMap.get(item.name) || item.image || ''
     const resolvedImage = urlMap.get(raw) || (raw.startsWith('cloud://') ? '' : raw)
     return { ...item, image: resolvedImage }
   })
