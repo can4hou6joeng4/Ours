@@ -1,6 +1,7 @@
 const cloud = require('wx-server-sdk')
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 const db = cloud.database()
+const PERF_VERSION = 'getItems-perf-v2'
 
 // 【云开发控制台索引建议】
 // 集合：Items
@@ -18,7 +19,7 @@ exports.main = async (event, context) => {
 	const pageSize = Number.isFinite(rawPageSize) && rawPageSize > 0 ? Math.min(Math.floor(rawPageSize), 100) : 20
 
 	try {
-		mark('start', { page, pageSize, status: status || 'all' })
+		mark('start', { version: PERF_VERSION, page, pageSize, status: status || 'all' })
 		const where = { userId: OPENID }
 		if (status === 'unused' || status === 'used') {
 			where.status = status

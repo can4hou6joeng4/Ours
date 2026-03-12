@@ -2,6 +2,8 @@ const cloud = require('wx-server-sdk')
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 const db = cloud.database()
 const _ = db.command
+const TEMP_URL_CACHE_TTL_MS = 10 * 60 * 1000
+const tempUrlCache = new Map()
 
 /**
  * 获取礼品列表（按伴侣关系隔离）
@@ -47,18 +49,42 @@ exports.main = async (event, context) => {
     mark('collect_fileids_done', { count: fileIDs.length })
 
     const fileUrlMap = Object.create(null)
-    if (fileIDs.length > 0) {
-      const urlRes = await cloud.getTempFileURL({ fileList: fileIDs })
+    const now = Date.now()
+    const pendingFileIDs = []
+    let cacheHits = 0
+
+    for (let i = 0; i < fileIDs.length; i += 1) {
+      const fileID = fileIDs[i]
+      const cached = tempUrlCache.get(fileID)
+      if (cached && cached.url && cached.expireAt > now) {
+        fileUrlMap[fileID] = cached.url
+        cacheHits += 1
+      } else {
+        pendingFileIDs.push(fileID)
+      }
+    }
+
+    if (pendingFileIDs.length > 0) {
+      const urlRes = await cloud.getTempFileURL({ fileList: pendingFileIDs })
       const tempFileList = Array.isArray(urlRes.fileList) ? urlRes.fileList : []
       for (let i = 0; i < tempFileList.length; i += 1) {
         const item = tempFileList[i]
         if (item && item.fileID && item.tempFileURL) {
           fileUrlMap[item.fileID] = item.tempFileURL
+          tempUrlCache.set(item.fileID, {
+            url: item.tempFileURL,
+            expireAt: Date.now() + TEMP_URL_CACHE_TTL_MS
+          })
         }
       }
-      mark('get_temp_urls_done', { count: tempFileList.length })
+      mark('get_temp_urls_done', {
+        fileIDs: fileIDs.length,
+        cacheHits,
+        fetched: pendingFileIDs.length,
+        count: tempFileList.length
+      })
     } else {
-      mark('get_temp_urls_done', { count: 0 })
+      mark('get_temp_urls_done', { fileIDs: fileIDs.length, cacheHits, fetched: 0, count: 0 })
     }
 
     for (let i = 0; i < gifts.length; i += 1) {
