@@ -10,13 +10,12 @@ import EmptyState from '../../components/EmptyState'
 import { getIconifyUrl } from '../../utils/assets'
 import { requestSubscribe } from '../../utils/subscribe'
 import { useUserStore } from '../../store'
-import { getExchangeHistory as getExchangeHistoryApi, getItems as getItemsApi, useItem as useItemApi } from '../../services'
-import type { InventoryItem, ItemStatus, ExchangeHistoryItem, HistoryFilter } from '../../types'
+import { useExchangeHistory } from '../../hooks'
+import { getItems as getItemsApi, useItem as useItemApi } from '../../services'
+import type { InventoryItem, ItemStatus } from '../../types'
 import './index.scss'
 
-// 数据缓存有效期（毫秒）
-const DATA_CACHE_DURATION = 30 * 1000 // 30秒
-const EXCHANGE_HISTORY_PAGE_SIZE = 20
+const DATA_CACHE_DURATION = 30 * 1000
 
 export default function Inventory() {
 	const { partnerId, fetchUser } = useUserStore()
@@ -34,22 +33,21 @@ export default function Inventory() {
 	const [using, setUsing] = useState(false)
 	const [searchTerm, setSearchTerm] = useState('')
 	const [showExchangeHistory, setShowExchangeHistory] = useState(false)
-	const [historyList, setHistoryList] = useState<ExchangeHistoryItem[]>([])
-	const [historyLoading, setHistoryLoading] = useState(false)
-	const [historyPage, setHistoryPage] = useState(1)
-	const [hasMoreHistory, setHasMoreHistory] = useState(true)
-	const [historyFilter, setHistoryFilter] = useState<HistoryFilter>('all')
 	const [showBindingSheet, setShowBindingSheet] = useState(false)
 
-	// 性能优化：记录上次数据获取时间
+	const {
+		historyList, historyLoading, hasMoreHistory, historyFilter,
+		loadHistory, changeFilter,
+	} = useExchangeHistory({
+		targetUserId: Taro.getStorageSync('partnerId') || '',
+	})
+
 	const lastFetchTime = useRef<number>(0)
 	const itemsRefreshingRef = useRef(false)
 
 	useDidShow(() => {
-		// 通过全局 store 刷新用户绑定状态
 		fetchUser()
 
-		// 性能优化：如果距离上次获取不足缓存时间且有数据，跳过请求
 		const now = Date.now()
 		if (itemsRefreshingRef.current) return
 		if (items.length > 0 && now - lastFetchTime.current < DATA_CACHE_DURATION) {
@@ -62,57 +60,13 @@ export default function Inventory() {
 		}, 300)
 	})
 
-	// 加载兑换历史数据
-	const loadExchangeHistory = async ({
-		reset = false,
-		filter = historyFilter
-	}: {
-		reset?: boolean
-		filter?: HistoryFilter
-	} = {}) => {
-		if (historyLoading) return
-		if (!hasMoreHistory && !reset) return
-
-		setHistoryLoading(true)
-		try {
-			const requestPage = reset ? 1 : historyPage
-			const result = await getExchangeHistoryApi({
-				page: requestPage,
-				pageSize: EXCHANGE_HISTORY_PAGE_SIZE,
-				filter,
-				targetUserId: Taro.getStorageSync('partnerId') || ''
-			})
-
-			if (result.success) {
-				const nextData = Array.isArray(result.data) ? result.data : []
-				setHistoryList(prev => (reset ? nextData : [...prev, ...nextData]))
-				setHasMoreHistory(nextData.length >= EXCHANGE_HISTORY_PAGE_SIZE)
-				setHistoryPage(requestPage + 1)
-			}
-		} catch (e) {
-			console.error('加载兑换历史失败', e)
-		} finally {
-			setHistoryLoading(false)
-		}
-	}
-
-	// 打开兑换历史弹窗
 	const handleShowExchangeHistory = () => {
 		if (!hasPartner) {
 			setShowBindingSheet(true)
 			return
 		}
 		setShowExchangeHistory(true)
-		loadExchangeHistory({ reset: true, filter: historyFilter })
-	}
-
-
-	// 切换历史筛选
-	const handleHistoryFilterChange = (filter: HistoryFilter) => {
-		setHistoryFilter(filter)
-		setHistoryPage(1)
-		setHasMoreHistory(true)
-		loadExchangeHistory({ reset: true, filter })
+		loadHistory({ reset: true })
 	}
 
 	const fetchItems = async ({
@@ -186,7 +140,6 @@ export default function Inventory() {
 				Taro.showToast({ title: '兑换申请已发出', icon: 'success' })
 				setShowConfirm(false)
 				resetItemsAndFetch(currentTab)
-				// 成功后引导订阅
 				requestSubscribe(['GIFT_USED'])
 			} else {
 				Notify.open({ type: 'danger', message: result.error || '操作失败' })
@@ -211,7 +164,6 @@ export default function Inventory() {
 		})
 	}, [items, currentTab, searchTerm])
 
-	// 礼品堆叠逻辑：优先按 sourceGiftId 聚合，缺失时回退到名称+图片
 	const stackedItems = useMemo(() => {
 		return filteredItems.reduce((acc: InventoryItem[], item) => {
 			const stackKey = `${item.sourceGiftId || ''}::${item.name}::${item.image || item.cover || ''}`
@@ -239,7 +191,6 @@ export default function Inventory() {
 				</View>
 			</View>
 
-			{/* TA 的兑换历史入口按钮 */}
 			<View className='exchange-history-entry'>
 				<View
 					className='history-btn'
@@ -320,11 +271,10 @@ export default function Inventory() {
 				</View>
 			</ScrollView>
 
-			{/* 使用确认弹窗 */}
 			<Dialog open={showConfirm} onClose={() => !using && setShowConfirm(false)}>
 				<Dialog.Header>确认使用</Dialog.Header>
 				<Dialog.Content>
-					确定要向对方发起“{selectedItem?.name}”的使用申请吗？
+					确定要向对方发起"{selectedItem?.name}"的使用申请吗？
 					对方将立即收到通知。
 				</Dialog.Content>
 				<Dialog.Actions>
@@ -333,7 +283,6 @@ export default function Inventory() {
 				</Dialog.Actions>
 			</Dialog>
 
-			{/* 兑换历史底部弹窗 */}
 			<ExchangeHistoryModal
 				visible={showExchangeHistory}
 				historyList={historyList}
@@ -341,12 +290,10 @@ export default function Inventory() {
 				hasMore={hasMoreHistory}
 				filter={historyFilter}
 				onClose={() => setShowExchangeHistory(false)}
-				onFilterChange={handleHistoryFilterChange}
-				onLoadMore={() => loadExchangeHistory()}
+				onFilterChange={changeFilter}
+				onLoadMore={() => loadHistory()}
 			/>
 
-
-			{/* 绑定弹窗 */}
 			<BindingSheet
 				visible={showBindingSheet}
 				onClose={() => setShowBindingSheet(false)}

@@ -11,15 +11,10 @@ const {
 } = require('./shared/authz')
 const { runWithIdempotencyTransaction } = require('./shared/idempotency')
 const { changeUserPoints } = require('./shared/points')
+const { safeTruncate } = require('./shared/utils')
 
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 const db = cloud.database()
-
-function safeTruncate(text, maxLength) {
-  if (!text) return ''
-  const truncated = text.toString().substring(0, maxLength)
-  return truncated + (text.toString().length > maxLength ? '...' : '')
-}
 
 function fail(message) {
   return { success: false, message }

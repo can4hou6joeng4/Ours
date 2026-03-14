@@ -3,6 +3,7 @@ import { Button, Input } from '@taroify/core'
 import Taro from '@tarojs/taro'
 import React from 'react'
 import { getIconifyUrl } from '../../utils/assets'
+import { uploadImage } from '../../utils/upload'
 import './index.scss'
 
 interface GiftEditSheetProps {
@@ -61,27 +62,11 @@ const GiftEditSheet: React.FC<GiftEditSheetProps> = ({
 	if (!visible) return null
 
 	const handleUploadImg = async () => {
-    try {
-      const res = await Taro.chooseImage({ count: 1, sizeType: ['compressed'] })
-      let tempFilePath = res.tempFilePaths[0]
-      Taro.showLoading({ title: '处理图片...' })
-
-      const compressRes = await Taro.compressImage({ src: tempFilePath, quality: 80 })
-      tempFilePath = compressRes.tempFilePath
-
-      const uploadRes = await Taro.cloud.uploadFile({
-        cloudPath: `gifts/${Date.now()}-${Math.random().toString(36).slice(-6)}.png`,
-        filePath: tempFilePath
-      })
-
-      onUpdate({ ...editData, coverImg: uploadRes.fileID })
-      Taro.showToast({ title: '图片已上传' })
-    } catch (e) {
-      console.error('上传失败', e)
-    } finally {
-      Taro.hideLoading()
-    }
-  }
+		const fileID = await uploadImage('gifts', { loadingText: '处理图片...' })
+		if (fileID) {
+			onUpdate({ ...editData, coverImg: fileID })
+		}
+	}
 
 	const handleSubmit = async () => {
 		if (saving || isSubmitting) return

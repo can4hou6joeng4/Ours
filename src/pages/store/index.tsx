@@ -1,26 +1,21 @@
 import { View, Text, ScrollView, Button, Image, Input } from '@tarojs/components'
-import Taro, { useDidShow, useReachBottom, eventCenter } from '@tarojs/taro'
+import Taro, { useDidShow, eventCenter } from '@tarojs/taro'
 import { useState, useEffect, useMemo, useRef } from 'react'
-import { Dialog, Notify } from '@taroify/core'
-import DuxGrid from '../../components/DuxGrid'
-import DuxCard from '../../components/DuxCard'
+import { Notify } from '@taroify/core'
 import ProductCard from '../../components/ProductCard'
 import EmptyState from '../../components/EmptyState'
 import GiftEditSheet from '../../components/GiftEditSheet'
 import ExchangeHistoryModal from '../../components/ExchangeHistoryModal'
 import BindingSheet from '../../components/BindingSheet'
 import SkeletonCard from '../../components/SkeletonCard'
-import { getIconifyUrl } from '../../utils/assets'
 import { requestSubscribe } from '../../utils/subscribe'
 import { useUserStore } from '../../store'
-import { getExchangeHistory as getExchangeHistoryApi, getGifts as getGiftsApi, manageGift as manageGiftApi, buyItem as buyItemApi } from '../../services'
-import type { Gift, GiftEditData, ExchangeHistoryItem, HistoryFilter } from '../../types'
-import dayjs from 'dayjs'
+import { useExchangeHistory } from '../../hooks'
+import { getGifts as getGiftsApi, manageGift as manageGiftApi, buyItem as buyItemApi } from '../../services'
+import type { Gift, GiftEditData } from '../../types'
 import './index.scss'
 
-// 数据缓存有效期（毫秒）
-const DATA_CACHE_DURATION = 30 * 1000 // 30秒
-const EXCHANGE_HISTORY_PAGE_SIZE = 20
+const DATA_CACHE_DURATION = 30 * 1000
 
 export default function Store() {
   const { user, partnerId, fetchUser } = useUserStore()
@@ -42,19 +37,17 @@ export default function Store() {
   const [saving, setSaving] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showExchangeHistory, setShowExchangeHistory] = useState(false)
-  const [historyList, setHistoryList] = useState<ExchangeHistoryItem[]>([])
-  const [historyLoading, setHistoryLoading] = useState(false)
-  const [historyPage, setHistoryPage] = useState(1)
-  const [hasMoreHistory, setHasMoreHistory] = useState(true)
-  const [historyFilter, setHistoryFilter] = useState<HistoryFilter>('all')
   const [showBindingSheet, setShowBindingSheet] = useState(false)
 
-  // 性能优化：记录上次数据获取时间
+  const {
+    historyList, historyLoading, hasMoreHistory, historyFilter,
+    loadHistory, changeFilter,
+  } = useExchangeHistory()
+
   const lastFetchTime = useRef<number>(0)
   const dataLoadingRef = useRef(false)
 
   useDidShow(() => {
-    // 性能优化：如果距离上次获取不足缓存时间且有数据，跳过请求
     const now = Date.now()
     if (products.length > 0 && now - lastFetchTime.current < DATA_CACHE_DURATION) {
       return
@@ -67,65 +60,15 @@ export default function Store() {
     return () => { eventCenter.off('refreshStore', fetchData) }
   }, [])
 
-  // 性能优化：使用 useMemo 缓存瀑布流列计算
   const { leftCol, rightCol } = useMemo(() => ({
     leftCol: products.filter((_, i) => i % 2 === 0),
     rightCol: products.filter((_, i) => i % 2 !== 0)
   }), [products])
 
-  // 加载兑换历史数据
-  const loadExchangeHistory = async ({
-    reset = false,
-    filter = historyFilter
-  }: {
-    reset?: boolean
-    filter?: HistoryFilter
-  } = {}) => {
-    if (historyLoading) return
-    if (!hasMoreHistory && !reset) return
-
-    setHistoryLoading(true)
-    try {
-      const requestPage = reset ? 1 : historyPage
-      const result = await getExchangeHistoryApi({
-        page: requestPage,
-        pageSize: EXCHANGE_HISTORY_PAGE_SIZE,
-        filter
-      })
-
-      if (result.success) {
-        const nextData = Array.isArray(result.data) ? result.data : []
-        setHistoryList(prev => (reset ? nextData : [...prev, ...nextData]))
-        setHasMoreHistory(nextData.length >= EXCHANGE_HISTORY_PAGE_SIZE)
-        setHistoryPage(requestPage + 1)
-      }
-    } catch (e) {
-      console.error('加载兑换历史失败', e)
-    } finally {
-      setHistoryLoading(false)
-    }
-  }
-
-  // 打开兑换历史弹窗
   const handleShowExchangeHistory = () => {
     setShowExchangeHistory(true)
-    loadExchangeHistory({ reset: true, filter: historyFilter })
+    loadHistory({ reset: true })
   }
-
-  // 切换历史筛选
-  const handleHistoryFilterChange = (filter: HistoryFilter) => {
-    setHistoryFilter(filter)
-    setHistoryPage(1)
-    setHasMoreHistory(true)
-    loadExchangeHistory({ reset: true, filter })
-  }
-
-  // 触底加载更多历史 (由组件内部处理，不再依赖页面级 useReachBottom 触发弹窗内滚动)
-  // useReachBottom(() => {
-  //   if (showExchangeHistory && hasMoreHistory && !historyLoading) {
-  //     loadExchangeHistory(false)
-  //   }
-  // })
 
   const fetchData = async () => {
     if (dataLoadingRef.current) return
@@ -133,7 +76,6 @@ export default function Store() {
     dataLoadingRef.current = true
     setLoading(true)
     try {
-      // 优化：用户信息通过 store 刷新，礼品列表并行请求
       const [, giftsResult] = await Promise.all([
         fetchUser(),
         getGiftsApi()
@@ -143,7 +85,7 @@ export default function Store() {
 
       if (giftsResult.success) {
         setProducts(giftsResult.gifts || [])
-        lastFetchTime.current = Date.now() // 记录获取时间
+        lastFetchTime.current = Date.now()
       }
     } catch (e) {
       console.error('获取数据失败', e)
@@ -177,7 +119,7 @@ export default function Store() {
   const handleDeleteConfirm = (item) => {
     Taro.showModal({
       title: '确认删除',
-      content: `确定要将“${item.name}”从货架移除吗？此操作不可撤销。`,
+      content: `确定要将"${item.name}"从货架移除吗？此操作不可撤销。`,
       confirmColor: '#FF4D4F',
       success: async (res) => {
         if (res.confirm) {
@@ -208,7 +150,6 @@ export default function Store() {
 
     setSaving(true)
     try {
-      // 引导订阅 (用于接收后续对方兑换礼品的通知)
       await requestSubscribe(['GIFT_USED'])
 
       const isEdit = !!selectedGift
@@ -242,7 +183,7 @@ export default function Store() {
 
     const confirm = await Taro.showModal({
       title: '确认兑换',
-      content: `确定要花费 ${item.points} 积分兑换“${item.name}”吗？`
+      content: `确定要花费 ${item.points} 积分兑换"${item.name}"吗？`
     })
 
     if (!confirm.confirm) return
@@ -254,7 +195,6 @@ export default function Store() {
 
       if (result.success) {
         Taro.showToast({ title: '兑换成功', icon: 'success' })
-        // buyItem 返回值已含最新积分（balanceAfter），直接更新，无需再发请求
         if (typeof result.balanceAfter === 'number') {
           useUserStore.getState().updateProfile({ totalPoints: result.balanceAfter })
         } else {
@@ -332,7 +272,7 @@ export default function Store() {
                   <EmptyState
                     icon='tabler:package-off'
                     title='货架空空如也'
-                    desc='点击上方“新增礼品”按钮丰富商店内容吧'
+                    desc='点击上方"新增礼品"按钮丰富商店内容吧'
                   />
                 ) : (
                   <View className='masonry-grid'>
@@ -346,7 +286,6 @@ export default function Store() {
         </View>
       </ScrollView>
 
-      {/* 礼品管理毛玻璃菜单 (已重塑为名片式风格) */}
       {showManageMenu && (
         <View className='masonry-manage-modal' onClick={() => setShowManageMenu(false)}>
           <View className='manage-card' onClick={e => e.stopPropagation()}>
@@ -366,7 +305,7 @@ export default function Store() {
           </View>
         </View>
       )}
-      {/* 礼品编辑底部抽屉 */}
+
       <GiftEditSheet
         visible={showEditSheet}
         isEdit={!!selectedGift}
@@ -377,7 +316,6 @@ export default function Store() {
         onSave={handleUpdateGift}
       />
 
-      {/* 兑换历史底部弹窗 */}
       <ExchangeHistoryModal
         visible={showExchangeHistory}
         historyList={historyList}
@@ -385,11 +323,10 @@ export default function Store() {
         hasMore={hasMoreHistory}
         filter={historyFilter}
         onClose={() => setShowExchangeHistory(false)}
-        onFilterChange={handleHistoryFilterChange}
-        onLoadMore={() => loadExchangeHistory()}
+        onFilterChange={changeFilter}
+        onLoadMore={() => loadHistory()}
       />
 
-      {/* 绑定弹窗 */}
       <BindingSheet
         visible={showBindingSheet}
         onClose={() => setShowBindingSheet(false)}

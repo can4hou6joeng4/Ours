@@ -4,6 +4,8 @@ import { View, Text, Image, ScrollView } from '@tarojs/components'
 import { Button, Input } from '@taroify/core'
 import { requestSubscribe } from '../../utils/subscribe'
 import { getIconifyUrl } from '../../utils/assets'
+import { uploadImage } from '../../utils/upload'
+import { manageGift as manageGiftApi } from '../../services'
 import './index.scss'
 
 export default function GiftEdit() {
@@ -35,35 +37,9 @@ export default function GiftEdit() {
   }, [isEdit, router.params.data])
 
   const handleUploadImg = async () => {
-    try {
-      const res = await Taro.chooseImage({
-        count: 1,
-        sizeType: ['compressed'], // 优先使用压缩图
-        sourceType: ['album', 'camera']
-      })
-      let tempFilePath = res.tempFilePaths[0]
-
-      Taro.showLoading({ title: '处理中...' })
-
-      // 1. 前端质量压缩：适配缩略图尺寸，减少上传体积
-      const compressRes = await Taro.compressImage({
-        src: tempFilePath,
-        quality: 80 // 压缩质量
-      })
-      tempFilePath = compressRes.tempFilePath
-
-      // 2. 上传到云存储
-      const uploadRes = await Taro.cloud.uploadFile({
-        cloudPath: `gifts/${Date.now()}-${Math.random().toString(36).slice(-6)}.png`,
-        filePath: tempFilePath
-      })
-
-      setGiftData({ ...giftData, coverImg: uploadRes.fileID })
-      Taro.showToast({ title: '上传并压缩成功' })
-    } catch (e) {
-      console.error('上传失败', e)
-    } finally {
-      Taro.hideLoading()
+    const fileID = await uploadImage('gifts', { loadingText: '处理中...' })
+    if (fileID) {
+      setGiftData({ ...giftData, coverImg: fileID })
     }
   }
 
@@ -77,22 +53,14 @@ export default function GiftEdit() {
 
     setLoading(true)
     try {
-      // 引导订阅 (用于接收后续对方兑换礼品的通知)
       await requestSubscribe(['GIFT_USED'])
 
-      const res = await Taro.cloud.callFunction({
-        name: 'manageGift',
-        data: {
-          action: isEdit ? 'update' : 'add',
-          giftId: router.params.id,
-          giftData: {
-            ...giftData,
-            points
-          }
-        }
+      const result = await manageGiftApi({
+        action: isEdit ? 'update' : 'add',
+        giftId: router.params.id,
+        giftData: { ...giftData, points }
       })
 
-      const result = res.result as any
       if (result.success) {
         Taro.showToast({ title: '保存成功' })
         Taro.eventCenter.trigger('refreshStore')
@@ -100,7 +68,7 @@ export default function GiftEdit() {
       } else {
         throw new Error(result.message || result.error || '保存失败')
       }
-    } catch (e) {
+    } catch (e: any) {
       Taro.showToast({ title: e.message || '保存失败', icon: 'none' })
     } finally {
       setLoading(false)
@@ -111,7 +79,6 @@ export default function GiftEdit() {
     <View className='gift-edit-container'>
       <ScrollView scrollY className='edit-scroll-view'>
         <View className='scroll-content'>
-          {/* 核心信息区块：图左文右布局 */}
           <View className='section-group core-info-section'>
             <View className='left-upload' onClick={handleUploadImg}>
               {giftData.coverImg ? (

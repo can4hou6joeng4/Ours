@@ -1,14 +1,13 @@
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import Taro, { useDidShow } from '@tarojs/taro'
-import { View, Text, Image } from '@tarojs/components'
+import { View, Text } from '@tarojs/components'
 import { Button, Notify } from '@taroify/core'
 import UserHeaderCard from '../../components/UserHeaderCard'
 import ProfileEditSheet from '../../components/ProfileEditSheet'
 import BindingSheet from '../../components/BindingSheet'
-import { getIconifyUrl } from '../../utils/assets'
 import { useUserStore } from '../../store'
 import { updateUserProfile as updateUserProfileApi } from '../../services'
-import type { User } from '../../types'
+import { generateCloudPath } from '../../utils/upload'
 import './index.scss'
 
 export default function Me() {
@@ -25,7 +24,6 @@ export default function Me() {
   })
 
   const handleOpenEdit = () => {
-    // 未绑定时提示去绑定
     if (!userInfo?.partnerId) {
       setShowBindingSheet(true)
       return
@@ -33,14 +31,6 @@ export default function Me() {
     setTempNickname(userInfo?.nickName || '')
     setTempAvatar(userInfo?.avatarUrl || '')
     setShowEditSheet(true)
-  }
-
-  const onChooseAvatar = (e) => {
-    const { avatarUrl } = e.detail
-    // 拦截取消选择的情况，不再抛出错误
-    if (avatarUrl) {
-      setTempAvatar(avatarUrl)
-    }
   }
 
   const handleSaveProfile = async (): Promise<boolean> => {
@@ -53,25 +43,23 @@ export default function Me() {
     try {
       let finalAvatarUrl = userInfo?.avatarUrl
 
-      // 1. 如果头像发生了变化（且是临时路径），则执行上传
       if (tempAvatar && tempAvatar !== userInfo?.avatarUrl && !tempAvatar.startsWith('cloud://')) {
         Taro.showLoading({ title: '正在上传头像...' })
-        const suffix = /\.[^\.]+$/.exec(tempAvatar)?.[0] || '.png'
+        const suffix = /\.[^.]+$/.exec(tempAvatar)?.[0] || '.png'
+        const cloudPath = generateCloudPath('avatars', suffix)
         const uploadRes = await Taro.cloud.uploadFile({
-          cloudPath: `avatars/${Date.now()}-${Math.random().toString(36).slice(-6)}${suffix}`,
+          cloudPath,
           filePath: tempAvatar
         })
         finalAvatarUrl = uploadRes.fileID
       }
 
-      // 2. 统一更新用户资料
       Taro.showLoading({ title: '正在保存...' })
       await updateUserProfileApi({
         nickName: tempNickname,
         avatarUrl: finalAvatarUrl
       })
 
-      // 通过 store 同步更新
       updateProfile({ nickName: tempNickname, avatarUrl: finalAvatarUrl })
       setShowEditSheet(false)
       Taro.showToast({ title: '资料已更新', icon: 'success' })
@@ -90,14 +78,11 @@ export default function Me() {
 
   return (
     <View className='container'>
-      {/* 个人资料卡片 */}
       <UserHeaderCard
         userInfo={userInfo}
         onEdit={handleOpenEdit}
       />
 
-
-      {/* 另一半/绑定状态区 */}
       <View className='binding-section'>
         <Text className='section-label'>PARTNER INFO / 我的另一半</Text>
         <View className='binding-content'>
@@ -126,7 +111,6 @@ export default function Me() {
         </View>
       </View>
 
-      {/* 个人资料编辑抽屉 */}
       <ProfileEditSheet
         visible={showEditSheet}
         nickname={tempNickname}
@@ -138,13 +122,11 @@ export default function Me() {
         onSave={handleSaveProfile}
       />
 
-      {/* 绑定弹窗 */}
       <BindingSheet
         visible={showBindingSheet}
         onClose={() => setShowBindingSheet(false)}
         onSuccess={() => {
           setShowBindingSheet(false)
-          // 刷新页面获取最新绑定状态
           setTimeout(() => Taro.reLaunch({ url: '/pages/me/index' }), 500)
         }}
       />
