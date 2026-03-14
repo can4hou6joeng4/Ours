@@ -19,7 +19,8 @@ const config = {
   compiler: {
     type: 'webpack5',
     prebundle: {
-      enable: true
+      enable: true,
+      exclude: ['dayjs', 'dayjs/plugin/relativeTime']
     }
   },
   cache: {
