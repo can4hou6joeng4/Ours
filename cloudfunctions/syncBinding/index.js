@@ -98,45 +98,51 @@ exports.main = async (event, context) => {
 
     const partnerOpenid = targetUser._id
 
-    const myInfo = await db.collection('Users').doc(OPENID).get()
+    const txResult = await db.runTransaction(async transaction => {
+      // 在事务内重新读取双方最新状态，确保 check-then-act 原子性
+      const myRes = await transaction.collection('Users').doc(OPENID).get()
+      const theirRes = await transaction.collection('Users').doc(partnerOpenid).get()
+      const myData = myRes && myRes.data ? myRes.data : null
+      const theirData = theirRes && theirRes.data ? theirRes.data : null
 
-    // 精细化绑定状态检查
-    const myPartnerId = myInfo.data.partnerId
-    const theirPartnerId = targetUser.partnerId
+      if (!myData) throw new Error('用户信息异常')
+      if (!theirData) throw new Error('对方用户信息异常')
 
-    // 场景1: 双方已经是伴侣
-    if (myPartnerId === partnerOpenid && theirPartnerId === OPENID) {
-      return { success: false, message: '你们已经是伴侣了 💕', alreadyBound: true }
-    }
+      const myPartnerId = myData.partnerId || ''
+      const theirPartnerId = theirData.partnerId || ''
 
-    // 场景2: 自己已绑定其他人
-    if (myPartnerId && myPartnerId !== partnerOpenid) {
-      return { success: false, message: '你已有伴侣，无法再次绑定' }
-    }
+      // 场景1: 双方已经是伴侣
+      if (myPartnerId === partnerOpenid && theirPartnerId === OPENID) {
+        return { success: false, message: '你们已经是伴侣了 💕', alreadyBound: true }
+      }
 
-    // 场景3: 对方已绑定其他人
-    if (theirPartnerId && theirPartnerId !== OPENID) {
-      return { success: false, message: '对方已有伴侣' }
-    }
+      // 场景2: 自己已绑定其他人
+      if (myPartnerId && myPartnerId !== partnerOpenid) {
+        return { success: false, message: '你已有伴侣，无法再次绑定' }
+      }
 
-    // 场景4: 单向绑定异常（数据不一致），尝试修复
-    if ((myPartnerId === partnerOpenid && !theirPartnerId) ||
-        (!myPartnerId && theirPartnerId === OPENID)) {
-      // 继续执行绑定流程来修复数据
-    }
+      // 场景3: 对方已绑定其他人
+      if (theirPartnerId && theirPartnerId !== OPENID) {
+        return { success: false, message: '对方已有伴侣' }
+      }
 
-    await db.runTransaction(async transaction => {
+      // 场景4: 单向绑定异常（数据不一致）或双方均未绑定，执行绑定
       await transaction.collection('Users').doc(OPENID).update({
         data: { partnerId: partnerOpenid }
       })
       await transaction.collection('Users').doc(partnerOpenid).update({
         data: { partnerId: OPENID }
       })
+
+      return { success: true, message: '绑定成功', nickName: myData.nickName }
     })
 
+    if (!txResult.success) {
+      return txResult
+    }
+
     try {
-      const myInfoRes = await db.collection('Users').doc(OPENID).get()
-      const nickName = safeTruncate(myInfoRes.data.nickName, 20)
+      const nickName = safeTruncate(txResult.nickName, 20)
 
       await cloud.openapi.subscribeMessage.send({
         touser: partnerOpenid,
@@ -152,7 +158,7 @@ exports.main = async (event, context) => {
       console.warn('绑定成功订阅消息发送失败', sendError)
     }
 
-    return { success: true, message: '绑定成功' }
+    return { success: true, message: '绑定成功', alreadyBound: false }
 
   } catch (err) {
     console.error(err)
