@@ -13,6 +13,7 @@ import SkeletonCard from '../../components/SkeletonCard'
 import { getIconifyUrl } from '../../utils/assets'
 import { requestSubscribe } from '../../utils/subscribe'
 import { smartFetchUser } from '../../utils/userCache'
+import type { Gift, GiftEditData, ExchangeHistoryItem, HistoryFilter } from '../../types'
 import dayjs from 'dayjs'
 import './index.scss'
 
@@ -22,14 +23,14 @@ const EXCHANGE_HISTORY_PAGE_SIZE = 20
 
 export default function Store() {
   const [totalPoints, setTotalPoints] = useState(0)
-  const [products, setProducts] = useState<any[]>([])
+  const [products, setProducts] = useState<Gift[]>([])
   const [loading, setLoading] = useState(true)
   const [isAdmin, setIsAdmin] = useState(false)
   const [hasPartner, setHasPartner] = useState(false)
   const [showManageMenu, setShowManageMenu] = useState(false)
   const [showEditSheet, setShowEditSheet] = useState(false)
-  const [selectedGift, setSelectedGift] = useState<any>(null)
-  const [editData, setEditData] = useState({
+  const [selectedGift, setSelectedGift] = useState<Gift | null>(null)
+  const [editData, setEditData] = useState<GiftEditData>({
     name: '',
     points: '',
     coverImg: '',
@@ -38,11 +39,11 @@ export default function Store() {
   const [saving, setSaving] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showExchangeHistory, setShowExchangeHistory] = useState(false)
-  const [historyList, setHistoryList] = useState<any[]>([])
+  const [historyList, setHistoryList] = useState<ExchangeHistoryItem[]>([])
   const [historyLoading, setHistoryLoading] = useState(false)
   const [historyPage, setHistoryPage] = useState(1)
   const [hasMoreHistory, setHasMoreHistory] = useState(true)
-  const [historyFilter, setHistoryFilter] = useState<'all' | 'unused' | 'used'>('all')
+  const [historyFilter, setHistoryFilter] = useState<HistoryFilter>('all')
   const [showBindingSheet, setShowBindingSheet] = useState(false)
 
   // 性能优化：记录上次数据获取时间
@@ -75,7 +76,7 @@ export default function Store() {
     filter = historyFilter
   }: {
     reset?: boolean
-    filter?: 'all' | 'unused' | 'used'
+    filter?: HistoryFilter
   } = {}) => {
     if (historyLoading) return
     if (!hasMoreHistory && !reset) return
@@ -108,7 +109,7 @@ export default function Store() {
   }
 
   // 切换历史筛选
-  const handleHistoryFilterChange = (filter: 'all' | 'unused' | 'used') => {
+  const handleHistoryFilterChange = (filter: HistoryFilter) => {
     setHistoryFilter(filter)
     setHistoryPage(1)
     setHasMoreHistory(true)

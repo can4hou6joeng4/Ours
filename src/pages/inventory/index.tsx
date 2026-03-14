@@ -10,28 +10,12 @@ import EmptyState from '../../components/EmptyState'
 import { getIconifyUrl } from '../../utils/assets'
 import { requestSubscribe } from '../../utils/subscribe'
 import { smartFetchUser } from '../../utils/userCache'
+import type { InventoryItem, ItemStatus, ExchangeHistoryItem, HistoryFilter } from '../../types'
 import './index.scss'
 
 // 数据缓存有效期（毫秒）
 const DATA_CACHE_DURATION = 30 * 1000 // 30秒
 const EXCHANGE_HISTORY_PAGE_SIZE = 20
-type ItemStatus = 'unused' | 'used'
-type HistoryFilter = 'all' | 'unused' | 'used'
-
-interface InventoryItem {
-	_id: string
-	userId: string
-	sourceGiftId?: string
-	name: string
-	image?: string
-	cover?: string
-	desc?: string
-	status: ItemStatus
-	createTime: string | Date
-	useTime?: string | Date
-	count?: number
-	stackedKey?: string
-}
 
 export default function Inventory() {
 	const [items, setItems] = useState<InventoryItem[]>([])
@@ -46,7 +30,7 @@ export default function Inventory() {
 	const [using, setUsing] = useState(false)
 	const [searchTerm, setSearchTerm] = useState('')
 	const [showExchangeHistory, setShowExchangeHistory] = useState(false)
-	const [historyList, setHistoryList] = useState<any[]>([])
+	const [historyList, setHistoryList] = useState<ExchangeHistoryItem[]>([])
 	const [historyLoading, setHistoryLoading] = useState(false)
 	const [historyPage, setHistoryPage] = useState(1)
 	const [hasMoreHistory, setHasMoreHistory] = useState(true)

@@ -4,15 +4,16 @@ import { useRef, useState } from 'react'
 import dayjs from 'dayjs'
 import './index.scss'
 import { smartFetchUser } from '../../utils/userCache'
+import type { PointRecord } from '../../types'
 
 const DATA_CACHE_DURATION = 30 * 1000
 
 export default function History() {
-  const [records, setRecords] = useState<any[]>([])
+  const [records, setRecords] = useState<PointRecord[]>([])
   const [totalPoints, setTotalPoints] = useState(0)
   const [loading, setLoading] = useState(false)
   const [showDetailModal, setShowDetailModal] = useState(false)
-  const [selectedRecord, setSelectedRecord] = useState<any>(null)
+  const [selectedRecord, setSelectedRecord] = useState<(PointRecord & { cleanTitle?: string }) | null>(null)
   const [filterActive, setFilterActive] = useState('all')
   const recordsLoadingRef = useRef(false)
   const lastFetchTimeRef = useRef(0)

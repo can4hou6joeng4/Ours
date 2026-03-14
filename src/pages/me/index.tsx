@@ -7,10 +7,11 @@ import ProfileEditSheet from '../../components/ProfileEditSheet'
 import BindingSheet from '../../components/BindingSheet'
 import { getIconifyUrl } from '../../utils/assets'
 import { smartFetchUser, setCachedUser } from '../../utils/userCache'
+import type { User } from '../../types'
 import './index.scss'
 
 export default function Me() {
-  const [userInfo, setUserInfo] = useState<any>(null)
+  const [userInfo, setUserInfo] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const [showEditSheet, setShowEditSheet] = useState(false)
   const [tempNickname, setTempNickname] = useState('')

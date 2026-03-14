@@ -13,10 +13,11 @@ import InviteConfirmModal from '../../components/InviteConfirmModal'
 import { requestSubscribe } from '../../utils/subscribe'
 import { smartFetchUser } from '../../utils/userCache'
 import SkeletonCard from '../../components/SkeletonCard'
+import type { Task, Notice, NotifyData } from '../../types'
 import './index.scss'
 
 export default function Index() {
-  const [tasks, setTasks] = useState<any[]>([])
+  const [tasks, setTasks] = useState<Task[]>([])
   const [currentUserId, setCurrentUserId] = useState(Taro.getStorageSync('userId') || '')
   const [partnerId, setPartnerId] = useState(Taro.getStorageSync('partnerId') || '')
   const [currentTab, setCurrentTab] = useState<'pending' | 'done' | 'all'>('pending')
@@ -26,7 +27,7 @@ export default function Index() {
   const [newTaskType, setNewTaskType] = useState<'reward' | 'penalty'>('reward')
   const [loading, setLoading] = useState(!Taro.getStorageSync('partnerId'))
   const [showDetailModal, setShowDetailModal] = useState(false)
-  const [selectedTask, setSelectedTask] = useState<any>(null)
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showBindingSheet, setShowBindingSheet] = useState(false)
   const [inviteCode, setInviteCode] = useState('')
@@ -43,7 +44,7 @@ export default function Index() {
 
   // 自定义通知状态
   const [notifyVisible, setNotifyVisible] = useState(false)
-  const [notifyData, setNotifyData] = useState<any>(null)
+  const [notifyData, setNotifyData] = useState<NotifyData | null>(null)
 
   const watcher = useRef<any>(null)
   const giftWatcher = useRef<any>(null)
@@ -56,7 +57,7 @@ export default function Index() {
 
   // 新增：仪式感消息状态
   const [showNoticeModal, setShowNoticeModal] = useState(false)
-  const [currentNotice, setCurrentNotice] = useState<any>(null)
+  const [currentNotice, setCurrentNotice] = useState<Notice | null>(null)
   const [isNoticeClosing, setIsNoticeClosing] = useState(false) // 新增：退出动画锁
 
   // 1. 实时任务指标计算 (性能优化：使用 useMemo)
@@ -82,7 +83,7 @@ export default function Index() {
     })
   }, [tasks, currentTab, currentUserId])
 
-  const getTaskAction = (task: any): { label: string, action: 'submit' | 'confirm' } | null => {
+  const getTaskAction = (task: Task): { label: string, action: 'submit' | 'confirm' } | null => {
     const executorId = task.executorId || task.targetId
     const isExecutor = executorId === currentUserId || task.targetId === currentUserId
     const isCreator = task.creatorId === currentUserId
@@ -133,7 +134,6 @@ export default function Index() {
         }
       }
     }).then((res: any) => {
-      // 无缓存时的首次加载
       if (!res?.fromCache && res?.success && res?.user?._id) {
         setCurrentUserId(res.user._id)
         setPartnerId(res.user.partnerId || '')
@@ -321,7 +321,7 @@ export default function Index() {
     }
   }
 
-  const showNotification = (data: any) => {
+  const showNotification = (data: NotifyData) => {
     setNotifyData(data)
     setNotifyVisible(true)
     Taro.vibrateShort() // 震动反馈，增强感知
@@ -449,7 +449,7 @@ export default function Index() {
     }
   }
 
-  const handleShowDetail = (task: any) => {
+  const handleShowDetail = (task: Task) => {
     setSelectedTask(task)
     setShowDetailModal(true)
   }

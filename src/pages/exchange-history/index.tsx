@@ -3,39 +3,15 @@ import Taro, { useDidShow, useReachBottom } from '@tarojs/taro'
 import { useState } from 'react'
 import dayjs from 'dayjs'
 import relativeTimePlugin from 'dayjs/plugin/relativeTime'
+import type { ExchangeHistoryItem, HistoryFilter } from '../../types'
 import './index.scss'
 
 dayjs.extend(relativeTimePlugin)
 const EXCHANGE_HISTORY_PAGE_SIZE = 20
 
-interface ExchangeHistoryItem {
-  _id: string
-  name: string
-  image: string
-  points: number
-  status: 'unused' | 'used' | 'deleted'
-  createTime: string | Date
-  isDeleted: boolean
-
-  purchaseRecord: {
-    _id: string
-    amount: number
-    createTime: string | Date
-    operator: string
-  }
-
-  useRecord?: {
-    _id: string
-    useTime: string | Date
-    operator: string
-    receiver: string
-    message: string
-  }
-}
-
 export default function ExchangeHistory() {
   const [historyList, setHistoryList] = useState<ExchangeHistoryItem[]>([])
-  const [filterType, setFilterType] = useState<'all' | 'unused' | 'used'>('all')
+  const [filterType, setFilterType] = useState<HistoryFilter>('all')
   const [loading, setLoading] = useState(false)
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(true)
@@ -85,7 +61,7 @@ export default function ExchangeHistory() {
     }
   }
 
-  const handleFilterChange = (type: 'all' | 'unused' | 'used') => {
+  const handleFilterChange = (type: HistoryFilter) => {
     setFilterType(type)
     setPage(1)
     setHasMore(true)
@@ -113,7 +89,7 @@ export default function ExchangeHistory() {
           <View
             key={tab.value}
             className={`filter-item ${filterType === tab.value ? 'active' : ''}`}
-            onClick={() => handleFilterChange(tab.value as any)}
+            onClick={() => handleFilterChange(tab.value as HistoryFilter)}
           >
             {tab.label}
           </View>
