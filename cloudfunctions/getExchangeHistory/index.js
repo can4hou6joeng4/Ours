@@ -5,19 +5,17 @@ const { getAllowedUserIds, resolveAccessibleUserId } = require('./shared/authz')
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 const db = cloud.database()
 const _ = db.command
-const MAX_RELATED_LIMIT = 100
-const TEMP_URL_CACHE_TTL_MS = 10 * 60 * 1000
-const tempUrlCache = new Map()
 
 /**
  * 获取兑换历史记录
  * event: { page, pageSize, filter, targetUserId }
  * filter: 'all' | 'unused' | 'used'
+ *
+ * 性能优化：不再调用 getTempFileURL 换签，
+ * 小程序 Image 组件原生支持 cloud:// 文件 ID。
  */
 exports.main = async (event, context) => {
 	const { OPENID } = cloud.getWXContext()
-	const startedAt = Date.now()
-	const mark = (label, extra = {}) => console.log('[perf]', 'getExchangeHistory', label, { ms: Date.now() - startedAt, ...extra })
 	const rawPage = Number(event && event.page)
 	const rawPageSize = Number(event && event.pageSize)
 	const page = Number.isFinite(rawPage) && rawPage > 0 ? Math.floor(rawPage) : 1
@@ -31,12 +29,10 @@ exports.main = async (event, context) => {
 	const targetUserInput = normalizeString(event && (event.userId || event.targetUserId))
 
 	try {
-		mark('start', { page, pageSize, filter: filterInput })
 		const userRes = await db.collection('Users').doc(OPENID).get().catch(() => null)
 		const currentUser = userRes && userRes.data ? userRes.data : null
 		const allowedUserIds = getAllowedUserIds(currentUser, OPENID)
 		const targetUserId = resolveAccessibleUserId(currentUser, OPENID, targetUserInput)
-		mark('auth_done', { hasUser: !!currentUser, targetUserId, allowedUserCount: allowedUserIds.length })
 
 		const purchaseQuery = buildPurchaseQuery(targetUserId)
 		const [purchaseRes, totalRes] = await Promise.all([
@@ -50,43 +46,35 @@ exports.main = async (event, context) => {
 
 		const purchaseRecords = Array.isArray(purchaseRes.data) ? purchaseRes.data : []
 		const total = totalRes && typeof totalRes.total === 'number' ? totalRes.total : null
-		mark('purchase_query_done', { count: purchaseRecords.length, total })
+
 		if (purchaseRecords.length === 0) {
-			mark('total_done', { count: 0, total: total || 0 })
 			return {
 				success: true,
 				data: [],
-				total: totalRes && typeof totalRes.total === 'number' ? totalRes.total : 0,
+				total: total || 0,
 				page,
 				pageSize
 			}
 		}
 
 		const relatedContext = buildRelatedContext(purchaseRecords, pageSize)
-		mark('related_context_done', { itemIds: relatedContext.itemIds.length, itemNames: relatedContext.itemNames.length, relatedLimit: relatedContext.relatedLimit })
 		const [items, useRecords, notices] = await Promise.all([
 			getRelatedItems(targetUserId, relatedContext),
 			getRelatedUseRecords(targetUserId, relatedContext),
 			getRelatedUseNotices(targetUserId, allowedUserIds, relatedContext)
 		])
-		mark('related_query_done', { items: items.length, useRecords: useRecords.length, notices: notices.length })
 
-		const integratedResult = await integrateData(
+		const historyList = await integrateData(
 			OPENID,
 			purchaseRecords,
 			items,
 			useRecords,
 			notices
 		)
-		const historyList = Array.isArray(integratedResult?.historyList) ? integratedResult.historyList : []
-		mark('integrate_done', { count: historyList.length, pureIntegrateMs: integratedResult?.pureIntegrateMs || 0 })
-		mark('image_resolve_done', { count: historyList.length, imageResolveMs: integratedResult?.imageResolveMs || 0 })
 
 		const filteredList = filterHistoryList(historyList, filterInput)
-		mark('filter_done', { count: filteredList.length })
+		const finalTotal = total !== null ? total : (page - 1) * pageSize + filteredList.length
 
-		const finalTotal = totalRes && typeof totalRes.total === 'number' ? totalRes.total : (page - 1) * pageSize + filteredList.length
-		mark('total_done', { count: filteredList.length, total: finalTotal })
 		return {
 			success: true,
 			data: filteredList,
@@ -119,7 +107,6 @@ function buildRelatedContext(purchaseRecords, pageSize) {
 		.filter(ts => ts > 0)
 	const minTs = timestamps.length ? Math.min(...timestamps) : 0
 	const maxTs = timestamps.length ? Math.max(...timestamps) : 0
-	// 精修：将页内关联查询时间窗口从 30 天收紧到 7 天，减少无关 Items / Records / Notices 扫描
 	const rangePadding = 7 * 24 * 60 * 60 * 1000
 
 	return {
@@ -127,7 +114,6 @@ function buildRelatedContext(purchaseRecords, pageSize) {
 		itemNames,
 		startTime: minTs ? new Date(minTs - rangePadding) : null,
 		endTime: maxTs ? new Date(maxTs + rangePadding) : null,
-		// 精修：进一步收紧页内关联查询上限，优先命中本页附近数据
 		relatedLimit: Math.min(Math.max(pageSize * 3, 20), 60)
 	}
 }
@@ -137,9 +123,7 @@ async function getRelatedItems(userId, context) {
 	if (context.startTime && context.endTime) {
 		where.createTime = _.and(_.gte(context.startTime), _.lte(context.endTime))
 	}
-	let query = db.collection('Items').where(where)
-
-	const res = await query
+	const res = await db.collection('Items').where(where)
 		.orderBy('createTime', 'desc')
 		.limit(context.relatedLimit)
 		.get()
@@ -156,16 +140,11 @@ async function getRelatedItems(userId, context) {
 }
 
 async function getRelatedUseRecords(userId, context) {
-	const where = {
-		userId,
-		type: 'gift_use'
-	}
+	const where = { userId, type: 'gift_use' }
 	if (context.startTime && context.endTime) {
 		where.createTime = _.and(_.gte(context.startTime), _.lte(context.endTime))
 	}
-	let query = db.collection('Records').where(where)
-
-	const res = await query
+	const res = await db.collection('Records').where(where)
 		.orderBy('createTime', 'desc')
 		.limit(context.relatedLimit)
 		.get()
@@ -185,19 +164,18 @@ async function getRelatedUseRecords(userId, context) {
 }
 
 async function getRelatedUseNotices(userId, allowedUserIds, context) {
-	let query = db.collection('Notices').where(
+	const res = await db.collection('Notices').where(
 		_.or([
 			{ type: 'GIFT_USED', senderId: userId },
 			{ type: 'GIFT_USED', receiverId: userId }
 		])
 	)
-	const res = await query
 		.orderBy('createTime', 'desc')
 		.limit(context.relatedLimit)
 		.get()
-	let notices = Array.isArray(res.data) ? res.data : []
+
 	const allowedSet = new Set(Array.isArray(allowedUserIds) ? allowedUserIds : [])
-	notices = notices.filter(notice => {
+	let notices = (Array.isArray(res.data) ? res.data : []).filter(notice => {
 		const senderAllowed = allowedSet.has(notice.senderId)
 		const receiverAllowed = !notice.receiverId || allowedSet.has(notice.receiverId)
 		if (!senderAllowed || !receiverAllowed) return false
@@ -231,22 +209,20 @@ function prioritizeRelated(list, matcher) {
 }
 
 async function integrateData(userId, purchaseRecords, items, useRecords, notices) {
-  const startedAt = Date.now()
-  const mark = (label, extra = {}) => console.log('[perf]', 'getExchangeHistory', label, { ms: Date.now() - startedAt, ...extra })
-  const result = []
+	const result = []
 
-  const itemById = new Map()
-  const itemsByName = new Map()
-  const usedItemIds = new Set()
+	const itemById = new Map()
+	const itemsByName = new Map()
+	const usedItemIds = new Set()
 
-  for (const item of items) {
-    itemById.set(item._id, item)
-    pushToGroup(itemsByName, item.name, item)
-  }
+	for (const item of items) {
+		itemById.set(item._id, item)
+		pushToGroup(itemsByName, item.name, item)
+	}
 
-  const useRecordByItemId = new Map()
-  const useRecordsByName = new Map()
-  const usedUseRecordIds = new Set()
+	const useRecordByItemId = new Map()
+	const useRecordsByName = new Map()
+	const usedUseRecordIds = new Set()
 
 	for (const record of useRecords) {
 		const directItemId = resolveItemIdFromRecord(record, itemById)
@@ -256,9 +232,9 @@ async function integrateData(userId, purchaseRecords, items, useRecords, notices
 		pushToGroup(useRecordsByName, extractUseItemName(record.reason), record)
 	}
 
-  const noticeByItemId = new Map()
-  const noticesByName = new Map()
-  const usedNoticeIds = new Set()
+	const noticeByItemId = new Map()
+	const noticesByName = new Map()
+	const usedNoticeIds = new Set()
 
 	for (const notice of notices) {
 		const noticeItemId = resolveItemIdFromNotice(notice, itemById)
@@ -268,51 +244,39 @@ async function integrateData(userId, purchaseRecords, items, useRecords, notices
 		pushToGroup(noticesByName, extractNoticeItemName(notice.message), notice)
 	}
 
-  mark('integrate_build_maps_done', {
-    purchaseRecords: purchaseRecords.length,
-    items: items.length,
-    useRecords: useRecords.length,
-    notices: notices.length,
-    itemBuckets: itemsByName.size,
-    useRecordBuckets: useRecordsByName.size,
-    noticeBuckets: noticesByName.size
-  })
+	if (itemsByName.size > 0) sortGroupedByCreateTime(itemsByName)
+	if (useRecordsByName.size > 0) sortGroupedByCreateTime(useRecordsByName)
+	if (noticesByName.size > 0) sortGroupedByCreateTime(noticesByName)
 
-  if (itemsByName.size > 0) sortGroupedByCreateTime(itemsByName)
-  if (useRecordsByName.size > 0) sortGroupedByCreateTime(useRecordsByName)
-  if (noticesByName.size > 0) sortGroupedByCreateTime(noticesByName)
+	const userIds = new Set()
+	for (const record of purchaseRecords) userIds.add(record.userId)
+	for (const record of useRecords) userIds.add(record.userId)
+	for (const notice of notices) {
+		userIds.add(notice.senderId)
+		userIds.add(notice.receiverId)
+	}
 
-  const userIds = new Set()
-  for (const record of purchaseRecords) userIds.add(record.userId)
-  for (const record of useRecords) userIds.add(record.userId)
-  for (const notice of notices) {
-    userIds.add(notice.senderId)
-    userIds.add(notice.receiverId)
-  }
+	const usersMap = await getUsersInfo(Array.from(userIds))
 
-  const usersMap = await getUsersInfo(Array.from(userIds))
-  mark('integrate_users_done', { users: usersMap.size })
-  mark('integrate_loop_start', { purchaseRecords: purchaseRecords.length })
+	for (const purchaseRecord of purchaseRecords) {
+		const itemName = extractPurchaseItemName(purchaseRecord.reason)
 
-  for (const purchaseRecord of purchaseRecords) {
-    const itemName = extractPurchaseItemName(purchaseRecord.reason)
+		const item = resolveItem({
+			purchaseRecord,
+			itemName,
+			itemById,
+			itemsByName,
+			usedItemIds
+		})
 
-    const item = resolveItem({
-      purchaseRecord,
-      itemName,
-      itemById,
-      itemsByName,
-      usedItemIds
-    })
-
-    const useRecord = resolveUseRecord({
-      item,
-      itemName,
-      purchaseRecord,
-      useRecordByItemId,
-      useRecordsByName,
-      usedUseRecordIds
-    })
+		const useRecord = resolveUseRecord({
+			item,
+			itemName,
+			purchaseRecord,
+			useRecordByItemId,
+			useRecordsByName,
+			usedUseRecordIds
+		})
 
 		const notice = resolveNotice({
 			item,
@@ -325,221 +289,124 @@ async function integrateData(userId, purchaseRecords, items, useRecords, notices
 			usedNoticeIds
 		})
 
-    const historyItem = {
-      _id: item?._id || `virtual_${purchaseRecord._id}`,
-      name: itemName,
-      image: item?.image || '',
-      giftId: item?.sourceGiftId || purchaseRecord.giftId || '',
-      points: Math.abs(purchaseRecord.amount),
-      status: item?.status || 'deleted',
-      createTime: purchaseRecord.createTime,
-      isDeleted: !item,
-      purchaseRecord: {
-        _id: purchaseRecord._id,
-        amount: purchaseRecord.amount,
-        createTime: purchaseRecord.createTime,
-        operator: getUserName(usersMap, purchaseRecord.userId, userId)
-      }
-    }
+		const historyItem = {
+			_id: item?._id || `virtual_${purchaseRecord._id}`,
+			name: itemName,
+			image: item?.image || '',
+			giftId: item?.sourceGiftId || purchaseRecord.giftId || '',
+			points: Math.abs(purchaseRecord.amount),
+			status: item?.status || 'deleted',
+			createTime: purchaseRecord.createTime,
+			isDeleted: !item,
+			purchaseRecord: {
+				_id: purchaseRecord._id,
+				amount: purchaseRecord.amount,
+				createTime: purchaseRecord.createTime,
+				operator: getUserName(usersMap, purchaseRecord.userId, userId)
+			}
+		}
 
-    if (useRecord) {
-      historyItem.useRecord = {
-        _id: useRecord._id,
-        useTime: item?.useTime || useRecord.createTime,
-        operator: getUserName(usersMap, notice?.senderId || useRecord.userId, userId),
-        receiver: getUserName(usersMap, notice?.receiverId, userId),
-        message: notice?.message || ''
-      }
-    }
+		if (useRecord) {
+			historyItem.useRecord = {
+				_id: useRecord._id,
+				useTime: item?.useTime || useRecord.createTime,
+				operator: getUserName(usersMap, notice?.senderId || useRecord.userId, userId),
+				receiver: getUserName(usersMap, notice?.receiverId, userId),
+				message: notice?.message || ''
+			}
+		}
 
-    result.push(historyItem)
-  }
+		result.push(historyItem)
+	}
 
-  const pureIntegrateMs = Date.now() - startedAt
-  mark('integrate_loop_done', { resultCount: result.length, pureIntegrateMs })
-  const imageStartedAt = Date.now()
-  const historyList = await resolveImageUrls(result)
-  const imageResolveMs = Date.now() - imageStartedAt
-  mark('integrate_resolve_images_done', { resultCount: historyList.length, imageResolveMs })
-
-  return {
-    historyList,
-    pureIntegrateMs,
-    imageResolveMs
-  }
+	return resolveGiftCovers(result)
 }
 
-async function resolveImageUrls(historyList) {
-  const startedAt = Date.now()
-  const mark = (label, extra = {}) => console.log('[perf]', 'getExchangeHistory', label, { ms: Date.now() - startedAt, ...extra })
-  const allGiftIds = [...new Set(historyList.map(item => item.giftId).filter(Boolean))]
-  const missingGiftNameList = [...new Set(
-    historyList
-      .filter(item => !item.giftId && item.name)
-      .map(item => item.name)
-  )]
+/**
+ * 补全历史记录的礼品封面图
+ * 通过 giftId 或名称查找 Gifts 集合中的 coverImg，
+ * 直接返回 cloud:// 文件 ID（Image 组件原生支持）。
+ */
+async function resolveGiftCovers(historyList) {
+	const allGiftIds = [...new Set(historyList.map(item => item.giftId).filter(Boolean))]
+	const missingGiftNameList = [...new Set(
+		historyList
+			.filter(item => !item.giftId && item.name)
+			.map(item => item.name)
+	)]
 
-  const hasCloudImageInList = historyList.some(item => {
-    const image = item && item.image
-    return typeof image === 'string' && image.startsWith('cloud://')
-  })
+	if (allGiftIds.length === 0 && missingGiftNameList.length === 0) {
+		return historyList
+	}
 
-  // 快速路径：没有 giftId、没有名称兜底需求、也没有 cloud:// 图片时，直接返回
-  if (allGiftIds.length === 0 && missingGiftNameList.length === 0 && !hasCloudImageInList) {
-    mark('resolveImageUrls_skipped', { reason: 'no_gift_lookup_and_no_cloud_file' })
-    return historyList
-  }
+	const giftCoverMap = new Map()
+	if (allGiftIds.length > 0) {
+		const batchSize = 20
+		for (let i = 0; i < allGiftIds.length; i += batchSize) {
+			const batch = allGiftIds.slice(i, i + batchSize)
+			const giftRes = await db.collection('Gifts').where({ _id: _.in(batch) }).get().catch(() => ({ data: [] }))
+			;(Array.isArray(giftRes.data) ? giftRes.data : []).forEach(gift => {
+				if (gift.coverImg) giftCoverMap.set(gift._id, gift.coverImg)
+			})
+		}
+	}
 
-  const giftCoverMap = new Map()
-  if (allGiftIds.length > 0) {
-    const batchSize = 20
-    for (let i = 0; i < allGiftIds.length; i += batchSize) {
-      const batch = allGiftIds.slice(i, i + batchSize)
-      const giftRes = await db.collection('Gifts').where({ _id: db.command.in(batch) }).get().catch(() => ({ data: [] }))
-      ;(Array.isArray(giftRes.data) ? giftRes.data : []).forEach(gift => {
-        if (gift.coverImg) giftCoverMap.set(gift._id, gift.coverImg)
-      })
-    }
-  }
-  mark('resolveImageUrls_gift_query_done', { giftIds: allGiftIds.length, giftCoverHits: giftCoverMap.size })
+	const giftCoverByNameMap = new Map()
+	if (missingGiftNameList.length > 0) {
+		const giftRes = await db.collection('Gifts').where({ name: _.in(missingGiftNameList) }).get().catch(() => ({ data: [] }))
+		const gifts = Array.isArray(giftRes.data) ? giftRes.data : []
+		const bucketByName = new Map()
 
-  const giftCoverByNameMap = new Map()
-  if (missingGiftNameList.length > 0) {
-    const giftRes = await db.collection('Gifts').where({ name: db.command.in(missingGiftNameList) }).get().catch(() => ({ data: [] }))
-    const gifts = Array.isArray(giftRes.data) ? giftRes.data : []
-    const bucketByName = new Map()
+		for (const gift of gifts) {
+			const giftName = normalizeString(gift && gift.name)
+			if (!giftName || !gift.coverImg) continue
+			const bucket = bucketByName.get(giftName) || []
+			bucket.push(gift)
+			bucketByName.set(giftName, bucket)
+		}
 
-    for (const gift of gifts) {
-      const giftName = normalizeString(gift && gift.name)
-      if (!giftName || !gift.coverImg) continue
-      const bucket = bucketByName.get(giftName) || []
-      bucket.push(gift)
-      bucketByName.set(giftName, bucket)
-    }
+		bucketByName.forEach((bucket, giftName) => {
+			if (bucket.length === 1 && bucket[0].coverImg) {
+				giftCoverByNameMap.set(giftName, bucket[0].coverImg)
+			}
+		})
+	}
 
-    bucketByName.forEach((bucket, giftName) => {
-      if (bucket.length === 1 && bucket[0].coverImg) {
-        giftCoverByNameMap.set(giftName, bucket[0].coverImg)
-      }
-    })
-  }
-  mark('resolveImageUrls_fallback_name_query_done', { names: missingGiftNameList.length, fallbackNameHits: giftCoverByNameMap.size })
-
-  const fileIdSet = new Set()
-  let giftIdHitCount = 0
-  let fallbackNameHitCount = 0
-  for (const item of historyList) {
-    const coverByGiftId = giftCoverMap.get(item.giftId) || ''
-    const coverByName = !coverByGiftId ? (giftCoverByNameMap.get(item.name) || '') : ''
-    if (coverByGiftId) giftIdHitCount += 1
-    if (coverByName) fallbackNameHitCount += 1
-    const src = coverByGiftId || coverByName || item.image || ''
-    if (typeof src === 'string' && src.startsWith('cloud://')) fileIdSet.add(src)
-  }
-
-  const urlMap = new Map()
-  const fileIds = [...fileIdSet]
-  const now = Date.now()
-  const pendingFileIds = []
-  let cacheHits = 0
-
-  for (const fileId of fileIds) {
-    const cached = tempUrlCache.get(fileId)
-    if (cached && cached.url && cached.expireAt > now) {
-      urlMap.set(fileId, cached.url)
-      cacheHits += 1
-    } else {
-      pendingFileIds.push(fileId)
-    }
-  }
-
-  mark('resolveImageUrls_collect_fileids_done', {
-    giftIdHits: giftIdHitCount,
-    fallbackNameHits: fallbackNameHitCount,
-    fileIds: fileIds.length,
-    cacheHits,
-    pendingFileIds: pendingFileIds.length
-  })
-
-  if (pendingFileIds.length > 0) {
-    const res = await cloud.getTempFileURL({ fileList: pendingFileIds })
-    ;(Array.isArray(res.fileList) ? res.fileList : []).forEach(f => {
-      if (f.fileID && f.tempFileURL) {
-        urlMap.set(f.fileID, f.tempFileURL)
-        tempUrlCache.set(f.fileID, {
-          url: f.tempFileURL,
-          expireAt: Date.now() + TEMP_URL_CACHE_TTL_MS
-        })
-      }
-    })
-  }
-  mark('resolveImageUrls_get_temp_urls_done', {
-    fileIds: fileIds.length,
-    cacheHits,
-    fetched: pendingFileIds.length,
-    resolved: urlMap.size
-  })
-
-  const resolvedList = historyList.map(item => {
-    const raw = giftCoverMap.get(item.giftId) || giftCoverByNameMap.get(item.name) || item.image || ''
-    const resolvedImage = urlMap.get(raw) || (raw.startsWith('cloud://') ? '' : raw)
-    return { ...item, image: resolvedImage }
-  })
-  mark('resolveImageUrls_done', { count: resolvedList.length })
-  return resolvedList
+	return historyList.map(item => {
+		const cover = giftCoverMap.get(item.giftId) || giftCoverByNameMap.get(item.name) || item.image || ''
+		return { ...item, image: cover }
+	})
 }
 
-function resolveItem({
-  purchaseRecord,
-  itemName,
-  itemById,
-  itemsByName,
-  usedItemIds
-}) {
-  if (purchaseRecord.itemId && itemById.has(purchaseRecord.itemId)) {
-    const directItem = itemById.get(purchaseRecord.itemId)
-    usedItemIds.add(directItem._id)
-    return directItem
-  }
+function resolveItem({ purchaseRecord, itemName, itemById, itemsByName, usedItemIds }) {
+	if (purchaseRecord.itemId && itemById.has(purchaseRecord.itemId)) {
+		const directItem = itemById.get(purchaseRecord.itemId)
+		usedItemIds.add(directItem._id)
+		return directItem
+	}
 
-  const bucket = itemsByName.get(itemName) || []
-  const matched = pickByNearestTime(bucket, purchaseRecord.createTime, usedItemIds)
-  if (matched) usedItemIds.add(matched._id)
-  return matched
+	const bucket = itemsByName.get(itemName) || []
+	const matched = pickByNearestTime(bucket, purchaseRecord.createTime, usedItemIds)
+	if (matched) usedItemIds.add(matched._id)
+	return matched
 }
 
-function resolveUseRecord({
-  item,
-  itemName,
-  purchaseRecord,
-  useRecordByItemId,
-  useRecordsByName,
-  usedUseRecordIds
-}) {
-  if (item?._id && useRecordByItemId.has(item._id)) {
-    const directRecord = useRecordByItemId.get(item._id)
-    if (!usedUseRecordIds.has(directRecord._id)) {
-      usedUseRecordIds.add(directRecord._id)
-      return directRecord
-    }
-  }
+function resolveUseRecord({ item, itemName, purchaseRecord, useRecordByItemId, useRecordsByName, usedUseRecordIds }) {
+	if (item?._id && useRecordByItemId.has(item._id)) {
+		const directRecord = useRecordByItemId.get(item._id)
+		if (!usedUseRecordIds.has(directRecord._id)) {
+			usedUseRecordIds.add(directRecord._id)
+			return directRecord
+		}
+	}
 
-  const bucket = useRecordsByName.get(itemName) || []
-  const matched = pickByNearestTime(bucket, purchaseRecord.createTime, usedUseRecordIds)
-  if (matched) usedUseRecordIds.add(matched._id)
-  return matched
+	const bucket = useRecordsByName.get(itemName) || []
+	const matched = pickByNearestTime(bucket, purchaseRecord.createTime, usedUseRecordIds)
+	if (matched) usedUseRecordIds.add(matched._id)
+	return matched
 }
 
-function resolveNotice({
-	item,
-	itemName,
-	purchaseRecord,
-	useRecord,
-	itemById,
-	noticeByItemId,
-	noticesByName,
-	usedNoticeIds
-}) {
+function resolveNotice({ item, itemName, purchaseRecord, useRecord, itemById, noticeByItemId, noticesByName, usedNoticeIds }) {
 	const relatedItemId = resolveRelatedItemId(item, useRecord, itemById)
 	if (relatedItemId && noticeByItemId.has(relatedItemId)) {
 		const directNotice = noticeByItemId.get(relatedItemId)
@@ -559,18 +426,14 @@ function resolveNotice({
 function resolveItemIdFromRecord(record, itemById) {
 	if (!record) return ''
 	if (record.itemId) return String(record.itemId)
-	if (record.giftId && itemById.has(record.giftId)) {
-		return String(record.giftId)
-	}
+	if (record.giftId && itemById.has(record.giftId)) return String(record.giftId)
 	return ''
 }
 
 function resolveItemIdFromNotice(notice, itemById) {
 	if (!notice) return ''
 	if (notice.itemId) return String(notice.itemId)
-	if (notice.giftId && itemById.has(notice.giftId)) {
-		return String(notice.giftId)
-	}
+	if (notice.giftId && itemById.has(notice.giftId)) return String(notice.giftId)
 	return ''
 }
 
@@ -590,14 +453,8 @@ async function getUsersInfo(userIds) {
 	for (let i = 0; i < validUserIds.length; i += batchSize) {
 		const batch = validUserIds.slice(i, i + batchSize)
 		if (batch.length === 0) continue
-
-		const res = await db.collection('Users')
-			.where({
-				_id: _.in(batch)
-			})
-			.get()
-
-		res.data.forEach(user => {
+		const res = await db.collection('Users').where({ _id: _.in(batch) }).get()
+		;(Array.isArray(res.data) ? res.data : []).forEach(user => {
 			usersMap.set(user._id, user)
 		})
 	}
@@ -606,76 +463,67 @@ async function getUsersInfo(userIds) {
 }
 
 function getUserName(usersMap, targetId, currentUserId) {
-  if (!targetId) return '未知'
-  if (targetId === currentUserId) return '我'
-
-  const user = usersMap.get(targetId)
-  return user?.nickName || '对方'
+	if (!targetId) return '未知'
+	if (targetId === currentUserId) return '我'
+	const user = usersMap.get(targetId)
+	return user?.nickName || '对方'
 }
 
 function filterHistoryList(list, filter) {
-  switch (filter) {
-    case 'unused':
-      return list.filter(item => item.status === 'unused' && !item.useRecord)
-    case 'used':
-      return list.filter(item => item.status === 'used' || !!item.useRecord)
-    case 'all':
-    default:
-      return list
-  }
+	switch (filter) {
+		case 'unused':
+			return list.filter(item => item.status === 'unused' && !item.useRecord)
+		case 'used':
+			return list.filter(item => item.status === 'used' || !!item.useRecord)
+		case 'all':
+		default:
+			return list
+	}
 }
 
 function extractPurchaseItemName(reason) {
-  return String(reason || '')
-    .replace(/^兑换[：:]\s*/, '')
-    .trim()
+	return String(reason || '').replace(/^兑换[：:]\s*/, '').trim()
 }
 
 function extractUseItemName(reason) {
-  return String(reason || '')
-    .replace(/^\[兑换请求\]\s*/, '')
-    .trim()
+	return String(reason || '').replace(/^\[兑换请求\]\s*/, '').trim()
 }
 
 function extractNoticeItemName(message) {
-  return String(message || '')
-    .replace(/^对方想要使用[：:]\s*/, '')
-    .trim()
+	return String(message || '').replace(/^对方想要使用[：:]\s*/, '').trim()
 }
 
 function pushToGroup(map, key, value) {
-  if (!key) return
-  if (!map.has(key)) map.set(key, [])
-  map.get(key).push(value)
+	if (!key) return
+	if (!map.has(key)) map.set(key, [])
+	map.get(key).push(value)
 }
 
 function sortGroupedByCreateTime(groupedMap) {
-  groupedMap.forEach(list => {
-    list.sort((a, b) => toTimestamp(b.createTime) - toTimestamp(a.createTime))
-  })
+	groupedMap.forEach(list => {
+		list.sort((a, b) => toTimestamp(b.createTime) - toTimestamp(a.createTime))
+	})
 }
 
 function pickByNearestTime(candidates, baseTime, usedIdSet) {
-  if (!Array.isArray(candidates) || candidates.length === 0) return null
+	if (!Array.isArray(candidates) || candidates.length === 0) return null
+	const baseTimestamp = toTimestamp(baseTime)
+	let bestCandidate = null
+	let bestDiff = Number.MAX_SAFE_INTEGER
 
-  const baseTimestamp = toTimestamp(baseTime)
-  let bestCandidate = null
-  let bestDiff = Number.MAX_SAFE_INTEGER
+	for (const candidate of candidates) {
+		if (!candidate?._id || usedIdSet.has(candidate._id)) continue
+		const diff = Math.abs(toTimestamp(candidate.createTime) - baseTimestamp)
+		if (diff < bestDiff) {
+			bestDiff = diff
+			bestCandidate = candidate
+		}
+	}
 
-  for (const candidate of candidates) {
-    if (!candidate?._id || usedIdSet.has(candidate._id)) continue
-
-    const diff = Math.abs(toTimestamp(candidate.createTime) - baseTimestamp)
-    if (diff < bestDiff) {
-      bestDiff = diff
-      bestCandidate = candidate
-    }
-  }
-
-  return bestCandidate
+	return bestCandidate
 }
 
 function toTimestamp(value) {
-  const ts = new Date(value).getTime()
-  return Number.isFinite(ts) ? ts : 0
+	const ts = new Date(value).getTime()
+	return Number.isFinite(ts) ? ts : 0
 }
