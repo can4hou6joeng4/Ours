@@ -10,6 +10,7 @@ import EmptyState from '../../components/EmptyState'
 import { getIconifyUrl } from '../../utils/assets'
 import { requestSubscribe } from '../../utils/subscribe'
 import { smartFetchUser } from '../../utils/userCache'
+import { getExchangeHistory as getExchangeHistoryApi, getItems as getItemsApi, useItem as useItemApi } from '../../services'
 import type { InventoryItem, ItemStatus, ExchangeHistoryItem, HistoryFilter } from '../../types'
 import './index.scss'
 
@@ -82,9 +83,11 @@ export default function Inventory() {
 		setHistoryLoading(true)
 		try {
 			const requestPage = reset ? 1 : historyPage
-			const { result }: any = await Taro.cloud.callFunction({
-				name: 'getExchangeHistory',
-				data: { page: requestPage, pageSize: EXCHANGE_HISTORY_PAGE_SIZE, filter, targetUserId: Taro.getStorageSync('partnerId') || '' }
+			const result = await getExchangeHistoryApi({
+				page: requestPage,
+				pageSize: EXCHANGE_HISTORY_PAGE_SIZE,
+				filter,
+				targetUserId: Taro.getStorageSync('partnerId') || ''
 			})
 
 			if (result.success) {
@@ -136,10 +139,7 @@ export default function Inventory() {
 		}
 
 		try {
-			const { result }: any = await Taro.cloud.callFunction({
-				name: 'getItems',
-				data: { page, pageSize: 20, status }
-			})
+			const result = await getItemsApi({ page, pageSize: 20, status })
 			if (result.success) {
 				const nextItems = Array.isArray(result.data) ? result.data : []
 				setItems(prev => (reset ? nextItems : [...prev, ...nextItems]))
@@ -187,10 +187,7 @@ export default function Inventory() {
 
 		setUsing(true)
 		try {
-			const { result }: any = await Taro.cloud.callFunction({
-				name: 'useItem',
-				data: { itemId: selectedItem._id }
-			})
+			const result = await useItemApi({ itemId: selectedItem._id })
 
 			if (result.success) {
 				Taro.showToast({ title: '兑换申请已发出', icon: 'success' })

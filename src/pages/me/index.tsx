@@ -7,6 +7,7 @@ import ProfileEditSheet from '../../components/ProfileEditSheet'
 import BindingSheet from '../../components/BindingSheet'
 import { getIconifyUrl } from '../../utils/assets'
 import { smartFetchUser, setCachedUser } from '../../utils/userCache'
+import { initUser as initUserApi, updateUserProfile as updateUserProfileApi } from '../../services'
 import type { User } from '../../types'
 import './index.scss'
 
@@ -65,10 +66,9 @@ export default function Me() {
   const fetchUserInfo = async (silent = false) => {
     if (!silent) setLoading(true)
     try {
-      const res = await Taro.cloud.callFunction({ name: 'initUser' })
-      const data = res.result as any
+      const data = await initUserApi()
       if (data.success) {
-        setUserInfo(data.user)
+        setUserInfo(data.user || null)
       }
     } catch (e) {
       console.error('获取用户信息失败', e)
@@ -108,12 +108,9 @@ export default function Me() {
 
       // 2. 统一更新用户资料
       Taro.showLoading({ title: '正在保存...' })
-      await Taro.cloud.callFunction({
-        name: 'updateUserProfile',
-        data: {
-          nickName: tempNickname,
-          avatarUrl: finalAvatarUrl
-        }
+      await updateUserProfileApi({
+        nickName: tempNickname,
+        avatarUrl: finalAvatarUrl
       })
 
       const updatedUser = { ...userInfo, nickName: tempNickname, avatarUrl: finalAvatarUrl }

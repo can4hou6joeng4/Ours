@@ -13,6 +13,7 @@ import InviteConfirmModal from '../../components/InviteConfirmModal'
 import { requestSubscribe } from '../../utils/subscribe'
 import { smartFetchUser } from '../../utils/userCache'
 import SkeletonCard from '../../components/SkeletonCard'
+import { addTask as addTaskApi, updateTaskStatus as updateTaskStatusApi, revokeTask as revokeTaskApi } from '../../services'
 import type { Task, Notice, NotifyData } from '../../types'
 import './index.scss'
 
@@ -335,11 +336,7 @@ export default function Index() {
         if (res.confirm) {
           Taro.showLoading({ title: '撤销中' })
           try {
-            const result = await Taro.cloud.callFunction({
-              name: 'revokeTask',
-              data: { taskId }
-            })
-            const data = result.result as any
+            const data = await revokeTaskApi({ taskId })
             if (data.success) {
               Taro.showToast({ title: '已撤销' })
             } else {
@@ -387,15 +384,11 @@ export default function Index() {
       // 在异步调用前先尝试请求权限 (微信允许在点击回调中尽早调用)
       await requestSubscribe(['NEW_TASK'])
 
-      const res = await Taro.cloud.callFunction({
-        name: 'addTask',
-        data: {
-          title: normalizedTitle,
-          points: pointsNum,
-          type: newTaskType
-        }
+      const data = await addTaskApi({
+        title: normalizedTitle,
+        points: pointsNum,
+        type: newTaskType
       })
-      const data = res.result as any
       if (data.success) {
         Taro.showToast({ title: '发布成功' })
         setShowAddModal(false)
@@ -425,11 +418,7 @@ export default function Index() {
 
     Taro.showLoading({ title: '处理中' })
     try {
-      const res = await Taro.cloud.callFunction({
-        name: 'updateTaskStatus',
-        data: { taskId, action }
-      })
-      const data = res.result as any
+      const data = await updateTaskStatusApi({ taskId, action })
       if (data.success) {
         if (action === 'submit') {
           Taro.showToast({ title: '已提交，等待对方验收', icon: 'success' })

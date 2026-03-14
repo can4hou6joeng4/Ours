@@ -13,6 +13,7 @@ import SkeletonCard from '../../components/SkeletonCard'
 import { getIconifyUrl } from '../../utils/assets'
 import { requestSubscribe } from '../../utils/subscribe'
 import { smartFetchUser } from '../../utils/userCache'
+import { getExchangeHistory as getExchangeHistoryApi, getGifts as getGiftsApi, manageGift as manageGiftApi, buyItem as buyItemApi } from '../../services'
 import type { Gift, GiftEditData, ExchangeHistoryItem, HistoryFilter } from '../../types'
 import dayjs from 'dayjs'
 import './index.scss'
@@ -84,9 +85,10 @@ export default function Store() {
     setHistoryLoading(true)
     try {
       const requestPage = reset ? 1 : historyPage
-      const { result }: any = await Taro.cloud.callFunction({
-        name: 'getExchangeHistory',
-        data: { page: requestPage, pageSize: EXCHANGE_HISTORY_PAGE_SIZE, filter }
+      const result = await getExchangeHistoryApi({
+        page: requestPage,
+        pageSize: EXCHANGE_HISTORY_PAGE_SIZE,
+        filter
       })
 
       if (result.success) {
@@ -130,7 +132,7 @@ export default function Store() {
     setLoading(true)
     try {
       // 优化：用户信息使用缓存，礼品列表并行请求
-      const [userResult, giftsRes]: any = await Promise.all([
+      const [userResult, giftsResult]: any = await Promise.all([
         smartFetchUser({
           onCacheHit: (cached) => {
             // 立即使用缓存渲染
@@ -140,7 +142,7 @@ export default function Store() {
             setIsAdmin(true)
           }
         }),
-        Taro.cloud.callFunction({ name: 'getGifts' })
+        getGiftsApi()
       ])
 
       // 处理用户信息（无缓存时或后台刷新后）
@@ -150,8 +152,8 @@ export default function Store() {
         setIsAdmin(true)
       }
 
-      if (giftsRes.result.success) {
-        setProducts(giftsRes.result.gifts)
+      if (giftsResult.success) {
+        setProducts(giftsResult.gifts || [])
         lastFetchTime.current = Date.now() // 记录获取时间
       }
     } catch (e) {
@@ -192,11 +194,8 @@ export default function Store() {
         if (res.confirm) {
           Taro.showLoading({ title: '正在移除...' })
           try {
-            const result: any = await Taro.cloud.callFunction({
-              name: 'manageGift',
-              data: { action: 'delete', giftId: item._id }
-            })
-            if (result.result.success) {
+            const result = await manageGiftApi({ action: 'delete', giftId: item._id })
+            if (result.success) {
               Taro.showToast({ title: '已成功移除', icon: 'success' })
               fetchData()
             }
@@ -224,21 +223,18 @@ export default function Store() {
       await requestSubscribe(['GIFT_USED'])
 
       const isEdit = !!selectedGift
-      const res: any = await Taro.cloud.callFunction({
-        name: 'manageGift',
-        data: {
-          action: isEdit ? 'update' : 'add',
-          giftId: isEdit ? selectedGift._id : undefined,
-          giftData: { ...editData, points }
-        }
+      const result = await manageGiftApi({
+        action: isEdit ? 'update' : 'add',
+        giftId: isEdit ? selectedGift._id : undefined,
+        giftData: { ...editData, points }
       })
 
-      if (res.result.success) {
+      if (result.success) {
         Taro.showToast({ title: isEdit ? '更新成功' : '添加成功' })
         setShowEditSheet(false)
         fetchData()
       } else {
-        Notify.open({ type: 'danger', message: res.result.message || res.result.error || '保存失败' })
+        Notify.open({ type: 'danger', message: result.message || result.error || '保存失败' })
       }
     } catch (e) {
       Notify.open({ type: 'danger', message: '保存失败' })
@@ -265,12 +261,7 @@ export default function Store() {
     setIsSubmitting(true)
     Taro.showLoading({ title: '处理中...' })
     try {
-      const { result }: any = await Taro.cloud.callFunction({
-        name: 'buyItem',
-        data: {
-          giftId: item._id
-        }
-      })
+      const result = await buyItemApi({ giftId: item._id })
 
       if (result.success) {
         Taro.showToast({ title: '兑换成功', icon: 'success' })

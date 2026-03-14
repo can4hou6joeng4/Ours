@@ -4,6 +4,7 @@ import { useState } from 'react'
 import dayjs from 'dayjs'
 import relativeTimePlugin from 'dayjs/plugin/relativeTime'
 import type { ExchangeHistoryItem, HistoryFilter } from '../../types'
+import { getExchangeHistory as getExchangeHistoryApi } from '../../services'
 import './index.scss'
 
 dayjs.extend(relativeTimePlugin)
@@ -39,13 +40,10 @@ export default function ExchangeHistory() {
 
     setLoading(true)
     try {
-      const { result }: any = await Taro.cloud.callFunction({
-        name: 'getExchangeHistory',
-        data: {
-          page: requestPage,
-          pageSize: EXCHANGE_HISTORY_PAGE_SIZE,
-          filter
-        }
+      const result = await getExchangeHistoryApi({
+        page: requestPage,
+        pageSize: EXCHANGE_HISTORY_PAGE_SIZE,
+        filter
       })
 
       if (result.success) {

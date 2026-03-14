@@ -3,6 +3,7 @@
  * 避免每个页面都调用 initUser 云函数导致冷启动延迟
  */
 import Taro from '@tarojs/taro'
+import { initUser } from '../services/user'
 
 const CACHE_KEY = 'userInfoCache'
 const CACHE_DURATION = 5 * 60 * 1000 // 5 分钟缓存有效期
@@ -91,7 +92,7 @@ const fetchUserFromCloud = async (onFresh?: (result: any) => void): Promise<any>
 
   pendingUserPromise = (async () => {
     try {
-      const { result }: any = await Taro.cloud.callFunction({ name: 'initUser' })
+      const result = await initUser()
       if (result?.success) {
         setCachedUser(result.user, result.todayChange)
         onFresh?.(result)

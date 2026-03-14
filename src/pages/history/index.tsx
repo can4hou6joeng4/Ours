@@ -4,6 +4,7 @@ import { useRef, useState } from 'react'
 import dayjs from 'dayjs'
 import './index.scss'
 import { smartFetchUser } from '../../utils/userCache'
+import { getRecords as getRecordsApi } from '../../services'
 import type { PointRecord } from '../../types'
 
 const DATA_CACHE_DURATION = 30 * 1000
@@ -64,10 +65,7 @@ export default function History() {
     recordsLoadingRef.current = true
     setLoading(true)
     try {
-      const { result }: any = await Taro.cloud.callFunction({
-        name: 'getRecords',
-        data: { page: 1, pageSize: 50, summaryOnly: true }
-      })
+      const result = await getRecordsApi({ page: 1, pageSize: 50, summaryOnly: true })
 
       if (result.success) {
         setRecords(Array.isArray(result.data) ? result.data : [])
