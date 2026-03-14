@@ -5,8 +5,8 @@
 
 // Tabler Icons - Base64 编码的 SVG
 const createSvgDataUrl = (svg: string, color: string) => {
-  const coloredSvg = svg.replace(/currentColor/g, color)
-  return `data:image/svg+xml;base64,${btoa(coloredSvg)}`
+	const coloredSvg = svg.replace(/currentColor/g, color)
+	return `data:image/svg+xml,${encodeURIComponent(coloredSvg)}`
 }
 
 // 原始 SVG 模板 (stroke-based icons from Tabler)

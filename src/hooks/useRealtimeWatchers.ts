@@ -117,7 +117,7 @@ export default function useRealtimeWatchers(callbacks: WatcherCallbacks) {
 								const latest = newNotices[newNotices.length - 1]
 								if (latest.receiverId === myId) {
 									callbacks.onNotice(latest)
-									Taro.vibrateShort()
+									Taro.vibrateShort({ type: 'heavy' })
 								}
 							}
 						},

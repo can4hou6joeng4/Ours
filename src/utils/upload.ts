@@ -24,12 +24,13 @@ export async function uploadImage(
 	const { quality = 80, loadingText = '处理图片...' } = options
 
 	try {
-		const res = await Taro.chooseImage({
+		const res = await Taro.chooseMedia({
 			count: 1,
+			mediaType: ['image'],
 			sizeType: ['compressed'],
 			sourceType: ['album', 'camera'],
 		})
-		let tempFilePath = res.tempFilePaths[0]
+		let tempFilePath = res.tempFiles[0].tempFilePath
 
 		Taro.showLoading({ title: loadingText })
 
