@@ -12,7 +12,7 @@ import BindingSheet from '../../components/BindingSheet'
 import SkeletonCard from '../../components/SkeletonCard'
 import { getIconifyUrl } from '../../utils/assets'
 import { requestSubscribe } from '../../utils/subscribe'
-import { smartFetchUser } from '../../utils/userCache'
+import { useUserStore } from '../../store'
 import { getExchangeHistory as getExchangeHistoryApi, getGifts as getGiftsApi, manageGift as manageGiftApi, buyItem as buyItemApi } from '../../services'
 import type { Gift, GiftEditData, ExchangeHistoryItem, HistoryFilter } from '../../types'
 import dayjs from 'dayjs'
@@ -23,11 +23,13 @@ const DATA_CACHE_DURATION = 30 * 1000 // 30秒
 const EXCHANGE_HISTORY_PAGE_SIZE = 20
 
 export default function Store() {
-  const [totalPoints, setTotalPoints] = useState(0)
+  const { user, partnerId, fetchUser } = useUserStore()
+  const totalPoints = user?.totalPoints || 0
+  const hasPartner = !!partnerId
+
   const [products, setProducts] = useState<Gift[]>([])
   const [loading, setLoading] = useState(true)
   const [isAdmin, setIsAdmin] = useState(false)
-  const [hasPartner, setHasPartner] = useState(false)
   const [showManageMenu, setShowManageMenu] = useState(false)
   const [showEditSheet, setShowEditSheet] = useState(false)
   const [selectedGift, setSelectedGift] = useState<Gift | null>(null)
@@ -131,26 +133,13 @@ export default function Store() {
     dataLoadingRef.current = true
     setLoading(true)
     try {
-      // 优化：用户信息使用缓存，礼品列表并行请求
-      const [userResult, giftsResult]: any = await Promise.all([
-        smartFetchUser({
-          onCacheHit: (cached) => {
-            // 立即使用缓存渲染
-            const user = cached.user
-            setTotalPoints(user?.totalPoints || 0)
-            setHasPartner(!!user?.partnerId)
-            setIsAdmin(true)
-          }
-        }),
+      // 优化：用户信息通过 store 刷新，礼品列表并行请求
+      const [, giftsResult] = await Promise.all([
+        fetchUser(),
         getGiftsApi()
       ])
 
-      // 处理用户信息（无缓存时或后台刷新后）
-      if (userResult?.success && !userResult.fromCache) {
-        setTotalPoints(userResult.user?.totalPoints || 0)
-        setHasPartner(!!userResult.user?.partnerId)
-        setIsAdmin(true)
-      }
+      setIsAdmin(true)
 
       if (giftsResult.success) {
         setProducts(giftsResult.gifts || [])
@@ -267,7 +256,7 @@ export default function Store() {
         Taro.showToast({ title: '兑换成功', icon: 'success' })
         // buyItem 返回值已含最新积分（balanceAfter），直接更新，无需再发请求
         if (typeof result.balanceAfter === 'number') {
-          setTotalPoints(result.balanceAfter)
+          useUserStore.getState().updateProfile({ totalPoints: result.balanceAfter })
         } else {
           fetchData()
         }

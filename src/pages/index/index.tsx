@@ -11,22 +11,23 @@ import AddTaskSheet from '../../components/AddTaskSheet'
 import BindingSheet from '../../components/BindingSheet'
 import InviteConfirmModal from '../../components/InviteConfirmModal'
 import { requestSubscribe } from '../../utils/subscribe'
-import { smartFetchUser } from '../../utils/userCache'
 import SkeletonCard from '../../components/SkeletonCard'
+import { useUserStore } from '../../store'
 import { addTask as addTaskApi, updateTaskStatus as updateTaskStatusApi, revokeTask as revokeTaskApi } from '../../services'
 import type { Task, Notice, NotifyData } from '../../types'
 import './index.scss'
 
 export default function Index() {
+  const { user, partnerId, fetchUser } = useUserStore()
+  const currentUserId = user?._id || ''
+
   const [tasks, setTasks] = useState<Task[]>([])
-  const [currentUserId, setCurrentUserId] = useState(Taro.getStorageSync('userId') || '')
-  const [partnerId, setPartnerId] = useState(Taro.getStorageSync('partnerId') || '')
   const [currentTab, setCurrentTab] = useState<'pending' | 'done' | 'all'>('pending')
   const [showAddModal, setShowAddModal] = useState(false)
   const [newTaskTitle, setNewTaskTitle] = useState('')
   const [newTaskPoints, setNewTaskPoints] = useState('')
   const [newTaskType, setNewTaskType] = useState<'reward' | 'penalty'>('reward')
-  const [loading, setLoading] = useState(!Taro.getStorageSync('partnerId'))
+  const [loading, setLoading] = useState(!partnerId)
   const [showDetailModal, setShowDetailModal] = useState(false)
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -112,36 +113,14 @@ export default function Index() {
   }, [])
 
   useDidShow(() => {
-    // 使用智能缓存：优先读取缓存快速显示，后台静默刷新
-    smartFetchUser({
-      onCacheHit: (cached) => {
-        // 立即使用缓存数据渲染 UI
-        const user = cached.user
-        setCurrentUserId(user?._id || '')
-        setPartnerId(user?.partnerId || '')
+    // 通过全局 store 获取用户信息（含缓存 + 后台刷新）
+    fetchUser().then(() => {
+      const state = useUserStore.getState()
+      const uid = state.user?._id || ''
+      const pid = state.partnerId || ''
+      if (uid) {
         setLoading(false)
-        // 启动监听器
-        if (user?._id) {
-          startWatchers(user._id, user.partnerId || '')
-        }
-      },
-      onFresh: (result) => {
-        // 后台刷新完成后更新状态
-        if (result?.success) {
-          setCurrentUserId(result.user?._id || '')
-          setPartnerId(result.user?.partnerId || '')
-          Taro.setStorageSync('userId', result.user?._id)
-          Taro.setStorageSync('partnerId', result.user?.partnerId || '')
-        }
-      }
-    }).then((res: any) => {
-      if (!res?.fromCache && res?.success && res?.user?._id) {
-        setCurrentUserId(res.user._id)
-        setPartnerId(res.user.partnerId || '')
-        Taro.setStorageSync('userId', res.user._id)
-        Taro.setStorageSync('partnerId', res.user.partnerId || '')
-        setLoading(false)
-        startWatchers(res.user._id, res.user.partnerId || '')
+        startWatchers(uid, pid)
       }
     })
   })

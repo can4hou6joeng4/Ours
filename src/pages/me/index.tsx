@@ -6,50 +6,22 @@ import UserHeaderCard from '../../components/UserHeaderCard'
 import ProfileEditSheet from '../../components/ProfileEditSheet'
 import BindingSheet from '../../components/BindingSheet'
 import { getIconifyUrl } from '../../utils/assets'
-import { smartFetchUser, setCachedUser } from '../../utils/userCache'
-import { initUser as initUserApi, updateUserProfile as updateUserProfileApi } from '../../services'
+import { useUserStore } from '../../store'
+import { updateUserProfile as updateUserProfileApi } from '../../services'
 import type { User } from '../../types'
 import './index.scss'
 
 export default function Me() {
-  const [userInfo, setUserInfo] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
+  const { user: userInfo, isLoading, fetchUser, updateProfile } = useUserStore()
+
   const [showEditSheet, setShowEditSheet] = useState(false)
   const [tempNickname, setTempNickname] = useState('')
   const [tempAvatar, setTempAvatar] = useState('')
   const [saving, setSaving] = useState(false)
   const [showBindingSheet, setShowBindingSheet] = useState(false)
-  const isRefreshingRef = useRef(false)
-  const lastRefreshTimeRef = useRef(0)
 
   useDidShow(() => {
-    const now = Date.now()
-    if (isRefreshingRef.current) return
-    if (userInfo && now - lastRefreshTimeRef.current < 30 * 1000) return
-
-    isRefreshingRef.current = true
-    // 使用智能缓存：优先显示缓存数据，后台刷新
-    smartFetchUser({
-      onCacheHit: (cached) => {
-        setUserInfo(cached.user)
-        setLoading(false)
-      },
-      onFresh: (result) => {
-        if (result?.success) {
-          setUserInfo(result.user)
-        }
-      }
-    }).then((res: any) => {
-      if (!res?.fromCache && res?.success) {
-        setUserInfo(res.user)
-        setLoading(false)
-      }
-      if (res?.success) {
-        lastRefreshTimeRef.current = Date.now()
-      }
-    }).finally(() => {
-      isRefreshingRef.current = false
-    })
+    fetchUser()
   })
 
   const handleOpenEdit = () => {
@@ -61,20 +33,6 @@ export default function Me() {
     setTempNickname(userInfo?.nickName || '')
     setTempAvatar(userInfo?.avatarUrl || '')
     setShowEditSheet(true)
-  }
-
-  const fetchUserInfo = async (silent = false) => {
-    if (!silent) setLoading(true)
-    try {
-      const data = await initUserApi()
-      if (data.success) {
-        setUserInfo(data.user || null)
-      }
-    } catch (e) {
-      console.error('获取用户信息失败', e)
-    } finally {
-      if (!silent) setLoading(false)
-    }
   }
 
   const onChooseAvatar = (e) => {
@@ -113,10 +71,8 @@ export default function Me() {
         avatarUrl: finalAvatarUrl
       })
 
-      const updatedUser = { ...userInfo, nickName: tempNickname, avatarUrl: finalAvatarUrl }
-      setUserInfo(updatedUser)
-      // 同步更新缓存
-      setCachedUser(updatedUser)
+      // 通过 store 同步更新
+      updateProfile({ nickName: tempNickname, avatarUrl: finalAvatarUrl })
       setShowEditSheet(false)
       Taro.showToast({ title: '资料已更新', icon: 'success' })
     } catch (err) {
@@ -130,7 +86,7 @@ export default function Me() {
     return true
   }
 
-  if (loading) return <View className='container'><Text>加载中...</Text></View>
+  if (isLoading && !userInfo) return <View className='container'><Text>加载中...</Text></View>
 
   return (
     <View className='container'>

@@ -9,7 +9,7 @@ import SkeletonCard from '../../components/SkeletonCard'
 import EmptyState from '../../components/EmptyState'
 import { getIconifyUrl } from '../../utils/assets'
 import { requestSubscribe } from '../../utils/subscribe'
-import { smartFetchUser } from '../../utils/userCache'
+import { useUserStore } from '../../store'
 import { getExchangeHistory as getExchangeHistoryApi, getItems as getItemsApi, useItem as useItemApi } from '../../services'
 import type { InventoryItem, ItemStatus, ExchangeHistoryItem, HistoryFilter } from '../../types'
 import './index.scss'
@@ -19,6 +19,9 @@ const DATA_CACHE_DURATION = 30 * 1000 // 30秒
 const EXCHANGE_HISTORY_PAGE_SIZE = 20
 
 export default function Inventory() {
+	const { partnerId, fetchUser } = useUserStore()
+	const hasPartner = !!partnerId
+
 	const [items, setItems] = useState<InventoryItem[]>([])
 	const [currentTab, setCurrentTab] = useState<ItemStatus>('unused')
 	const [loading, setLoading] = useState(false)
@@ -36,7 +39,6 @@ export default function Inventory() {
 	const [historyPage, setHistoryPage] = useState(1)
 	const [hasMoreHistory, setHasMoreHistory] = useState(true)
 	const [historyFilter, setHistoryFilter] = useState<HistoryFilter>('all')
-	const [hasPartner, setHasPartner] = useState(false)
 	const [showBindingSheet, setShowBindingSheet] = useState(false)
 
 	// 性能优化：记录上次数据获取时间
@@ -44,17 +46,8 @@ export default function Inventory() {
 	const itemsRefreshingRef = useRef(false)
 
 	useDidShow(() => {
-		// 获取用户绑定状态
-		smartFetchUser({
-			onCacheHit: (cached) => {
-				setHasPartner(!!cached.user?.partnerId)
-			},
-			onFresh: (result) => {
-				if (result?.success) {
-					setHasPartner(!!result.user?.partnerId)
-				}
-			}
-		})
+		// 通过全局 store 刷新用户绑定状态
+		fetchUser()
 
 		// 性能优化：如果距离上次获取不足缓存时间且有数据，跳过请求
 		const now = Date.now()
@@ -359,7 +352,7 @@ export default function Inventory() {
 				onClose={() => setShowBindingSheet(false)}
 				onSuccess={() => {
 					setShowBindingSheet(false)
-					setHasPartner(true)
+					fetchUser()
 					resetItemsAndFetch(currentTab)
 				}}
 			/>
