@@ -54,19 +54,18 @@ const Confetti = forwardRef<ConfettiRef>((_, ref) => {
 
     ctx.clearRect(0, 0, canvas.width, canvas.height)
 
-    particles.current.forEach((p, index) => {
-      p.vx *= p.friction
-      p.vy *= p.friction
-      p.vy += p.gravity
-      p.x += p.vx
-      p.y += p.vy
-      p.alpha -= 0.015
+    const updated = particles.current.map(p => ({
+      ...p,
+      vx: p.vx * p.friction,
+      vy: p.vy * p.friction + p.gravity,
+      x: p.x + p.vx * p.friction,
+      y: p.y + (p.vy * p.friction + p.gravity),
+      alpha: p.alpha - 0.015,
+    }))
 
-      if (p.alpha <= 0) {
-        particles.current.splice(index, 1)
-        return
-      }
+    particles.current = updated.filter(p => p.alpha > 0)
 
+    particles.current.forEach(p => {
       ctx.save()
       ctx.globalAlpha = p.alpha
       ctx.fillStyle = p.color

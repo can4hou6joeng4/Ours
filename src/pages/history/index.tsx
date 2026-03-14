@@ -9,6 +9,14 @@ import type { PointRecord } from '../../types'
 
 const DATA_CACHE_DURATION = 30 * 1000
 
+const classifyRecord = (record: PointRecord) => {
+	const amount = record.amount || record.points || 0
+	const isExchange = record.type === 'exchange' || record.type === 'gift'
+	const isOutcome = record.type === 'outcome' || amount < 0 || isExchange
+	const isIncome = !isOutcome
+	return { amount, isExchange, isOutcome, isIncome }
+}
+
 export default function History() {
   const [records, setRecords] = useState<PointRecord[]>([])
   const [totalPoints, setTotalPoints] = useState(0)
@@ -112,11 +120,7 @@ export default function History() {
         ) : (
           records
             .filter(record => {
-              const amount = record.amount || record.points || 0
-              const rawTitle = record.reason || record.title || ''
-              const isExchange = rawTitle.includes('兑换') || record.type === 'exchange' || record.type === 'gift'
-              const isOutcome = record.type === 'outcome' || amount < 0 || isExchange
-              const isIncome = !isOutcome
+              const { isExchange, isOutcome, isIncome } = classifyRecord(record)
 
               if (filterActive === 'all') return true
               if (filterActive === 'reward') return isIncome && !isExchange
@@ -125,11 +129,8 @@ export default function History() {
               return true
             })
             .map(record => {
-              const amount = record.amount || record.points || 0
+              const { amount, isExchange, isIncome } = classifyRecord(record)
               const rawTitle = record.reason || record.title || ''
-              const isExchange = rawTitle.includes('兑换') || record.type === 'exchange' || record.type === 'gift'
-              const isOutcome = record.type === 'outcome' || amount < 0 || isExchange
-              const isIncome = !isOutcome
               const displayAmount = Math.abs(amount)
               const cleanTitle = rawTitle
                 .replace(/^\[.*?\]\s*/, '')
@@ -170,11 +171,11 @@ export default function History() {
 
               <View className='task-type-sub'>
                 <Text className={`category-label ${
-                  (selectedRecord.reason || selectedRecord.title || '').includes('兑换') || selectedRecord.type === 'exchange' || selectedRecord.type === 'gift'
+                  selectedRecord.type === 'exchange' || selectedRecord.type === 'gift'
                     ? 'penalty'
                     : (selectedRecord.type === 'reward' || (selectedRecord.amount || 0) > 0 ? 'reward' : 'penalty')
                 }`}>
-                  {(selectedRecord.reason || selectedRecord.title || '').includes('兑换') || selectedRecord.type === 'exchange' || selectedRecord.type === 'gift'
+                  {selectedRecord.type === 'exchange' || selectedRecord.type === 'gift'
                     ? '兑换'
                     : (selectedRecord.type === 'reward' || (selectedRecord.amount || 0) > 0 ? '奖赏' : '惩罚')}
                 </Text>

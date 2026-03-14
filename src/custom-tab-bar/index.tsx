@@ -1,7 +1,7 @@
 import { View, Text, Image } from '@tarojs/components'
 import Taro from '@tarojs/taro'
 import { useState, useEffect } from 'react'
-import { getIconifyUrl } from '../utils/assets'
+import { TAB_ICONS } from '../utils/icons'
 import './index.scss'
 
 export default function CustomTabBar() {
@@ -11,26 +11,22 @@ export default function CustomTabBar() {
     {
       pagePath: 'pages/index/index',
       text: '首页',
-      icon: 'solar:home-2-bold',
-      iconOutline: 'solar:home-2-linear'
+      iconKey: 'home' as const,
     },
     {
       pagePath: 'pages/store/index',
       text: '兑换',
-      icon: 'solar:bag-heart-bold',
-      iconOutline: 'solar:bag-heart-linear'
+      iconKey: 'refresh' as const,
     },
     {
       pagePath: 'pages/inventory/index',
       text: '背包',
-      icon: 'solar:box-bold',
-      iconOutline: 'solar:box-linear'
+      iconKey: 'package' as const,
     },
     {
       pagePath: 'pages/me/index',
       text: '我的',
-      icon: 'solar:user-rounded-bold',
-      iconOutline: 'solar:user-rounded-linear'
+      iconKey: 'user' as const,
     }
   ]
 
@@ -66,10 +62,10 @@ export default function CustomTabBar() {
               onClick={() => switchTab(index, item.pagePath)}
             >
               <Image
-                src={getIconifyUrl(
-                  selected === index ? item.icon : item.iconOutline,
-                  selected === index ? '#D4B185' : '#666666'
-                )}
+                src={selected === index
+                  ? TAB_ICONS[item.iconKey].active
+                  : TAB_ICONS[item.iconKey].inactive
+                }
                 className='tab-icon'
               />
               <Text className='tab-text'>{item.text}</Text>

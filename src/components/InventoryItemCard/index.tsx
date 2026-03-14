@@ -22,16 +22,20 @@ interface InventoryItemCardProps {
 	onUse: (item: InventoryItemData) => void
 }
 
+const ITEM_ICON_MAP: Array<[string, string]> = [
+	['电影', 'tabler:movie'],
+	['家务', 'tabler:vacuum-cleaner'],
+	['盒', 'tabler:gift'],
+	['奶茶', 'tabler:cup'],
+	['金牌', 'tabler:medal'],
+]
+
+const getItemIcon = (name: string): string => {
+	const match = ITEM_ICON_MAP.find(([keyword]) => name.includes(keyword))
+	return match ? match[1] : 'tabler:box'
+}
+
 const InventoryItemCard: React.FC<InventoryItemCardProps> = React.memo(({ item, currentTab, onUse }) => {
-	// 根据类型获取图标
-	const getItemIcon = (name: string) => {
-		if (name.includes('电影')) return 'tabler:movie'
-		if (name.includes('家务')) return 'tabler:vacuum-cleaner'
-		if (name.includes('盒')) return 'tabler:gift'
-		if (name.includes('奶茶')) return 'tabler:cup'
-		if (name.includes('金牌')) return 'tabler:medal'
-		return 'tabler:box'
-	}
 
 	const displayTime = currentTab === 'unused'
 		? item.createTime

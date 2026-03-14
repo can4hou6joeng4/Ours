@@ -19,11 +19,11 @@ const config = {
   compiler: {
     type: 'webpack5',
     prebundle: {
-      enable: false
+      enable: true
     }
   },
   cache: {
-    enable: false
+    enable: true
   },
   mini: {
     miniCssExtractPluginOption: {
