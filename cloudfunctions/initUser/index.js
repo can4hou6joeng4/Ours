@@ -27,7 +27,7 @@ exports.main = async (event, context) => {
       todayRecordsQuery = todayRecordsQuery.field({ amount: true })
     }
 
-    const todayRecordsPromise = todayRecordsQuery.get().catch(() => ({ data: [] }))
+    const todayRecordsPromise = todayRecordsQuery.limit(100).get().catch(() => ({ data: [] }))
 
     const [userRes, recordsRes] = await Promise.all([userPromise, todayRecordsPromise])
     const todayRecords = Array.isArray(recordsRes.data) ? recordsRes.data : []

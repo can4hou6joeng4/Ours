@@ -87,20 +87,20 @@ exports.main = async (event, context) => {
       mark('get_temp_urls_done', { fileIDs: fileIDs.length, cacheHits, fetched: 0, count: 0 })
     }
 
-    for (let i = 0; i < gifts.length; i += 1) {
-      const gift = gifts[i]
+    const resolvedGifts = gifts.map(gift => {
       const coverImg = gift && gift.coverImg
-      if (!coverImg || typeof coverImg !== 'string') continue
-      if (coverImg.startsWith('https://')) continue
-      if (!coverImg.startsWith('cloud://')) continue
+      if (!coverImg || typeof coverImg !== 'string') return gift
+      if (coverImg.startsWith('https://')) return gift
+      if (!coverImg.startsWith('cloud://')) return gift
       if (fileUrlMap[coverImg]) {
-        gift.coverImg = fileUrlMap[coverImg]
+        return { ...gift, coverImg: fileUrlMap[coverImg] }
       }
-    }
-    mark('replace_urls_done', { count: gifts.length })
-    mark('total_done', { count: gifts.length })
+      return gift
+    })
+    mark('replace_urls_done', { count: resolvedGifts.length })
+    mark('total_done', { count: resolvedGifts.length })
 
-    return { success: true, gifts }
+    return { success: true, gifts: resolvedGifts }
   } catch (e) {
     console.error('获取礼品失败', e)
     return { success: false, message: '操作失败，请重试' }
