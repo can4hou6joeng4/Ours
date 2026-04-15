@@ -9,6 +9,10 @@ project.config.json.bak
 project.private.config.json
 node_modules
 
+# Lock files (only keep pnpm-lock.yaml)
+package-lock.json
+yarn.lock
+
 # Documentation and progress tracking
 CLAUDE.md
 DEVELOPMENT_PROGRESS.md

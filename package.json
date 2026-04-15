@@ -9,6 +9,7 @@
     "framework": "react"
   },
   "scripts": {
+    "preinstall": "npx only-allow pnpm",
     "build:weapp": "taro build --type weapp",
     "dev:weapp": "taro build --type weapp --watch"
   },
