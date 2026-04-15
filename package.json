@@ -11,7 +11,8 @@
   "scripts": {
     "preinstall": "npx only-allow pnpm",
     "build:weapp": "taro build --type weapp",
-    "dev:weapp": "taro build --type weapp --watch"
+    "dev:weapp": "taro build --type weapp --watch",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@babel/runtime": "^7.20.0",
