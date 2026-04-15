@@ -29,5 +29,8 @@ jobs:
         run: pnpm exec tsc --noEmit
         continue-on-error: true
 
+      - name: 运行测试
+        run: pnpm test
+
       - name: 构建微信小程序
         run: pnpm build:weapp
