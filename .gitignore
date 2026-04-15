@@ -20,3 +20,10 @@ yarn.lock
 # Documentation and progress tracking
 CLAUDE.md
 DEVELOPMENT_PROGRESS.md
+
+# 开发过程产物
+.cursor/
+.analysis/
+design-system/
+*_REPORT.md
+*_FIX_REPORT.md
