@@ -9,8 +9,12 @@
     "framework": "react"
   },
   "scripts": {
+    "preinstall": "npx only-allow pnpm",
     "build:weapp": "taro build --type weapp",
-    "dev:weapp": "taro build --type weapp --watch"
+    "dev:weapp": "taro build --type weapp --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "jest",
+    "test:coverage": "jest --coverage"
   },
   "dependencies": {
     "@babel/runtime": "^7.20.0",
@@ -34,10 +38,13 @@
     "@babel/core": "^7.20.0",
     "@babel/preset-react": "^7.18.6",
     "@tarojs/cli": "4.1.11",
+    "@types/jest": "^30.0.0",
     "@types/node": "^18.0.0",
     "@types/react": "^18.0.0",
     "babel-preset-taro": "4.1.11",
+    "jest": "^30.3.0",
     "postcss": "^8.4.18",
+    "ts-jest": "^29.4.9",
     "typescript": "^5.0.0",
     "webpack": "5.91.0"
   },

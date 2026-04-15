@@ -1,0 +1,6 @@
+export const View = 'View'
+export const Text = 'Text'
+export const ScrollView = 'ScrollView'
+export const Image = 'Image'
+export const Button = 'Button'
+export const Input = 'Input'
