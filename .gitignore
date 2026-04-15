@@ -9,6 +9,10 @@ project.config.json.bak
 project.private.config.json
 node_modules
 
+# 环境变量（含敏感配置）
+.env.local
+.env.*.local
+
 # Lock files (only keep pnpm-lock.yaml)
 package-lock.json
 yarn.lock

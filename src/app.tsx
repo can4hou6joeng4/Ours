@@ -8,7 +8,7 @@ function App({ children }: PropsWithChildren<any>) {
     console.log('App launched.')
     if (Taro.cloud) {
       Taro.cloud.init({
-        env: 'cloud1-0ghgw7hf443dfb9b',
+        env: CLOUD_ENV_ID,
         traceUser: true,
       })
     }
