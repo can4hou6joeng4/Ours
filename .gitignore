@@ -9,6 +9,10 @@ project.config.json.bak
 project.private.config.json
 node_modules
 
+# 环境变量（含敏感配置）
+.env.local
+.env.*.local
+
 # Lock files (only keep pnpm-lock.yaml)
 package-lock.json
 yarn.lock
@@ -16,3 +20,10 @@ yarn.lock
 # Documentation and progress tracking
 CLAUDE.md
 DEVELOPMENT_PROGRESS.md
+
+# 开发过程产物
+.cursor/
+.analysis/
+design-system/
+*_REPORT.md
+*_FIX_REPORT.md

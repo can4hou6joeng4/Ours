@@ -115,7 +115,7 @@ pnpm build:weapp
 项目使用微信云开发作为后端服务，需要：
 
 1. 在[微信公众平台](https://mp.weixin.qq.com/)创建小程序并开通云开发
-2. 将 `src/app.tsx` 中的 `env` 替换为你自己的云开发环境 ID
+2. 复制 `.env.example` 为 `.env.local`，填入你的云开发环境 ID
 3. 在云开发控制台创建以下数据集合：`users`、`tasks`、`gifts`、`items`、`records`、`notices`
 
 ## 许可证

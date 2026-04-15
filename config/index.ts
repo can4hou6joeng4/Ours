@@ -1,3 +1,26 @@
+const path = require('path')
+const fs = require('fs')
+
+// 读取 .env.local 环境变量
+function loadEnvLocal() {
+  const envPath = path.resolve(__dirname, '..', '.env.local')
+  const env: Record<string, string> = {}
+  try {
+    const content = fs.readFileSync(envPath, 'utf-8')
+    content.split('\n').forEach((line: string) => {
+      const trimmed = line.trim()
+      if (!trimmed || trimmed.startsWith('#')) return
+      const [key, ...rest] = trimmed.split('=')
+      env[key.trim()] = rest.join('=').trim()
+    })
+  } catch (_) {
+    console.warn('未找到 .env.local，使用默认空值')
+  }
+  return env
+}
+
+const envLocal = loadEnvLocal()
+
 const config = {
   projectName: 'OursApp',
   date: '2026-01-28',
@@ -10,7 +33,9 @@ const config = {
   sourceRoot: 'src',
   outputRoot: 'dist',
   plugins: [],
-  defineConstants: {},
+  defineConstants: {
+    CLOUD_ENV_ID: JSON.stringify(envLocal.CLOUD_ENV_ID || ''),
+  },
   copy: {
     patterns: [],
     options: {}
