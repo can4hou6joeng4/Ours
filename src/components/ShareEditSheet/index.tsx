@@ -1,5 +1,5 @@
 import { View, Text, Button as TaroButton } from '@tarojs/components'
-import { Button, Input, Textarea } from '@taroify/core'
+import { Textarea } from '@taroify/core'
 import Taro from '@tarojs/taro'
 import React, { useState } from 'react'
 import './index.scss'

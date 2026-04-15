@@ -120,7 +120,7 @@ export type HistoryFilter = 'all' | 'unused' | 'used'
 
 // ---- 通知 ----
 
-export type NoticeType = 'NEW_TASK' | 'TASK_DONE' | 'GIFT_USED'
+export type NoticeType = 'NEW_TASK' | 'TASK_DONE' | 'TASK_CONFIRM' | 'NEW_GIFT' | 'GIFT_USED'
 
 export interface Notice {
 	_id: string

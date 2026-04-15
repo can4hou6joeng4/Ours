@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import Taro, { useDidShow, useDidHide, useShareAppMessage } from '@tarojs/taro'
 import { View, Text, ScrollView } from '@tarojs/components'
 import { Notify, Button } from '@taroify/core'
@@ -55,7 +55,7 @@ export default function Index() {
 		},
 	})
 
-	const { isSubmitting, handleAddTask, handleDone, handleRevoke } = useTaskActions({
+	const { handleAddTask, handleDone, handleRevoke } = useTaskActions({
 		partnerId,
 		onAddSuccess: () => {
 			setShowAddModal(false)
@@ -164,7 +164,7 @@ export default function Index() {
 
 			{/* 极简悬浮通知 */}
 			<Notify
-				visible={notifyVisible}
+				open={notifyVisible}
 				className='minimal-float-notify'
 				onClick={() => setNotifyVisible(false)}
 			>

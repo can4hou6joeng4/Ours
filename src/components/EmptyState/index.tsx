@@ -1,5 +1,4 @@
 import { View, Text, Button, Image } from '@tarojs/components'
-import Taro from '@tarojs/taro'
 import { getIconifyUrl } from '../../utils/assets'
 import './index.scss'
 

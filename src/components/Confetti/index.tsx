@@ -8,7 +8,6 @@ export interface ConfettiRef {
 }
 
 const Confetti = forwardRef<ConfettiRef>((_, ref) => {
-  const canvasRef = useRef<any>(null)
   const particles = useRef<any[]>([])
   const animationFrame = useRef<number | null>(null)
   const ctxRef = useRef<any>(null)

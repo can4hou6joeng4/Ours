@@ -42,11 +42,11 @@ const InventoryItemCard: React.FC<InventoryItemCardProps> = React.memo(({ item, 
 		: (item.useTime || item.createTime)
 
 	return (
-		<View className={`item-card-v4 ${currentTab} ${item.count > 1 ? 'is-stacked' : ''}`}>
+		<View className={`item-card-v4 ${currentTab} ${(item.count || 0) > 1 ? 'is-stacked' : ''}`}>
 			<View className='item-icon-box'>
 				{item.image || item.cover ? (
 					<Image
-						src={item.image || item.cover}
+						src={item.image || item.cover || ''}
 						className='inner-icon thumb-img'
 						mode='aspectFill'
 					/>
@@ -56,7 +56,7 @@ const InventoryItemCard: React.FC<InventoryItemCardProps> = React.memo(({ item, 
 						className='inner-icon'
 					/>
 				)}
-				{item.count > 1 && (
+				{(item.count || 0) > 1 && (
 					<View className='item-count-badge'>x{item.count}</View>
 				)}
 			</View>

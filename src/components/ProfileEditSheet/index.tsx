@@ -1,6 +1,5 @@
 import { View, Text, Image } from '@tarojs/components'
 import { Button, Input } from '@taroify/core'
-import Taro from '@tarojs/taro'
 import React from 'react'
 import { getIconifyUrl } from '../../utils/assets'
 import './index.scss'

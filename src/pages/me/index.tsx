@@ -102,7 +102,7 @@ export default function Me() {
                 已关联伙伴：{userInfo.partnerId.slice(-6)}
               </View>
               <View className='unbind-wrapper'>
-                <Button className='unbind-btn-v2' size='mini' plain color='#BBB'>
+                <Button className='unbind-btn-v2' size='mini' variant='outlined' color='default'>
                   解除绑定 (暂未开放)
                 </Button>
               </View>

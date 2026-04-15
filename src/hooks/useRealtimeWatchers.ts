@@ -1,4 +1,4 @@
-import { useRef, useCallback, useState } from 'react'
+import { useRef, useCallback } from 'react'
 import Taro from '@tarojs/taro'
 import type { Task, Notice, NotifyData } from '../types'
 
@@ -53,10 +53,10 @@ export default function useRealtimeWatchers(callbacks: WatcherCallbacks) {
 				watcher.current = db.collection('Tasks')
 					.where(_.or([{ creatorId: myId }, { targetId: myId }]))
 					.watch({
-						onChange: (snapshot) => {
-							const currentIds = new Set(snapshot.docs.map(d => d._id))
+						onChange: (snapshot: any) => {
+							const currentIds = new Set<string>(snapshot.docs.map((d: any) => d._id))
 							if (!isFirstLoad.current && partnerId) {
-								snapshot.docChanges.forEach(change => {
+								snapshot.docChanges.forEach((change: any) => {
 									if (change.dataType === 'add' && !lastTaskIds.current.has(change.doc._id)) {
 										if (change.doc.creatorId === partnerId) {
 											callbacks.onNotification({
@@ -70,7 +70,7 @@ export default function useRealtimeWatchers(callbacks: WatcherCallbacks) {
 							}
 							lastTaskIds.current = currentIds
 							callbacks.onTasksChange(
-								snapshot.docs.sort((a, b) => (b.createTime as any) - (a.createTime as any))
+								snapshot.docs.sort((a: any, b: any) => (b.createTime as any) - (a.createTime as any))
 							)
 						},
 						onError: (err) => console.warn('任务监听暂不可用', err)
@@ -80,10 +80,10 @@ export default function useRealtimeWatchers(callbacks: WatcherCallbacks) {
 				giftWatcher.current = db.collection('Gifts')
 					.where(_.or([{ creatorId: myId }, { partnerId: myId }]))
 					.watch({
-						onChange: (snapshot) => {
-							const currentIds = new Set(snapshot.docs.map(d => d._id))
+						onChange: (snapshot: any) => {
+							const currentIds = new Set<string>(snapshot.docs.map((d: any) => d._id))
 							if (!isFirstLoad.current && partnerId) {
-								snapshot.docChanges.forEach(change => {
+								snapshot.docChanges.forEach((change: any) => {
 									if (change.dataType === 'add' && !lastGiftIds.current.has(change.doc._id)) {
 										if (change.doc.creatorId === partnerId) {
 											callbacks.onNotification({
@@ -108,10 +108,10 @@ export default function useRealtimeWatchers(callbacks: WatcherCallbacks) {
 						read: false
 					})
 					.watch({
-						onChange: (snapshot) => {
+						onChange: (snapshot: any) => {
 							const newNotices = snapshot.docChanges
-								.filter(change => change.dataType === 'add')
-								.map(change => change.doc)
+								.filter((change: any) => change.dataType === 'add')
+								.map((change: any) => change.doc)
 
 							if (newNotices.length > 0) {
 								const latest = newNotices[newNotices.length - 1]
