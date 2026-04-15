@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, Button, Image, Input } from '@tarojs/components'
+import { View, Text, ScrollView, Button } from '@tarojs/components'
 import Taro, { useDidShow, eventCenter } from '@tarojs/taro'
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { Notify } from '@taroify/core'
@@ -65,11 +65,6 @@ export default function Store() {
     rightCol: products.filter((_, i) => i % 2 !== 0)
   }), [products])
 
-  const handleShowExchangeHistory = () => {
-    setShowExchangeHistory(true)
-    loadHistory({ reset: true })
-  }
-
   const fetchData = async () => {
     if (dataLoadingRef.current) return
 
@@ -103,6 +98,7 @@ export default function Store() {
 
   const handleAction = (type: 'edit' | 'delete') => {
     setShowManageMenu(false)
+    if (!selectedGift) return
     if (type === 'edit') {
       setEditData({
         name: selectedGift.name || '',

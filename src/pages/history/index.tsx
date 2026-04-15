@@ -129,7 +129,7 @@ export default function History() {
               return true
             })
             .map(record => {
-              const { amount, isExchange, isIncome } = classifyRecord(record)
+              const { amount, isIncome } = classifyRecord(record)
               const rawTitle = record.reason || record.title || ''
               const displayAmount = Math.abs(amount)
               const cleanTitle = rawTitle
