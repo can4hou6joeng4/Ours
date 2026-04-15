@@ -11,7 +11,7 @@ import { getIconifyUrl } from '../../utils/assets'
 import { requestSubscribe } from '../../utils/subscribe'
 import { useUserStore } from '../../store'
 import { useExchangeHistory } from '../../hooks'
-import { getItems as getItemsApi, useItem as useItemApi } from '../../services'
+import { getItems as getItemsApi, useItem as consumeItemApi } from '../../services'
 import type { InventoryItem, ItemStatus } from '../../types'
 import './index.scss'
 
@@ -134,7 +134,7 @@ export default function Inventory() {
 
 		setUsing(true)
 		try {
-			const result = await useItemApi({ itemId: selectedItem._id })
+			const result = await consumeItemApi({ itemId: selectedItem._id })
 
 			if (result.success) {
 				Taro.showToast({ title: '兑换申请已发出', icon: 'success' })
